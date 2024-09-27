@@ -1,10 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.22;
 
-// FIXME
-import { console2 as console } from "forge-std/console2.sol";
-import { Lib } from "test/utils/Lib.sol";
-
 import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
 import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { IERC20 } from "../interfaces/IERC20.sol";
@@ -18,9 +14,6 @@ import { ETH, UNI_V3_ZAP_KIND, VERSION } from "../libraries/Constants.sol";
 import { FixedPointMath } from "../libraries/FixedPointMath.sol";
 import { UniV3Path } from "../libraries/UniV3Path.sol";
 
-// FIXME: We'll have to update the slippage guard if it output doesn't fully
-//        fill the Uniswap order on close and vice versa.
-//
 // FIXME: Add reentrancy guards.
 //
 /// @title UniV3Zap
@@ -31,9 +24,6 @@ import { UniV3Path } from "../libraries/UniV3Path.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract UniV3Zap is IUniV3Zap {
-    // FIXME
-    using Lib for *;
-
     using FixedPointMath for uint256;
     using SafeERC20 for ERC20;
     using UniV3Path for bytes;
@@ -622,8 +612,6 @@ contract UniV3Zap is IUniV3Zap {
 
         // Execute the Uniswap trade.
         proceeds = swapRouter.exactInput{ value: value }(_swapParams);
-        // FIXME
-        console.log("proceeds = %s", proceeds.toString(18));
 
         // If the proceeds should be converted to ETH, withdraw the ETH from the
         // WETH proceeds.

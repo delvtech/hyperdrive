@@ -1,10 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.22;
 
-// FIXME
-import { console2 as console } from "forge-std/console2.sol";
-import { Lib } from "test/utils/Lib.sol";
-
 import { IERC20 } from "../../../contracts/src/interfaces/IERC20.sol";
 import { IERC4626 } from "../../../contracts/src/interfaces/IERC4626.sol";
 import { ILido } from "../../../contracts/src/interfaces/ILido.sol";
@@ -13,16 +9,13 @@ import { ISwapRouter } from "../../../contracts/src/interfaces/ISwapRouter.sol";
 import { IUniV3Zap } from "../../../contracts/src/interfaces/IUniV3Zap.sol";
 import { IWETH } from "../../../contracts/src/interfaces/IWETH.sol";
 import { AssetId } from "../../../contracts/src/libraries/AssetId.sol";
-import { UniV3Path } from "../../../contracts/src/libraries/UniV3Path.sol";
+import { ETH } from "../../../contracts/src/libraries/Constants.sol";
 import { FixedPointMath } from "../../../contracts/src/libraries/FixedPointMath.sol";
+import { UniV3Path } from "../../../contracts/src/libraries/UniV3Path.sol";
 import { UniV3Zap } from "../../../contracts/src/zaps/UniV3Zap.sol";
 import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
 
-// FIXME: Add test comments.
 contract UniV3ZapTest is HyperdriveTest {
-    // FIXME
-    using Lib for *;
-
     using FixedPointMath for uint256;
     using UniV3Path for bytes;
 
@@ -84,6 +77,10 @@ contract UniV3ZapTest is HyperdriveTest {
     address internal constant SDAI_WHALE =
         0x4C612E3B15b96Ff9A6faED838F8d07d479a8dD4c;
 
+    /// @dev The WETH whale address
+    address internal constant WETH_WHALE =
+        0xF04a5cC80B1E94C69B48f5ee68a08CD2F09A7c3E;
+
     /// @dev The stETH whale address
     address internal constant STETH_WHALE =
         0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
@@ -120,6 +117,7 @@ contract UniV3ZapTest is HyperdriveTest {
         fundAccounts(address(zap), IERC20(USDC), USDC_WHALE, accounts);
         fundAccounts(address(zap), IERC20(DAI), DAI_WHALE, accounts);
         fundAccounts(address(zap), IERC20(SDAI), SDAI_WHALE, accounts);
+        fundAccounts(address(zap), IERC20(WETH), WETH_WHALE, accounts);
         fundAccounts(address(zap), IERC20(STETH), STETH_WHALE, accounts);
     }
 
@@ -131,6 +129,8 @@ contract UniV3ZapTest is HyperdriveTest {
     //
     /// Add Liquidity ///
 
+    /// @notice Ensure that zapping into `addLiquidity` will fail when the
+    ///         recipient isn't the zap contract.
     function test_addLiquidityZap_failure_invalidRecipient() external {
         // Ensure that the zap fails when the recipient isn't Hyperdrive.
         vm.expectRevert(IUniV3Zap.InvalidRecipient.selector);
@@ -155,6 +155,8 @@ contract UniV3ZapTest is HyperdriveTest {
         );
     }
 
+    /// @notice Ensure that zapping into `addLiquidity` with base will fail when
+    ///         the output isn't the base token.
     function test_addLiquidityZap_failure_invalidOutputToken_asBase() external {
         // Ensure that the zap fails when `asBase` is true and the output token
         // isn't the base token.
@@ -186,6 +188,8 @@ contract UniV3ZapTest is HyperdriveTest {
         );
     }
 
+    /// @notice Ensure that zapping into `addLiquidity` with vault shares will
+    ///         fail when the output isn't the vault shares token.
     function test_addLiquidityZap_failure_invalidOutputToken_asShares()
         external
     {
@@ -213,6 +217,8 @@ contract UniV3ZapTest is HyperdriveTest {
         );
     }
 
+    /// @notice Ensure that zapping into `addLiquidity` with base refunds the
+    ///         sender when they send ETH that can't be used for the zap.
     function test_addLiquidityZap_success_asBase_refund() external {
         // Get Alice's ether balance before the zap.
         uint256 aliceBalanceBefore = alice.balance;
@@ -243,6 +249,9 @@ contract UniV3ZapTest is HyperdriveTest {
         assertEq(alice.balance, aliceBalanceBefore);
     }
 
+    /// @notice Ensure that zapping into `addLiquidity` with vault shares
+    ///         refunds the sender when they send ETH that can't be used for the
+    ///         zap.
     function test_addLiquidityZap_success_asShares_refund() external {
         // Get Alice's ether balance before the zap.
         uint256 aliceBalanceBefore = alice.balance;
@@ -279,239 +288,118 @@ contract UniV3ZapTest is HyperdriveTest {
         assertEq(alice.balance, aliceBalanceBefore);
     }
 
-    /// @dev Ensure that Alice can pay for a zap from WETH to DAI with ETH.
-    ///      We send extra ETH in the zap to ensure that Alice gets refunded
-    ///      for the excess.
-    function test_addLiquidityZap_success_asBase_withETH() external {
-        // Instantiate the swap parameters for this zap.
-        ISwapRouter.ExactInputParams memory swapParams = ISwapRouter
-            .ExactInputParams({
+    /// @notice Ensure that Alice can pay for a zap from WETH to DAI with WETH.
+    ///         We send extra ETH in the zap to ensure that Alice gets refunded
+    ///         for the excess.
+    function test_addLiquidityZap_success_asBase_withWETH() external {
+        // Ensure that adding liquidity with vault shares using a zap from
+        // ETH (via WETH) to DAI is successful.
+        _verifyAddLiquidityZap(
+            SDAI_HYPERDRIVE,
+            ISwapRouter.ExactInputParams({
                 path: abi.encodePacked(WETH, LOW_FEE_TIER, DAI),
                 recipient: address(zap),
                 deadline: block.timestamp + 1 minutes,
                 amountIn: 0.3882e18,
                 amountOutMinimum: 999e18
-            });
-
-        // Gets some data about the trader and the pool before the zap.
-        uint256 aliceBalanceBefore = alice.balance;
-        uint256 hyperdriveVaultSharesBalanceBefore = IERC20(
-            SDAI_HYPERDRIVE.vaultSharesToken()
-        ).balanceOf(address(SDAI_HYPERDRIVE));
-        uint256 lpTotalSupplyBefore = SDAI_HYPERDRIVE
-            .getPoolInfo()
-            .lpTotalSupply;
-        uint256 lpSharesBefore = SDAI_HYPERDRIVE.balanceOf(
-            AssetId._LP_ASSET_ID,
-            alice
-        );
-
-        // Zaps into `addLiquidity` with `asBase` as `false` from USDC to sDAI.
-        uint256 lpShares = zap.addLiquidityZap{ value: 10e18 }(
-            SDAI_HYPERDRIVE,
-            0, // minimum LP share price
-            0, // minimum APR
-            type(uint256).max, // maximum APR
-            IHyperdrive.Options({
-                destination: alice,
-                asBase: true,
-                extraData: ""
             }),
+            0.1e18, // this should be refunded
             false, // is rebasing
-            swapParams
-        );
-
-        // Ensure that Alice was charged the correct amount of ETH.
-        assertEq(alice.balance, aliceBalanceBefore - swapParams.amountIn);
-
-        // Ensure that Hyperdrive received more than the minimum output of the
-        // swap.
-        //
-        // NOTE: Since the vault shares don't rebase, the units are in shares.
-        uint256 hyperdriveVaultSharesBalanceAfter = IERC20(
-            SDAI_HYPERDRIVE.vaultSharesToken()
-        ).balanceOf(address(SDAI_HYPERDRIVE));
-        assertGt(
-            hyperdriveVaultSharesBalanceAfter,
-            hyperdriveVaultSharesBalanceBefore +
-                _convertToShares(SDAI_HYPERDRIVE, swapParams.amountOutMinimum)
-        );
-
-        // Ensure that Alice received an appropriate amount of LP shares and
-        // that the LP total supply increased.
-        assertGt(
-            lpShares,
-            swapParams.amountOutMinimum.divDown(
-                SDAI_HYPERDRIVE.getPoolInfo().lpSharePrice
-            )
-        );
-        assertEq(
-            SDAI_HYPERDRIVE.balanceOf(AssetId._LP_ASSET_ID, alice),
-            lpSharesBefore + lpShares
-        );
-        assertEq(
-            SDAI_HYPERDRIVE.getPoolInfo().lpTotalSupply,
-            lpTotalSupplyBefore + lpShares
+            true // as base
         );
     }
 
-    /// @dev Ensure that Alice can pay for a zap from WETH to sDAI with ETH.
-    ///      We send extra ETH in the zap to ensure that Alice gets refunded
-    ///      for the excess.
-    function test_addLiquidityZap_success_asShares_withETH() external {
-        // Instantiate the swap parameters for this zap.
-        ISwapRouter.ExactInputParams memory swapParams = ISwapRouter
-            .ExactInputParams({
+    /// @notice Ensure that Alice can pay for a zap from WETH to sDAI with WETH.
+    ///         We send extra ETH in the zap to ensure that Alice gets refunded
+    ///         for the excess.
+    function test_addLiquidityZap_success_asShares_withWETH() external {
+        // Ensure that adding liquidity with vault shares using a zap from
+        // ETH (via WETH) to sDAI is successful.
+        _verifyAddLiquidityZap(
+            SDAI_HYPERDRIVE,
+            ISwapRouter.ExactInputParams({
                 path: abi.encodePacked(WETH, LOW_FEE_TIER, SDAI),
                 recipient: address(zap),
                 deadline: block.timestamp + 1 minutes,
                 amountIn: 0.3882e18,
                 amountOutMinimum: 886e18
-            });
-
-        // Gets some data about the trader and the pool before the zap.
-        uint256 aliceBalanceBefore = alice.balance;
-        uint256 hyperdriveVaultSharesBalanceBefore = IERC20(
-            SDAI_HYPERDRIVE.vaultSharesToken()
-        ).balanceOf(address(SDAI_HYPERDRIVE));
-        uint256 lpTotalSupplyBefore = SDAI_HYPERDRIVE
-            .getPoolInfo()
-            .lpTotalSupply;
-        uint256 lpSharesBefore = SDAI_HYPERDRIVE.balanceOf(
-            AssetId._LP_ASSET_ID,
-            alice
-        );
-
-        // Zaps into `addLiquidity` with `asBase` as `false` from USDC to sDAI.
-        uint256 lpShares = zap.addLiquidityZap{ value: 10e18 }(
-            SDAI_HYPERDRIVE,
-            0, // minimum LP share price
-            0, // minimum APR
-            type(uint256).max, // maximum APR
-            IHyperdrive.Options({
-                destination: alice,
-                asBase: false,
-                extraData: ""
             }),
+            0.1e18, // this should be refunded
             false, // is rebasing
-            swapParams
-        );
-
-        // Ensure that Alice was charged the correct amount of ETH.
-        assertEq(alice.balance, aliceBalanceBefore - swapParams.amountIn);
-
-        // Ensure that Hyperdrive received more than the minimum output of the
-        // swap.
-        //
-        // NOTE: Since the vault shares don't rebase, the units are in shares.
-        uint256 hyperdriveVaultSharesBalanceAfter = IERC20(
-            SDAI_HYPERDRIVE.vaultSharesToken()
-        ).balanceOf(address(SDAI_HYPERDRIVE));
-        assertGt(
-            hyperdriveVaultSharesBalanceAfter,
-            hyperdriveVaultSharesBalanceBefore + swapParams.amountOutMinimum
-        );
-
-        // Ensure that Alice received an appropriate amount of LP shares and
-        // that the LP total supply increased.
-        assertGt(
-            lpShares,
-            swapParams.amountOutMinimum.divDown(
-                SDAI_HYPERDRIVE.getPoolInfo().lpSharePrice
-            )
-        );
-        assertEq(
-            SDAI_HYPERDRIVE.balanceOf(AssetId._LP_ASSET_ID, alice),
-            lpSharesBefore + lpShares
-        );
-        assertEq(
-            SDAI_HYPERDRIVE.getPoolInfo().lpTotalSupply,
-            lpTotalSupplyBefore + lpShares
+            false // as base
         );
     }
 
+    /// @notice Ensure that Alice can pay for a zap from WETH to DAI with ETH.
+    ///         We send extra ETH in the zap to ensure that Alice gets refunded
+    ///         for the excess.
+    function test_addLiquidityZap_success_asBase_withETH() external {
+        // Ensure that adding liquidity with vault shares using a zap from
+        // ETH (via WETH) to DAI is successful.
+        _verifyAddLiquidityZap(
+            SDAI_HYPERDRIVE,
+            ISwapRouter.ExactInputParams({
+                path: abi.encodePacked(WETH, LOW_FEE_TIER, DAI),
+                recipient: address(zap),
+                deadline: block.timestamp + 1 minutes,
+                amountIn: 0.3882e18,
+                amountOutMinimum: 999e18
+            }),
+            10e18, // most of this should be refunded
+            false, // is rebasing
+            true // as base
+        );
+    }
+
+    /// @notice Ensure that Alice can pay for a zap from WETH to sDAI with ETH.
+    ///         We send extra ETH in the zap to ensure that Alice gets refunded
+    ///         for the excess.
+    function test_addLiquidityZap_success_asShares_withETH() external {
+        // Ensure that adding liquidity with vault shares using a zap from
+        // ETH (via WETH) to sDAI is successful.
+        _verifyAddLiquidityZap(
+            SDAI_HYPERDRIVE,
+            ISwapRouter.ExactInputParams({
+                path: abi.encodePacked(WETH, LOW_FEE_TIER, SDAI),
+                recipient: address(zap),
+                deadline: block.timestamp + 1 minutes,
+                amountIn: 0.3882e18,
+                amountOutMinimum: 886e18
+            }),
+            10e18, // most of this should be refunded
+            false, // is rebasing
+            false // as base
+        );
+    }
+
+    /// @notice Ensure that zapping into `addLiquidity` with base succeeds with
+    ///         a rebasing yield source.
     function test_addLiquidityZap_success_rebasing_asBase() external {
-        // Instantiate the swap parameters for this zap.
-        ISwapRouter.ExactInputParams memory swapParams = ISwapRouter
-            .ExactInputParams({
+        // Ensure that adding liquidity with base using a zap from USDC to WETH
+        // (and ultimately into ETH) is successful.
+        _verifyAddLiquidityZap(
+            STETH_HYPERDRIVE,
+            ISwapRouter.ExactInputParams({
                 path: abi.encodePacked(USDC, MEDIUM_FEE_TIER, WETH),
                 recipient: address(zap),
                 deadline: block.timestamp + 1 minutes,
                 amountIn: 1_000e6,
-                // FIXME
                 amountOutMinimum: 0.38e18
-            });
-
-        // Gets some data about the trader and the pool before the zap.
-        uint256 aliceBalanceBefore = IERC20(swapParams.path.tokenIn())
-            .balanceOf(alice);
-        uint256 hyperdriveVaultSharesBalanceBefore = IERC20(
-            STETH_HYPERDRIVE.vaultSharesToken()
-        ).balanceOf(address(STETH_HYPERDRIVE));
-        uint256 lpTotalSupplyBefore = STETH_HYPERDRIVE
-            .getPoolInfo()
-            .lpTotalSupply;
-        uint256 lpSharesBefore = STETH_HYPERDRIVE.balanceOf(
-            AssetId._LP_ASSET_ID,
-            alice
-        );
-
-        // Zaps into `addLiquidity` with `asBase` as `true` from USDC to ETH.
-        uint256 lpShares = zap.addLiquidityZap(
-            STETH_HYPERDRIVE,
-            0, // minimum LP share price
-            0, // minimum APR
-            type(uint256).max, // maximum APR
-            IHyperdrive.Options({
-                destination: alice,
-                asBase: true,
-                extraData: ""
             }),
+            10e18, // this should be completely refunded
             true, // is rebasing
-            swapParams
-        );
-
-        // Ensure that Alice was charged the correct amount of the input token.
-        assertEq(
-            IERC20(swapParams.path.tokenIn()).balanceOf(alice),
-            aliceBalanceBefore - swapParams.amountIn
-        );
-
-        // Ensure that Hyperdrive received more than the minimum output of the
-        // swap.
-        //
-        // NOTE: Since the vault shares rebase, the units are in base.
-        uint256 hyperdriveVaultSharesBalanceAfter = IERC20(
-            STETH_HYPERDRIVE.vaultSharesToken()
-        ).balanceOf(address(STETH_HYPERDRIVE));
-        assertGt(
-            hyperdriveVaultSharesBalanceAfter,
-            hyperdriveVaultSharesBalanceBefore + swapParams.amountOutMinimum
-        );
-
-        // Ensure that Alice received an appropriate amount of LP shares and
-        // that the LP total supply increased.
-        assertGt(
-            lpShares,
-            swapParams.amountOutMinimum.divDown(
-                STETH_HYPERDRIVE.getPoolInfo().lpSharePrice
-            )
-        );
-        assertEq(
-            STETH_HYPERDRIVE.balanceOf(AssetId._LP_ASSET_ID, alice),
-            lpSharesBefore + lpShares
-        );
-        assertEq(
-            STETH_HYPERDRIVE.getPoolInfo().lpTotalSupply,
-            lpTotalSupplyBefore + lpShares
+            true // as base
         );
     }
 
-    // FIXME: Find a route that makes sense for this.
+    /// @notice Ensure that zapping into `addLiquidity` with vault shares
+    ///         succeeds with a rebasing yield source.
     function test_addLiquidityZap_success_rebasing_asShares() external {
-        // Instantiate the swap parameters for this zap.
-        ISwapRouter.ExactInputParams memory swapParams = ISwapRouter
-            .ExactInputParams({
+        // Ensure that adding liquidity with vault shares using a zap from
+        // USDC to stETH is successful.
+        _verifyAddLiquidityZap(
+            STETH_HYPERDRIVE,
+            ISwapRouter.ExactInputParams({
                 path: abi.encodePacked(
                     USDC,
                     MEDIUM_FEE_TIER,
@@ -523,156 +411,41 @@ contract UniV3ZapTest is HyperdriveTest {
                 deadline: block.timestamp + 1 minutes,
                 amountIn: 1_000e6,
                 amountOutMinimum: 0.38e18
-            });
-
-        // Gets some data about the trader and the pool before the zap.
-        uint256 aliceBalanceBefore = IERC20(swapParams.path.tokenIn())
-            .balanceOf(alice);
-        uint256 hyperdriveVaultSharesBalanceBefore = IERC20(
-            STETH_HYPERDRIVE.vaultSharesToken()
-        ).balanceOf(address(STETH_HYPERDRIVE));
-        uint256 lpTotalSupplyBefore = STETH_HYPERDRIVE
-            .getPoolInfo()
-            .lpTotalSupply;
-        uint256 lpSharesBefore = STETH_HYPERDRIVE.balanceOf(
-            AssetId._LP_ASSET_ID,
-            alice
-        );
-
-        // FIXME: Update this comment.
-        //
-        // Zaps into `addLiquidity` with `asBase` as `false` from USDC to stETH.
-        uint256 lpShares = zap.addLiquidityZap(
-            STETH_HYPERDRIVE,
-            0, // minimum LP share price
-            0, // minimum APR
-            type(uint256).max, // maximum APR
-            IHyperdrive.Options({
-                destination: alice,
-                asBase: false,
-                extraData: ""
             }),
+            0,
             true, // is rebasing
-            swapParams
-        );
-
-        // Ensure that Alice was charged the correct amount of the input token.
-        assertEq(
-            IERC20(swapParams.path.tokenIn()).balanceOf(alice),
-            aliceBalanceBefore - swapParams.amountIn
-        );
-
-        // Ensure that Hyperdrive received more than the minimum output of the
-        // swap.
-        //
-        // NOTE: Since the vault shares rebase, the units are in base.
-        uint256 hyperdriveVaultSharesBalanceAfter = IERC20(
-            STETH_HYPERDRIVE.vaultSharesToken()
-        ).balanceOf(address(STETH_HYPERDRIVE));
-        assertGt(
-            hyperdriveVaultSharesBalanceAfter,
-            hyperdriveVaultSharesBalanceBefore + swapParams.amountOutMinimum
-        );
-
-        // Ensure that Alice received an appropriate amount of LP shares and
-        // that the LP total supply increased.
-        assertGt(
-            lpShares,
-            swapParams.amountOutMinimum.divDown(
-                STETH_HYPERDRIVE.getPoolInfo().lpSharePrice
-            )
-        );
-        assertEq(
-            STETH_HYPERDRIVE.balanceOf(AssetId._LP_ASSET_ID, alice),
-            lpSharesBefore + lpShares
-        );
-        assertEq(
-            STETH_HYPERDRIVE.getPoolInfo().lpTotalSupply,
-            lpTotalSupplyBefore + lpShares
+            false // as base
         );
     }
 
+    /// @notice Ensure that zapping into `addLiquidity` with base succeeds with
+    ///         a non-rebasing yield source.
     function test_addLiquidityZap_success_nonRebasing_asBase() external {
-        // Instantiate the swap parameters for this zap.
-        ISwapRouter.ExactInputParams memory swapParams = ISwapRouter
-            .ExactInputParams({
+        // Ensure that adding liquidity with base using a zap from USDC to DAI
+        // is successful.
+        _verifyAddLiquidityZap(
+            SDAI_HYPERDRIVE,
+            ISwapRouter.ExactInputParams({
                 path: abi.encodePacked(USDC, LOWEST_FEE_TIER, DAI),
                 recipient: address(zap),
                 deadline: block.timestamp + 1 minutes,
                 amountIn: 1_000e6,
                 amountOutMinimum: 999e18
-            });
-
-        // Gets some data about the trader and the pool before the zap.
-        uint256 aliceBalanceBefore = IERC20(swapParams.path.tokenIn())
-            .balanceOf(alice);
-        uint256 hyperdriveVaultSharesBalanceBefore = IERC20(
-            SDAI_HYPERDRIVE.vaultSharesToken()
-        ).balanceOf(address(SDAI_HYPERDRIVE));
-        uint256 lpTotalSupplyBefore = SDAI_HYPERDRIVE
-            .getPoolInfo()
-            .lpTotalSupply;
-        uint256 lpSharesBefore = SDAI_HYPERDRIVE.balanceOf(
-            AssetId._LP_ASSET_ID,
-            alice
-        );
-
-        // Zaps into `addLiquidity` with `asBase` as `true` from USDC to DAI.
-        uint256 lpShares = zap.addLiquidityZap(
-            SDAI_HYPERDRIVE,
-            0, // minimum LP share price
-            0, // minimum APR
-            type(uint256).max, // maximum APR
-            IHyperdrive.Options({
-                destination: alice,
-                asBase: true,
-                extraData: ""
             }),
+            0,
             false, // is rebasing
-            swapParams
-        );
-
-        // Ensure that Alice was charged the correct amount of the input token.
-        assertEq(
-            IERC20(swapParams.path.tokenIn()).balanceOf(alice),
-            aliceBalanceBefore - swapParams.amountIn
-        );
-
-        // Ensure that Hyperdrive received more than the minimum output of the
-        // swap.
-        //
-        // NOTE: Since the vault shares don't rebase, the units are in shares.
-        uint256 hyperdriveVaultSharesBalanceAfter = IERC20(
-            SDAI_HYPERDRIVE.vaultSharesToken()
-        ).balanceOf(address(SDAI_HYPERDRIVE));
-        assertGt(
-            hyperdriveVaultSharesBalanceAfter,
-            hyperdriveVaultSharesBalanceBefore +
-                _convertToShares(SDAI_HYPERDRIVE, swapParams.amountOutMinimum)
-        );
-
-        // Ensure that Alice received an appropriate amount of LP shares and
-        // that the LP total supply increased.
-        assertGt(
-            lpShares,
-            swapParams.amountOutMinimum.divDown(
-                SDAI_HYPERDRIVE.getPoolInfo().lpSharePrice
-            )
-        );
-        assertEq(
-            SDAI_HYPERDRIVE.balanceOf(AssetId._LP_ASSET_ID, alice),
-            lpSharesBefore + lpShares
-        );
-        assertEq(
-            SDAI_HYPERDRIVE.getPoolInfo().lpTotalSupply,
-            lpTotalSupplyBefore + lpShares
+            true // as base
         );
     }
 
+    /// @notice Ensure that zapping into `addLiquidity` with vault shares
+    ///         succeeds with a non-rebasing yield source.
     function test_addLiquidityZap_success_nonRebasing_asShares() external {
-        // Instantiate the swap parameters for this zap.
-        ISwapRouter.ExactInputParams memory swapParams = ISwapRouter
-            .ExactInputParams({
+        // Ensure that adding liquidity with vault shares using a zap from
+        // USDC to sDAI is successful.
+        _verifyAddLiquidityZap(
+            SDAI_HYPERDRIVE,
+            ISwapRouter.ExactInputParams({
                 path: abi.encodePacked(
                     USDC,
                     LOW_FEE_TIER,
@@ -684,69 +457,120 @@ contract UniV3ZapTest is HyperdriveTest {
                 deadline: block.timestamp + 1 minutes,
                 amountIn: 1_000e6,
                 amountOutMinimum: 850e18
-            });
+            }),
+            10e18, // this should be completely refunded
+            false, // is rebasing
+            false // as base
+        );
+    }
 
+    /// @dev Verify that `addLiquidityZap` performs correctly under the
+    ///      specified conditions.
+    /// @param _hyperdrive The Hyperdrive instance.
+    /// @param _swapParams The Uniswap multi-hop swap parameters.
+    /// @param _value The ETH value to send in the transaction.
+    /// @param _isRebasing A flag indicating whether or not the yield source is
+    ///        rebasing.
+    /// @param _asBase A flag indicating whether or not the deposit should be in
+    ///        base.
+    function _verifyAddLiquidityZap(
+        IHyperdrive _hyperdrive,
+        ISwapRouter.ExactInputParams memory _swapParams,
+        uint256 _value,
+        bool _isRebasing,
+        bool _asBase
+    ) internal {
         // Gets some data about the trader and the pool before the zap.
-        uint256 aliceBalanceBefore = IERC20(swapParams.path.tokenIn())
-            .balanceOf(alice);
+        bool isETHDeposit = _swapParams.path.tokenIn() == WETH &&
+            _value > _swapParams.amountIn;
+        uint256 aliceBalanceBefore;
+        if (isETHDeposit) {
+            aliceBalanceBefore = alice.balance;
+        } else {
+            aliceBalanceBefore = IERC20(_swapParams.path.tokenIn()).balanceOf(
+                alice
+            );
+        }
         uint256 hyperdriveVaultSharesBalanceBefore = IERC20(
-            SDAI_HYPERDRIVE.vaultSharesToken()
-        ).balanceOf(address(SDAI_HYPERDRIVE));
-        uint256 lpTotalSupplyBefore = SDAI_HYPERDRIVE
-            .getPoolInfo()
-            .lpTotalSupply;
-        uint256 lpSharesBefore = SDAI_HYPERDRIVE.balanceOf(
+            _hyperdrive.vaultSharesToken()
+        ).balanceOf(address(_hyperdrive));
+        uint256 lpTotalSupplyBefore = _hyperdrive.getPoolInfo().lpTotalSupply;
+        uint256 lpSharesBefore = _hyperdrive.balanceOf(
             AssetId._LP_ASSET_ID,
             alice
         );
 
-        // Zaps into `addLiquidity` with `asBase` as `false` from USDC to sDAI.
-        uint256 lpShares = zap.addLiquidityZap(
-            SDAI_HYPERDRIVE,
+        // Zap into `addLiquidity`.
+        ISwapRouter.ExactInputParams memory swapParams = _swapParams; // avoid stack-too-deep
+        IHyperdrive hyperdrive = _hyperdrive; // avoid stack-too-deep
+        bool isRebasing = _isRebasing; // avoid stack-too-deep
+        bool asBase = _asBase; // avoid stack-too-deep
+        uint256 lpShares = zap.addLiquidityZap{ value: _value }(
+            hyperdrive,
             0, // minimum LP share price
             0, // minimum APR
             type(uint256).max, // maximum APR
             IHyperdrive.Options({
                 destination: alice,
-                asBase: false,
+                asBase: asBase,
                 extraData: ""
             }),
-            false, // is rebasing
+            isRebasing, // is rebasing
             swapParams
         );
 
         // Ensure that Alice was charged the correct amount of the input token.
-        assertEq(
-            IERC20(swapParams.path.tokenIn()).balanceOf(alice),
-            aliceBalanceBefore - swapParams.amountIn
-        );
+        if (isETHDeposit) {
+            assertEq(alice.balance, aliceBalanceBefore - swapParams.amountIn);
+        } else {
+            assertEq(
+                IERC20(_swapParams.path.tokenIn()).balanceOf(alice),
+                aliceBalanceBefore - swapParams.amountIn
+            );
+        }
 
         // Ensure that Hyperdrive received more than the minimum output of the
         // swap.
-        //
-        // NOTE: Since the vault shares don't rebase, the units are in shares.
         uint256 hyperdriveVaultSharesBalanceAfter = IERC20(
-            SDAI_HYPERDRIVE.vaultSharesToken()
-        ).balanceOf(address(SDAI_HYPERDRIVE));
-        assertGt(
-            hyperdriveVaultSharesBalanceAfter,
-            hyperdriveVaultSharesBalanceBefore + swapParams.amountOutMinimum
-        );
+            hyperdrive.vaultSharesToken()
+        ).balanceOf(address(hyperdrive));
+        if (isRebasing) {
+            // NOTE: Since the vault shares rebase, the units are in base.
+            assertGt(
+                hyperdriveVaultSharesBalanceAfter,
+                hyperdriveVaultSharesBalanceBefore + swapParams.amountOutMinimum
+            );
+        } else if (asBase) {
+            // NOTE: Since the vault shares don't rebase, the units are in shares.
+            assertGt(
+                hyperdriveVaultSharesBalanceAfter,
+                hyperdriveVaultSharesBalanceBefore +
+                    _convertToShares(hyperdrive, swapParams.amountOutMinimum)
+            );
+        } else {
+            // NOTE: Since the vault shares don't rebase, the units are in shares.
+            assertGt(
+                hyperdriveVaultSharesBalanceAfter,
+                hyperdriveVaultSharesBalanceBefore + swapParams.amountOutMinimum
+            );
+        }
 
         // Ensure that Alice received an appropriate amount of LP shares and
         // that the LP total supply increased.
-        assertGt(
-            lpShares,
-            swapParams.amountOutMinimum.divDown(
-                SDAI_HYPERDRIVE.getPoolInfo().lpSharePrice
-            )
-        );
+        if (!asBase && !isRebasing) {
+            assertGt(
+                lpShares,
+                _convertToBase(hyperdrive, swapParams.amountOutMinimum).divDown(
+                    hyperdrive.getPoolInfo().lpSharePrice
+                )
+            );
+        }
         assertEq(
-            SDAI_HYPERDRIVE.balanceOf(AssetId._LP_ASSET_ID, alice),
+            hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice),
             lpSharesBefore + lpShares
         );
         assertEq(
-            SDAI_HYPERDRIVE.getPoolInfo().lpTotalSupply,
+            hyperdrive.getPoolInfo().lpTotalSupply,
             lpTotalSupplyBefore + lpShares
         );
     }
@@ -776,6 +600,40 @@ contract UniV3ZapTest is HyperdriveTest {
     // FIXME
 
     /// Helpers ///
+
+    /// @dev Converts a quantity to base. This works for all Hyperdrive pools.
+    function _convertToBase(
+        IHyperdrive _hyperdrive,
+        uint256 _sharesAmount
+    ) internal view returns (uint256) {
+        // If this is a mainnet deployment and the address is the legacy stETH
+        // pool, we have to convert the proceeds to shares manually using Lido's
+        // `getPooledEthByShares` function.
+        if (
+            block.chainid == 1 &&
+            address(_hyperdrive) == LEGACY_STETH_HYPERDRIVE
+        ) {
+            return
+                ILido(_hyperdrive.vaultSharesToken()).getPooledEthByShares(
+                    _sharesAmount
+                );
+        }
+        // If this is a mainnet deployment and the address is the legacy stETH
+        // pool, we have to convert the proceeds to shares manually using Lido's
+        // `getSharesByPooledEth` function.
+        else if (
+            block.chainid == 1 && address(_hyperdrive) == LEGACY_SDAI_HYPERDRIVE
+        ) {
+            return
+                IERC4626(_hyperdrive.vaultSharesToken()).convertToAssets(
+                    _sharesAmount
+                );
+        }
+        // Otherwise, we can use the built-in `convertToBase` function.
+        else {
+            return _hyperdrive.convertToBase(_sharesAmount);
+        }
+    }
 
     /// @dev Converts a quantity to shares. This works for all Hyperdrive pools.
     function _convertToShares(
