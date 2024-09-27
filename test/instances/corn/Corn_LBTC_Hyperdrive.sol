@@ -54,6 +54,7 @@ contract Corn_LBTC_Hyperdrive is CornHyperdriveInstanceTest {
                 isRebasing: false,
                 shouldAccrueInterest: false,
                 // The base test tolerances.
+                closeLongWithBaseTolerance: 2,
                 roundTripLpInstantaneousWithBaseTolerance: 1e3,
                 roundTripLpWithdrawalSharesWithBaseTolerance: 1e5,
                 roundTripLongInstantaneousWithBaseUpperBoundTolerance: 100,
