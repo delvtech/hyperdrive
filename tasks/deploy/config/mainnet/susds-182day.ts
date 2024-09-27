@@ -20,7 +20,7 @@ export const MAINNET_SUSDS_182DAY_NAME = "ElementDAO 182 Day sUSDS Hyperdrive";
 // The initial contribution of the pool.
 const CONTRIBUTION = parseEther("100");
 
-export const MAINNET_DAI_182DAY: HyperdriveInstanceConfig<"ERC4626"> = {
+export const MAINNET_SUSDS_182DAY: HyperdriveInstanceConfig<"ERC4626"> = {
     name: MAINNET_SUSDS_182DAY_NAME,
     prefix: "ERC4626",
     coordinatorAddress: async (hre) =>
@@ -42,7 +42,7 @@ export const MAINNET_DAI_182DAY: HyperdriveInstanceConfig<"ERC4626"> = {
     prepare: async (hre) => {
         let baseToken = await hre.viem.getContractAt(
             "contracts/src/interfaces/IERC20.sol:IERC20",
-            DAI_ADDRESS_MAINNET,
+            USDS_ADDRESS_MAINNET,
         );
         let tx = await baseToken.write.approve([
             hre.hyperdriveDeploy.deployments.byName(
@@ -55,8 +55,8 @@ export const MAINNET_DAI_182DAY: HyperdriveInstanceConfig<"ERC4626"> = {
     },
     poolDeployConfig: async (hre) => {
         return {
-            baseToken: DAI_ADDRESS_MAINNET,
-            vaultSharesToken: SDAI_ADDRESS_MAINNET,
+            baseToken: USDS_ADDRESS_MAINNET,
+            vaultSharesToken: SUSDS_ADDRESS_MAINNET,
             circuitBreakerDelta: parseEther("0.05"),
             minimumShareReserves: parseEther("10"),
             minimumTransactionAmount: parseEther("0.001"),
