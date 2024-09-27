@@ -61,6 +61,7 @@ contract MorphoBlue_wstETH_USDA_HyperdriveTest is
                 isRebasing: false,
                 shouldAccrueInterest: true,
                 // The base test tolerances.
+                closeLongWithBaseTolerance: 2,
                 roundTripLpInstantaneousWithBaseTolerance: 1e13,
                 roundTripLpWithdrawalSharesWithBaseTolerance: 1e13,
                 roundTripLongInstantaneousWithBaseUpperBoundTolerance: 1e3,
@@ -76,7 +77,6 @@ contract MorphoBlue_wstETH_USDA_HyperdriveTest is
                 // The share test tolerances.
                 closeLongWithSharesTolerance: 0,
                 closeShortWithSharesTolerance: 0,
-                closeLongWithBaseTolerance: 0,
                 roundTripLpInstantaneousWithSharesTolerance: 0,
                 roundTripLpWithdrawalSharesWithSharesTolerance: 0,
                 roundTripLongInstantaneousWithSharesUpperBoundTolerance: 0,

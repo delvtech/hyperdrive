@@ -74,6 +74,7 @@ contract sUSDSHyperdriveTest is ERC4626HyperdriveInstanceTest {
                 isRebasing: false,
                 shouldAccrueInterest: true,
                 // The base test tolerances.
+                closeLongWithBaseTolerance: 1e3,
                 roundTripLpInstantaneousWithBaseTolerance: 1e8,
                 roundTripLpWithdrawalSharesWithBaseTolerance: 1e8,
                 roundTripLongInstantaneousWithBaseUpperBoundTolerance: 1e3,
@@ -85,7 +86,6 @@ contract sUSDSHyperdriveTest is ERC4626HyperdriveInstanceTest {
                 roundTripShortMaturityWithBaseTolerance: 1e5,
                 // The share test tolerances.
                 closeLongWithSharesTolerance: 1e3,
-                closeLongWithBaseTolerance: 1e3,
                 closeShortWithSharesTolerance: 100,
                 roundTripLpInstantaneousWithSharesTolerance: 1e7,
                 roundTripLpWithdrawalSharesWithSharesTolerance: 1e7,

@@ -73,6 +73,7 @@ contract RsETHLineaHyperdriveTest is InstanceTest {
                 // NOTE: Base  withdrawals are disabled, so the tolerances are zero.
                 //
                 // The base test tolerances.
+                closeLongWithBaseTolerance: 20,
                 roundTripLpInstantaneousWithBaseTolerance: 0,
                 roundTripLpWithdrawalSharesWithBaseTolerance: 0,
                 roundTripLongInstantaneousWithBaseUpperBoundTolerance: 0,
@@ -85,7 +86,6 @@ contract RsETHLineaHyperdriveTest is InstanceTest {
                 // The share test tolerances.
                 closeLongWithSharesTolerance: 100,
                 closeShortWithSharesTolerance: 100,
-                closeLongWithBaseTolerance: 20,
                 roundTripLpInstantaneousWithSharesTolerance: 100,
                 roundTripLpWithdrawalSharesWithSharesTolerance: 1e4,
                 roundTripLongInstantaneousWithSharesUpperBoundTolerance: 1e3,

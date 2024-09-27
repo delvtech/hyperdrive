@@ -72,6 +72,7 @@ contract AaveHyperdriveTest is InstanceTest {
                 isRebasing: true,
                 shouldAccrueInterest: true,
                 // The base test tolerances.
+                closeLongWithBaseTolerance: 20,
                 roundTripLpInstantaneousWithBaseTolerance: 1e5,
                 roundTripLpWithdrawalSharesWithBaseTolerance: 1e5,
                 roundTripLongInstantaneousWithBaseUpperBoundTolerance: 1e3,
@@ -84,7 +85,6 @@ contract AaveHyperdriveTest is InstanceTest {
                 // The share test tolerances.
                 closeLongWithSharesTolerance: 20,
                 closeShortWithSharesTolerance: 100,
-                closeLongWithBaseTolerance: 20,
                 roundTripLpInstantaneousWithSharesTolerance: 1e5,
                 roundTripLpWithdrawalSharesWithSharesTolerance: 1e3,
                 roundTripLongInstantaneousWithSharesUpperBoundTolerance: 1e3,

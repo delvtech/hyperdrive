@@ -72,6 +72,7 @@ contract SUSDeHyperdriveTest is ERC4626HyperdriveInstanceTest {
                 // NOTE: Base  withdrawals are disabled, so the tolerances are zero.
                 //
                 // The base test tolerances.
+                closeLongWithBaseTolerance: 20,
                 roundTripLpInstantaneousWithBaseTolerance: 0,
                 roundTripLpWithdrawalSharesWithBaseTolerance: 0,
                 roundTripLongInstantaneousWithBaseUpperBoundTolerance: 0,
@@ -84,7 +85,6 @@ contract SUSDeHyperdriveTest is ERC4626HyperdriveInstanceTest {
                 // The share test tolerances.
                 closeLongWithSharesTolerance: 20,
                 closeShortWithSharesTolerance: 100,
-                closeLongWithBaseTolerance: 20,
                 roundTripLpInstantaneousWithSharesTolerance: 1e8,
                 roundTripLpWithdrawalSharesWithSharesTolerance: 1e8,
                 roundTripLongInstantaneousWithSharesUpperBoundTolerance: 1e3,
