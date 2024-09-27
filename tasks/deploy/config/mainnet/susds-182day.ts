@@ -7,9 +7,9 @@ import {
     toBytes32,
 } from "../../lib";
 import {
-    USDS_ADDRESS_MAINNET,
-    SUSDS_ADDRESS_MAINNET,
     SIX_MONTHS,
+    SUSDS_ADDRESS_MAINNET,
+    USDS_ADDRESS_MAINNET,
 } from "../../lib/constants";
 import { MAINNET_ERC4626_COORDINATOR_NAME } from "./erc4626-coordinator";
 import { MAINNET_FACTORY_NAME } from "./factory";
