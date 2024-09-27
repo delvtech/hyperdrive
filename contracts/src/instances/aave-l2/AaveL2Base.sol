@@ -97,8 +97,6 @@ abstract contract AaveL2Base is HyperdriveBase {
         );
     }
 
-    // FIXME: This still needs to be updated.
-    //
     /// @dev Process a withdrawal in base and send the proceeds to the
     ///      destination.
     /// @param _shareAmount The amount of vault shares to withdraw.
@@ -115,13 +113,6 @@ abstract contract AaveL2Base is HyperdriveBase {
         );
         amountWithdrawn = _vault.withdraw(withdrawParams);
         _baseToken.transfer(_destination, amountWithdrawn);
-        // amountWithdrawn = _vault.withdraw(
-        //     address(_baseToken), // asset
-        //     // NOTE: Withdrawals are processed in base, so we have to convert
-        //     // the share amount to a base amount.
-        //     _convertToBase(_shareAmount), // amount
-        //     _destination // onBehalfOf
-        // );
 
         return amountWithdrawn;
     }
