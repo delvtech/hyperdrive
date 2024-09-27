@@ -1,20 +1,27 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.22;
 
+// FIXME
+import { console2 as console } from "forge-std/console2.sol";
+import { Lib } from "test/utils/Lib.sol";
+
 import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
 import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { IERC20 } from "../interfaces/IERC20.sol";
+import { ILido } from "../interfaces/ILido.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { ISwapRouter } from "../interfaces/ISwapRouter.sol";
 import { IUniV3Zap } from "../interfaces/IUniV3Zap.sol";
+import { IWETH } from "../interfaces/IWETH.sol";
 import { AssetId } from "../libraries/AssetId.sol";
+import { ETH, UNI_V3_ZAP_KIND, VERSION } from "../libraries/Constants.sol";
+import { FixedPointMath } from "../libraries/FixedPointMath.sol";
 import { UniV3Path } from "../libraries/UniV3Path.sol";
 
-// FIXME: We need "name", "kind", and "version"
+// FIXME: We'll have to update the slippage guard if it output doesn't fully
+//        fill the Uniswap order on close and vice versa.
 //
-// FIXME: Do we need to check the options destination for any of these zaps?
-//
-// FIXME: Handle ETH in these zaps.
+// FIXME: Add reentrancy guards.
 //
 /// @title UniV3Zap
 /// @author DELV
@@ -24,17 +31,50 @@ import { UniV3Path } from "../libraries/UniV3Path.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract UniV3Zap is IUniV3Zap {
+    // FIXME
+    using Lib for *;
+
+    using FixedPointMath for uint256;
     using SafeERC20 for ERC20;
     using UniV3Path for bytes;
+
+    /// @notice We can assume that almost all Hyperdrive deployments have the
+    ///         `convertToBase` and `convertToShares` functions, but there is
+    ///         one legacy stETH pool that was deployed before these functions
+    ///         were written. We explicitly special case conversions for this
+    ///         pool.
+    address internal constant LEGACY_STETH_HYPERDRIVE =
+        address(0xd7e470043241C10970953Bd8374ee6238e77D735);
 
     /// @notice The Uniswap swap router.
     ISwapRouter public immutable swapRouter;
 
+    /// @notice The wrapped ether address.
+    IWETH public immutable weth;
+
+    /// @notice The name of this zap.
+    string public name;
+
+    /// @notice The kind of this zap.
+    string public constant kind = UNI_V3_ZAP_KIND;
+
+    /// @notice The version of this zap.
+    string public constant version = VERSION;
+
     /// @notice Instantiates the zap contract.
+    /// @param _name The name of this zap contract.
     /// @param _swapRouter The uniswap swap router.
-    constructor(ISwapRouter _swapRouter) {
+    /// @param _weth The wrapped ether address.
+    constructor(string memory _name, ISwapRouter _swapRouter, IWETH _weth) {
+        name = _name;
         swapRouter = _swapRouter;
+        weth = _weth;
     }
+
+    /// Receive ///
+
+    // FIXME: Spruce this up and add a lock.
+    receive() external payable {}
 
     /// LPs ///
 
@@ -62,28 +102,48 @@ contract UniV3Zap is IUniV3Zap {
         IHyperdrive.Options calldata _options,
         bool _isRebasing,
         ISwapRouter.ExactInputParams calldata _swapParams
-    ) external returns (uint256 lpShares) {
+    ) external payable returns (uint256 lpShares) {
         // Validate the zap parameters.
-        _validateZapIn(_hyperdrive, _options, _swapParams);
+        bool isETHDeposit = _validateZapIn(_hyperdrive, _options, _swapParams);
 
         // Zap the funds that will be used to add liquidity and approve the pool
         // to spend these funds.
-        uint256 proceeds = _zapIn(_swapParams);
-        // NOTE: We increase the required approval amount by 1 wei so that the
-        // pool ends with an approval of 1 wei. This makes future approvals
-        // cheaper by keeping the storage slot warm.
-        ERC20(_swapParams.path.tokenOut()).forceApprove(
-            address(_hyperdrive),
-            proceeds + 1
-        );
+        uint256 proceeds = _zapIn(_swapParams, isETHDeposit);
 
+        // If the deposit isn't in ETH, we need to set an approval on Hyperdrive.
+        if (!isETHDeposit) {
+            // NOTE: We increase the required approval amount by 1 wei so that the
+            // pool ends with an approval of 1 wei. This makes future approvals
+            // cheaper by keeping the storage slot warm.
+            ERC20(_swapParams.path.tokenOut()).forceApprove(
+                address(_hyperdrive),
+                proceeds + 1
+            );
+        }
+
+        // FIXME: DRY this up.
+        //
         // Add liquidity using the proceeds of the trade. If the vault shares
         // token is a rebasing token, the proceeds amount needs to be converted
         // to vault shares.
         if (!_options.asBase && _isRebasing) {
-            proceeds = _hyperdrive.convertToShares(proceeds);
+            // If this is a mainnet deployment and the address is the legacy
+            // stETH pool, we have to convert the proceeds to shares manually
+            // using Lido's `getSharesByPooledEth` function.
+            if (
+                block.chainid == 1 &&
+                address(_hyperdrive) == LEGACY_STETH_HYPERDRIVE
+            ) {
+                proceeds = ILido(_hyperdrive.vaultSharesToken())
+                    .getSharesByPooledEth(proceeds);
+            }
+            // Otherwise, we can use the built-in `convertToShares` function.
+            else {
+                proceeds = _hyperdrive.convertToShares(proceeds);
+            }
         }
-        lpShares = _hyperdrive.addLiquidity(
+        uint256 value = isETHDeposit ? proceeds : 0;
+        lpShares = _hyperdrive.addLiquidity{ value: value }(
             proceeds,
             _minLpSharePrice,
             _minApr,
@@ -94,8 +154,6 @@ contract UniV3Zap is IUniV3Zap {
         return lpShares;
     }
 
-    // FIXME: Make sure that the destination is the zap contract.
-    //
     /// @notice Removes liquidity on Hyperdrive and converts the proceeds to the
     ///         traders preferred asset by executing a swap on Uniswap v3.
     /// @param _hyperdrive The Hyperdrive pool to open the long on.
@@ -139,12 +197,12 @@ contract UniV3Zap is IUniV3Zap {
         // rebase and also ensures that this contract doesn't end up with stuck
         // tokens. As a consequence, we don't need the output value of closing
         // the long position.
-        (, withdrawalShares) = _hyperdrive.removeLiquidity(
+        (proceeds, withdrawalShares) = _hyperdrive.removeLiquidity(
             _lpShares,
             _minOutputPerShare,
             _options
         );
-        proceeds = _zapOut(_swapParams);
+        proceeds = _zapOut(proceeds, _swapParams);
 
         return (proceeds, withdrawalShares);
     }
@@ -191,12 +249,13 @@ contract UniV3Zap is IUniV3Zap {
         // rebase and also ensures that this contract doesn't end up with stuck
         // tokens. As a consequence, we don't need the output value of closing
         // the long position.
-        (, withdrawalSharesRedeemed) = _hyperdrive.redeemWithdrawalShares(
-            _withdrawalShares,
-            _minOutputPerShare,
-            _options
-        );
-        proceeds = _zapOut(_swapParams);
+        (proceeds, withdrawalSharesRedeemed) = _hyperdrive
+            .redeemWithdrawalShares(
+                _withdrawalShares,
+                _minOutputPerShare,
+                _options
+            );
+        proceeds = _zapOut(proceeds, _swapParams);
 
         return (proceeds, withdrawalSharesRedeemed);
     }
@@ -225,20 +284,24 @@ contract UniV3Zap is IUniV3Zap {
         IHyperdrive.Options calldata _options,
         bool _isRebasing,
         ISwapRouter.ExactInputParams calldata _swapParams
-    ) external returns (uint256 maturityTime, uint256 longAmount) {
+    ) external payable returns (uint256 maturityTime, uint256 longAmount) {
         // Validate the zap parameters.
-        _validateZapIn(_hyperdrive, _options, _swapParams);
+        bool isETHDeposit = _validateZapIn(_hyperdrive, _options, _swapParams);
 
         // Zap the funds that will be used to open the long and approve the pool
         // to spend these funds.
-        uint256 proceeds = _zapIn(_swapParams);
-        // NOTE: We increase the required approval amount by 1 wei so that the
-        // pool ends with an approval of 1 wei. This makes future approvals
-        // cheaper by keeping the storage slot warm.
-        ERC20(_swapParams.path.tokenOut()).forceApprove(
-            address(_hyperdrive),
-            proceeds + 1
-        );
+        uint256 proceeds = _zapIn(_swapParams, isETHDeposit);
+
+        // If the deposit isn't in ETH, we need to set an approval on Hyperdrive.
+        if (!isETHDeposit) {
+            // NOTE: We increase the required approval amount by 1 wei so that the
+            // pool ends with an approval of 1 wei. This makes future approvals
+            // cheaper by keeping the storage slot warm.
+            ERC20(_swapParams.path.tokenOut()).forceApprove(
+                address(_hyperdrive),
+                proceeds + 1
+            );
+        }
 
         // Open a long using the proceeds of the trade. If the vault shares
         // token is a rebasing token, the proceeds amount needs to be converted
@@ -246,7 +309,8 @@ contract UniV3Zap is IUniV3Zap {
         if (!_options.asBase && _isRebasing) {
             proceeds = _hyperdrive.convertToShares(proceeds);
         }
-        (maturityTime, longAmount) = _hyperdrive.openLong(
+        uint256 value = isETHDeposit ? proceeds : 0;
+        (maturityTime, longAmount) = _hyperdrive.openLong{ value: value }(
             proceeds,
             _minOutput,
             _minVaultSharePrice,
@@ -296,8 +360,13 @@ contract UniV3Zap is IUniV3Zap {
         // rebase and also ensures that this contract doesn't end up with stuck
         // tokens. As a consequence, we don't need the output value of closing
         // the long position.
-        _hyperdrive.closeLong(_maturityTime, _bondAmount, _minOutput, _options);
-        _zapOut(_swapParams);
+        proceeds = _hyperdrive.closeLong(
+            _maturityTime,
+            _bondAmount,
+            _minOutput,
+            _options
+        );
+        proceeds = _zapOut(proceeds, _swapParams);
 
         return proceeds;
     }
@@ -327,36 +396,51 @@ contract UniV3Zap is IUniV3Zap {
         uint256 _minVaultSharePrice,
         IHyperdrive.Options calldata _options,
         ISwapRouter.ExactInputParams calldata _swapParams
-    ) external returns (uint256 maturityTime, uint256 deposit) {
+    ) external payable returns (uint256 maturityTime, uint256 deposit) {
         // Validate the zap parameters.
-        _validateZapIn(_hyperdrive, _options, _swapParams);
+        bool isETHDeposit = _validateZapIn(_hyperdrive, _options, _swapParams);
 
         // Zap the funds that will be used to open the long and approve the pool
         // to spend these funds.
-        uint256 proceeds = _zapIn(_swapParams);
-        // NOTE: We increase the required approval amount by 1 wei so that the
-        // pool ends with an approval of 1 wei. This makes future approvals
-        // cheaper by keeping the storage slot warm.
+        uint256 proceeds = _zapIn(_swapParams, isETHDeposit);
+
+        // If the deposit isn't in ETH, we need to set an approval on Hyperdrive.
         address tokenOut = _swapParams.path.tokenOut();
-        ERC20(tokenOut).forceApprove(address(_hyperdrive), proceeds + 1);
+        if (!isETHDeposit) {
+            // NOTE: We increase the required approval amount by 1 wei so that the
+            // pool ends with an approval of 1 wei. This makes future approvals
+            // cheaper by keeping the storage slot warm.
+            ERC20(tokenOut).forceApprove(address(_hyperdrive), proceeds + 1);
+        }
 
         // Open a long using the proceeds of the trade.
-        (maturityTime, deposit) = _hyperdrive.openShort(
+        uint256 value = isETHDeposit ? proceeds : 0;
+        (maturityTime, deposit) = _hyperdrive.openShort{ value: value }(
             _bondAmount,
             _maxDeposit,
             _minVaultSharePrice,
             _options
         );
 
-        // TODO: Is this the right UX? Ideally, we'd trade it back for them, but
-        // that is more complicated and gas intensive.
-        //
-        // If there is capital left over after the rebase, send it back to the
-        // trader.
-        ERC20(tokenOut).safeTransfer(
-            msg.sender,
-            IERC20(tokenOut).balanceOf(address(this))
-        );
+        // If the deposit was in ETH and capital is left after the trade, send
+        // it back to the trader.
+        if (isETHDeposit) {
+            uint256 balance = address(this).balance;
+            if (balance > 0) {
+                (bool success, ) = msg.sender.call{ value: balance }("");
+                if (!success) {
+                    revert TransferFailed();
+                }
+            }
+        }
+        // Otherwise, if the deposit asset was an ERC20 token and capital is
+        // left after the trade, send it back to the trader.
+        else {
+            uint256 balance = IERC20(tokenOut).balanceOf(address(this));
+            if (balance > 0) {
+                ERC20(tokenOut).safeTransfer(msg.sender, balance);
+            }
+        }
 
         return (maturityTime, deposit);
     }
@@ -401,13 +485,13 @@ contract UniV3Zap is IUniV3Zap {
         // rebase and also ensures that this contract doesn't end up with stuck
         // tokens. As a consequence, we don't need the output value of closing
         // the long position.
-        _hyperdrive.closeShort(
+        proceeds = _hyperdrive.closeShort(
             _maturityTime,
             _bondAmount,
             _minOutput,
             _options
         );
-        _zapOut(_swapParams);
+        proceeds = _zapOut(proceeds, _swapParams);
 
         return proceeds;
     }
@@ -418,29 +502,40 @@ contract UniV3Zap is IUniV3Zap {
     /// @param _hyperdrive The Hyperdrive pool to open the long on.
     /// @param _options The options that configure how the operation is settled.
     /// @param _swapParams The Uniswap swap parameters for a multi-hop fill.
+    /// @return A flag indicating whether or not the zap's output should be
+    ///         converted to ETH.
     function _validateZapIn(
         IHyperdrive _hyperdrive,
         IHyperdrive.Options calldata _options,
         ISwapRouter.ExactInputParams memory _swapParams
-    ) internal view {
+    ) internal view returns (bool) {
         // Ensure that the swap recipient is this contract.
         if (_swapParams.recipient != address(this)) {
             revert InvalidRecipient();
         }
 
-        // Ensure that if we're opening the long with base that the output token
-        // of the zap is the Hyperdrive pool's base token.
+        // If we're depositing with base, the output token is WETH, and the base
+        // token is ETH, we need to convert the WETH proceeds of the zap to ETH
+        // before executing the Hyperdrive trade.
         address tokenOut = _swapParams.path.tokenOut();
-        if (_options.asBase && tokenOut != _hyperdrive.baseToken()) {
+        address baseToken = _hyperdrive.baseToken();
+        if (_options.asBase && tokenOut == address(weth) && baseToken == ETH) {
+            return true;
+        }
+        // Ensure that if we're depositing with base that the output token
+        // of the zap is the Hyperdrive pool's base token.
+        else if (_options.asBase && tokenOut != _hyperdrive.baseToken()) {
             revert InvalidOutputToken();
         }
-        // Ensure that if we're opening the long with vault shares that the
-        // output token of the zap is the Hyperdrive pool's vault shares token.
+        // Ensure that if we're depositing with vault shares that the output
+        // token of the zap is the Hyperdrive pool's vault shares token.
         else if (
             !_options.asBase && tokenOut != _hyperdrive.vaultSharesToken()
         ) {
             revert InvalidOutputToken();
         }
+
+        return false;
     }
 
     /// @dev Validate the swap parameters for zapping tokens out of Hyperdrive.
@@ -452,6 +547,11 @@ contract UniV3Zap is IUniV3Zap {
         IHyperdrive.Options calldata _options,
         ISwapRouter.ExactInputParams memory _swapParams
     ) internal view {
+        // Ensure that the swap recipient is the sender.
+        if (_options.destination != address(this)) {
+            revert InvalidRecipient();
+        }
+
         // Ensure that the swap recipient is the sender.
         if (_swapParams.recipient != msg.sender) {
             revert InvalidRecipient();
@@ -474,22 +574,107 @@ contract UniV3Zap is IUniV3Zap {
 
     /// @dev Zaps funds into this contract to open positions on Hyperdrive.
     /// @param _swapParams The Uniswap swap parameters for a multi-hop fill.
+    /// @param _isETHDeposit A flag indicating whether or not the proceeds have
+    ///        been converted to ETH.
     /// @return proceeds The amount of assets that were zapped into this
     ///         contract.
     function _zapIn(
+        ISwapRouter.ExactInputParams memory _swapParams,
+        bool _isETHDeposit
+    ) internal returns (uint256 proceeds) {
+        // If the input token is WETH and sufficient ETH was sent to pay for the
+        // swap, we'll use ETH for the swap and refund any excess.
+        uint256 refund;
+        uint256 value;
+        address tokenIn = _swapParams.path.tokenIn();
+        if (tokenIn == address(weth) && msg.value >= _swapParams.amountIn) {
+            // Refund the difference between the message value and the input
+            // amount to the sender.
+            refund = msg.value - _swapParams.amountIn;
+
+            // Send the input amount of ETH to the swap router.
+            value = _swapParams.amountIn;
+        } else {
+            // Take custody of the assets to swap. Then we update the swap
+            // parameters so that the swap's input amount is equal to this
+            // contract's total balance of the input token. This ensures that stuck
+            // tokens from this contract are used.
+            ERC20(tokenIn).safeTransferFrom(
+                msg.sender,
+                address(this),
+                _swapParams.amountIn
+            );
+            _swapParams.amountIn = IERC20(tokenIn).balanceOf(address(this));
+
+            // Approve the swap router to spend the input tokens.
+            //
+            // NOTE: We increase the required approval amount by 1 wei so that the
+            // router ends with an approval of 1 wei. This makes future approvals
+            // cheaper by keeping the storage slot warm.
+            ERC20(tokenIn).forceApprove(
+                address(swapRouter),
+                _swapParams.amountIn + 1
+            );
+
+            // Refund all of the ETH sent to the contract.
+            refund = msg.value;
+        }
+
+        // Execute the Uniswap trade.
+        proceeds = swapRouter.exactInput{ value: value }(_swapParams);
+        // FIXME
+        console.log("proceeds = %s", proceeds.toString(18));
+
+        // If the proceeds should be converted to ETH, withdraw the ETH from the
+        // WETH proceeds.
+        if (_isETHDeposit) {
+            weth.withdraw(proceeds);
+        }
+
+        // If necessary, refund ETH to the sender.
+        if (refund > 0) {
+            (bool success, ) = msg.sender.call{ value: refund }("");
+            if (!success) {
+                revert TransferFailed();
+            }
+        }
+
+        return proceeds;
+    }
+
+    // FIXME: We need to handle cases where ETH is the output of closing a
+    // Hyperdrive trade.
+    //
+    /// @dev Zaps the proceeds of closing a Hyperdrive position into a trader's
+    ///      preferred tokens.
+    /// @param _proceeds The proceeds of closing a position on Hyperdrive. This
+    ///        will be converted to the trader's preferred token by a Uniswap
+    ///        swap.
+    /// @param _swapParams The Uniswap swap parameters for a multi-hop fill.
+    /// @return proceeds The proceeds of the zap that were transferred to the
+    ///         trader.
+    function _zapOut(
+        uint256 _proceeds,
         ISwapRouter.ExactInputParams memory _swapParams
     ) internal returns (uint256 proceeds) {
-        // Take custody of the assets to swap. Then we update the swap
-        // parameters so that the swap's input amount is equal to this
-        // contract's total balance of the input token. This ensures that stuck
-        // tokens from this contract are used.
+        // Update the swap parameters so that the input amount is equal to the
+        // proceeds of closing the position and the minimum amount out is scaled
+        // to the size of the proceeds. This will ensure that the swap is
+        // properly sized for the proceeds that need to be converted.
         address tokenIn = _swapParams.path.tokenIn();
-        ERC20(tokenIn).safeTransferFrom(
-            msg.sender,
-            address(this),
+        _swapParams.amountOutMinimum = _proceeds.mulDivDown(
+            _swapParams.amountOutMinimum,
             _swapParams.amountIn
         );
-        _swapParams.amountIn = IERC20(tokenIn).balanceOf(address(this));
+        _swapParams.amountIn = _proceeds;
+
+        // If the output token is WETH, we always unwrap to ETH. In this case,
+        // we make this contract the recipient of the Uniswap swap.
+        address tokenOut = _swapParams.path.tokenOut();
+        address recipient = _swapParams.recipient;
+        if (tokenOut == address(weth)) {
+            _swapParams.recipient = address(this);
+        }
 
         // Execute the Uniswap trade.
         //
@@ -502,30 +687,16 @@ contract UniV3Zap is IUniV3Zap {
         );
         proceeds = swapRouter.exactInput(_swapParams);
 
-        return proceeds;
-    }
-
-    /// @dev Zaps the proceeds of closing a Hyperdrive position into a trader's
-    ///      preferred tokens.
-    /// @param _swapParams The Uniswap swap parameters for a multi-hop fill.
-    /// @return proceeds The proceeds of the zap that were transferred to the
-    ///         trader.
-    function _zapOut(
-        ISwapRouter.ExactInputParams memory _swapParams
-    ) internal returns (uint256 proceeds) {
-        // Update the swap parameters so that the swap's input amount is equal
-        // to this contract's total balance of the input token. This ensures
-        // that stuck tokens from this contract are used.
-        address tokenIn = _swapParams.path.tokenIn();
-        _swapParams.amountIn = IERC20(tokenIn).balanceOf(address(this));
-
-        // Execute the Uniswap trade.
-        //
-        // NOTE: We increase the required approval amount by 1 wei so that the
-        // router ends with an approval of 1 wei. This makes future approvals
-        // cheaper by keeping the storage slot warm.
-        ERC20(tokenIn).forceApprove(address(swapRouter), proceeds + 1);
-        proceeds = swapRouter.exactInput(_swapParams);
+        // If the output token is WETH, unwrap the WETH and send the ETH.
+        if (tokenOut == address(weth)) {
+            weth.withdraw(weth.balanceOf(address(this)));
+            (bool success, ) = recipient.call{ value: address(this).balance }(
+                ""
+            );
+            if (!success) {
+                revert TransferFailed();
+            }
+        }
 
         return proceeds;
     }

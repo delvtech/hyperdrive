@@ -22,6 +22,13 @@ interface IUniV3Zap {
     /// @notice Thrown when attempting to zap to an invalid recipient.
     error InvalidRecipient();
 
+    /// @notice Thrown when ether is sent to an instance that doesn't accept
+    ///         ether as a deposit asset.
+    error NotPayable();
+
+    /// @notice Thrown when an ether transfer fails.
+    error TransferFailed();
+
     /// LPs ///
 
     /// @notice Executes a swap on Uniswap and uses the proceeds to add
@@ -48,7 +55,7 @@ interface IUniV3Zap {
         IHyperdrive.Options calldata _options,
         bool _isRebasing,
         ISwapRouter.ExactInputParams calldata _swapParams
-    ) external returns (uint256 lpShares);
+    ) external payable returns (uint256 lpShares);
 
     /// @notice Removes liquidity on Hyperdrive and converts the proceeds to the
     ///         traders preferred asset by executing a swap on Uniswap v3.
@@ -123,7 +130,7 @@ interface IUniV3Zap {
         IHyperdrive.Options calldata _options,
         bool _isRebasing,
         ISwapRouter.ExactInputParams calldata _swapParams
-    ) external returns (uint256 maturityTime, uint256 longAmount);
+    ) external payable returns (uint256 maturityTime, uint256 longAmount);
 
     /// @notice Closes a long on Hyperdrive and converts the proceeds to the
     ///         traders preferred asset by executing a swap on Uniswap v3.
@@ -172,7 +179,7 @@ interface IUniV3Zap {
         uint256 _minVaultSharePrice,
         IHyperdrive.Options calldata _options,
         ISwapRouter.ExactInputParams calldata _swapParams
-    ) external returns (uint256 maturityTime, uint256 deposit);
+    ) external payable returns (uint256 maturityTime, uint256 deposit);
 
     /// @notice Closes a short on Hyperdrive and converts the proceeds to the
     ///         traders preferred asset by executing a swap on Uniswap v3.

@@ -99,3 +99,6 @@ string constant RSETH_LINEA_HYPERDRIVE_KIND = "RsETHLineaHyperdrive";
 
 /// @dev The kind of StETHHyperdrive.
 string constant STETH_HYPERDRIVE_KIND = "StETHHyperdrive";
+
+/// @dev The kind of UniV3Zap.
+string constant UNI_V3_ZAP_KIND = "UniV3Zap";
