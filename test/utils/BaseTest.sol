@@ -25,6 +25,7 @@ contract BaseTest is Test {
 
     uint256 __init__; // time setup function was ran
 
+    string internal BASE_RPC_URL = vm.envString("ARBITRUM_RPC_URL");
     string internal BASE_RPC_URL = vm.envString("BASE_RPC_URL");
     string internal GNOSIS_CHAIN_RPC_URL = vm.envString("GNOSIS_CHAIN_RPC_URL");
     string internal LINEA_RPC_URL = vm.envString("LINEA_RPC_URL");
