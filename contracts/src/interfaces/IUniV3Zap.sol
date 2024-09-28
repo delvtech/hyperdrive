@@ -29,6 +29,20 @@ interface IUniV3Zap {
     /// @notice Thrown when an ether transfer fails.
     error TransferFailed();
 
+    /// Metadata ///
+
+    /// @notice Returns the name of this zap.
+    /// @return The name of this zap.
+    function name() external view returns (string memory);
+
+    /// @notice Returns the kind of this zap.
+    /// @return The kind of this zap.
+    function kind() external view returns (string memory);
+
+    /// @notice Returns the version of this zap.
+    /// @return The version of this zap.
+    function version() external view returns (string memory);
+
     /// LPs ///
 
     /// @notice Executes a swap on Uniswap and uses the proceeds to add
