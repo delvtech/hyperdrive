@@ -52,6 +52,15 @@ import { StakingUSDSBase } from "./StakingUSDSBase.sol";
 /// @author DELV
 /// @title StakingUSDSHyperdrive
 /// @notice A Hyperdrive instance that uses a StakingUSDS vault as the yield source.
+/// @dev This instance uses a StakingUSDS vault as a yield soure. These are vaults
+///      where users can stake USDS and earn rewards. Some information about this
+///      yield source:
+///
+///      - The base token address is USDS.
+///      - The vault shares token address is zero since staked USDS isn't
+///        transferable.
+///      - The vault share price is always one since the staking vaults don't
+///        natively accrue interest.
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
