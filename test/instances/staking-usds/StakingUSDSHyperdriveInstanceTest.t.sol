@@ -160,6 +160,12 @@ contract StakingUSDSHyperdriveInstanceTest is InstanceTest {
     /// @dev A test that ensures that Hyperdrive is set up to claim the staking
     ///      rewards.
     function test__rewards() external {
+        // If the rewards token is the zero address, this is a points vault, and
+        // we skip this test.
+        if (address(stakingUSDS.rewardsToken()) == address(0)) {
+            return;
+        }
+
         // Advance time to accrue rewards.
         advanceTime(POSITION_DURATION, 0);
 
