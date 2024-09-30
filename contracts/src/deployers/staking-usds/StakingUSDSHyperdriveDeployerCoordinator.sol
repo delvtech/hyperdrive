@@ -6,6 +6,7 @@ import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { StakingUSDSConversions } from "../../instances/staking-usds/StakingUSDSConversions.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IHyperdriveDeployerCoordinator } from "../../interfaces/IHyperdriveDeployerCoordinator.sol";
+import { IStakingUSDS } from "../../interfaces/IStakingUSDS.sol";
 import { StakingUSDSConversions } from "../../instances/staking-usds/StakingUSDSConversions.sol";
 import { STAKING_USDS_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND } from "../../libraries/Constants.sol";
 import { ONE } from "../../libraries/FixedPointMath.sol";
@@ -114,7 +115,8 @@ contract StakingUSDSHyperdriveDeployerCoordinator is
 
     /// @notice Checks the pool configuration to ensure that it is valid.
     /// @param _deployConfig The deploy configuration of the Hyperdrive pool.
-    /// @param _extraData The empty extra data.
+    /// @param _extraData The extra data. This contains the StakingUSDS vault
+    ///        address.
     function _checkPoolConfig(
         IHyperdrive.PoolDeployConfig memory _deployConfig,
         bytes memory _extraData
@@ -123,7 +125,11 @@ contract StakingUSDSHyperdriveDeployerCoordinator is
         super._checkPoolConfig(_deployConfig, _extraData);
 
         // Ensure that the base token address is properly configured.
-        if (address(_deployConfig.baseToken) == address(0)) {
+        IStakingUSDS stakingUSDS = abi.decode(_extraData, (IStakingUSDS));
+        if (
+            address(_deployConfig.baseToken) !=
+            address(stakingUSDS.stakingToken())
+        ) {
             revert IHyperdriveDeployerCoordinator.InvalidBaseToken();
         }
 

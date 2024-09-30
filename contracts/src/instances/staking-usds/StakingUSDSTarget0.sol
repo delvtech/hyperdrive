@@ -36,4 +36,10 @@ contract StakingUSDSTarget0 is HyperdriveTarget0, StakingUSDSBase {
     function kind() external pure override returns (string memory) {
         _revert(abi.encode(STAKING_USDS_HYPERDRIVE_KIND));
     }
+
+    /// @notice Gets the StakingUSDS vault used as this pool's yield source.
+    /// @return The StakingUSDS vault.
+    function stakingUSDS() external view returns (address) {
+        _revert(abi.encode(_stakingUSDS));
+    }
 }

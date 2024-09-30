@@ -24,15 +24,6 @@ abstract contract StakingUSDSBase is HyperdriveBase {
     ///      be deposited.
     IStakingUSDS internal immutable _stakingUSDS;
 
-    // FIXME: There needs to be a function on this that allows rewards to be
-    // claimed.
-    //
-    // FIXME: The vault shares token should be zero.
-    //
-    // FIXME: The base token should be USDS.
-    //
-    // FIXME: Add natspec
-    //
     /// @notice Instantiates the StakingUSDSHyperdrive base contract.
     /// @param __stakingUSDS The staking USDS contract that pays out rewards.
     constructor(IStakingUSDS __stakingUSDS) {
@@ -100,10 +91,8 @@ abstract contract StakingUSDSBase is HyperdriveBase {
         _stakingUSDS.withdraw(_shareAmount);
 
         // Transfer the shares to the destination.
-        ERC20(address(_baseToken)).safeTransfer(
-            _destination,
-            _convertToBase(_shareAmount)
-        );
+        amountWithdrawn = _convertToBase(_shareAmount);
+        ERC20(address(_baseToken)).safeTransfer(_destination, amountWithdrawn);
 
         return amountWithdrawn;
     }

@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.22;
 
+import { IERC20 } from "./IERC20.sol";
+
 /// @author DELV
 /// @title IStakingUSDS
 /// @notice The interface file for StakingUSDS
@@ -18,5 +20,13 @@ interface IStakingUSDS {
 
     function getReward() external;
 
+    function earned(address account) external view returns (uint256);
+
     function balanceOf(address account) external view returns (uint256);
+
+    function totalSupply() external view returns (uint256);
+
+    function rewardsToken() external view returns (IERC20);
+
+    function stakingToken() external view returns (IERC20);
 }
