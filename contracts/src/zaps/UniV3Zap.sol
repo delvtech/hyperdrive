@@ -4,6 +4,7 @@ pragma solidity 0.8.22;
 import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
 import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { IERC20 } from "../interfaces/IERC20.sol";
+import { IERC4626 } from "../interfaces/IERC4626.sol";
 import { ILido } from "../interfaces/ILido.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { ISwapRouter } from "../interfaces/ISwapRouter.sol";
@@ -27,6 +28,14 @@ contract UniV3Zap is IUniV3Zap {
     using FixedPointMath for uint256;
     using SafeERC20 for ERC20;
     using UniV3Path for bytes;
+
+    /// @dev We can assume that almost all Hyperdrive deployments have the
+    ///      `convertToBase` and `convertToShares` functions, but there is
+    ///      one legacy sDAI pool that was deployed before these functions
+    ///      were written. We explicitly special case conversions for this
+    ///      pool.
+    address internal constant LEGACY_SDAI_HYPERDRIVE =
+        address(0x324395D5d835F84a02A75Aa26814f6fD22F25698);
 
     /// @notice We can assume that almost all Hyperdrive deployments have the
     ///         `convertToBase` and `convertToShares` functions, but there is
@@ -117,20 +126,7 @@ contract UniV3Zap is IUniV3Zap {
         // token is a rebasing token, the proceeds amount needs to be converted
         // to vault shares.
         if (!_options.asBase && _isRebasing) {
-            // If this is a mainnet deployment and the address is the legacy
-            // stETH pool, we have to convert the proceeds to shares manually
-            // using Lido's `getSharesByPooledEth` function.
-            if (
-                block.chainid == 1 &&
-                address(_hyperdrive) == LEGACY_STETH_HYPERDRIVE
-            ) {
-                proceeds = ILido(_hyperdrive.vaultSharesToken())
-                    .getSharesByPooledEth(proceeds);
-            }
-            // Otherwise, we can use the built-in `convertToShares` function.
-            else {
-                proceeds = _hyperdrive.convertToShares(proceeds);
-            }
+            proceeds = _convertToShares(_hyperdrive, proceeds);
         }
         uint256 value = isETHDeposit ? proceeds : 0;
         lpShares = _hyperdrive.addLiquidity{ value: value }(
@@ -297,7 +293,7 @@ contract UniV3Zap is IUniV3Zap {
         // token is a rebasing token, the proceeds amount needs to be converted
         // to vault shares.
         if (!_options.asBase && _isRebasing) {
-            proceeds = _hyperdrive.convertToShares(proceeds);
+            proceeds = _convertToShares(_hyperdrive, proceeds);
         }
         uint256 value = isETHDeposit ? proceeds : 0;
         (maturityTime, longAmount) = _hyperdrive.openLong{ value: value }(
@@ -687,5 +683,43 @@ contract UniV3Zap is IUniV3Zap {
         }
 
         return proceeds;
+    }
+
+    /// @dev Converts a quantity in base to vault shares. This works for all
+    ///      Hyperdrive pools.
+    /// @param _hyperdrive The Hyperdrive instance.
+    /// @param _baseAmount The base amount.
+    /// @return The converted vault shares amount.
+    function _convertToShares(
+        IHyperdrive _hyperdrive,
+        uint256 _baseAmount
+    ) internal view returns (uint256) {
+        // If this is a mainnet deployment and the address is the legacy stETH
+        // pool, we have to convert the proceeds to shares manually using Lido's
+        // `getSharesByPooledEth` function.
+        if (
+            block.chainid == 1 &&
+            address(_hyperdrive) == LEGACY_STETH_HYPERDRIVE
+        ) {
+            return
+                ILido(_hyperdrive.vaultSharesToken()).getSharesByPooledEth(
+                    _baseAmount
+                );
+        }
+        // If this is a mainnet deployment and the address is the legacy stETH
+        // pool, we have to convert the proceeds to shares manually using Lido's
+        // `getSharesByPooledEth` function.
+        else if (
+            block.chainid == 1 && address(_hyperdrive) == LEGACY_SDAI_HYPERDRIVE
+        ) {
+            return
+                IERC4626(_hyperdrive.vaultSharesToken()).convertToShares(
+                    _baseAmount
+                );
+        }
+        // Otherwise, we can use the built-in `convertToShares` function.
+        else {
+            return _hyperdrive.convertToShares(_baseAmount);
+        }
     }
 }
