@@ -232,8 +232,10 @@ contract AaveHyperdriveTest is InstanceTest {
 
         // Accrue interest in the Aave pool. Since the vault share price is
         // given by `getReserveNormalizedIncome()`, we can simulate the accrual
-        // of interest by multiplying the total pooled ether by the variable
-        // rate plus one.
+        // of interest by multiplying the reserve normalized income by the
+        // variable rate plus one. We also need to increase the
+        // `lastUpdatedTimestamp` to avoid accruing interest when deposits or
+        // withdrawals are processed.
         uint256 normalizedTime = timeDelta.divDown(365 days);
         reserveNormalizedIncome = variableRate >= 0
             ? reserveNormalizedIncome +
@@ -258,7 +260,7 @@ contract AaveHyperdriveTest is InstanceTest {
             address(POOL),
             bytes32(uint256(reserveDataLocation) + 3),
             bytes32(
-                (data.id << 192) |
+                (uint256(data.id) << 168) |
                     (block.timestamp << 128) |
                     data.currentStableBorrowRate
             )

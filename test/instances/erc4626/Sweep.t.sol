@@ -9,7 +9,6 @@ import { ERC4626Target2 } from "../../../contracts/src/instances/erc4626/ERC4626
 import { ERC4626Target3 } from "../../../contracts/src/instances/erc4626/ERC4626Target3.sol";
 import { ERC4626Target4 } from "../../../contracts/src/instances/erc4626/ERC4626Target4.sol";
 import { IERC20 } from "../../../contracts/src/interfaces/IERC20.sol";
-import { IERC4626 } from "../../../contracts/src/interfaces/IERC4626.sol";
 import { IHyperdrive } from "../../../contracts/src/interfaces/IHyperdrive.sol";
 import { IHyperdriveAdminController } from "../../../contracts/src/interfaces/IHyperdriveAdminController.sol";
 import { IHyperdriveEvents } from "../../../contracts/src/interfaces/IHyperdriveEvents.sol";
@@ -19,7 +18,6 @@ import { HyperdriveMath } from "../../../contracts/src/libraries/HyperdriveMath.
 import { ERC20Mintable } from "../../../contracts/test/ERC20Mintable.sol";
 import { MockERC4626 } from "../../../contracts/test/MockERC4626.sol";
 import { BaseTest } from "../../utils/BaseTest.sol";
-import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
 
 contract SweepTest is BaseTest, IHyperdriveEvents {
     ForwardingToken baseForwarder;

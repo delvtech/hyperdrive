@@ -23,13 +23,11 @@ import { IHyperdriveFactory } from "../../../contracts/src/interfaces/IHyperdriv
 import { AssetId } from "../../../contracts/src/libraries/AssetId.sol";
 import { ERC4626_HYPERDRIVE_KIND, ERC4626_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND, VERSION } from "../../../contracts/src/libraries/Constants.sol";
 import { FixedPointMath, ONE } from "../../../contracts/src/libraries/FixedPointMath.sol";
-import { HyperdriveMath } from "../../../contracts/src/libraries/HyperdriveMath.sol";
 import { ERC20ForwarderFactory } from "../../../contracts/src/token/ERC20ForwarderFactory.sol";
 import { ERC20Mintable } from "../../../contracts/test/ERC20Mintable.sol";
-import { MockERC4626, ERC20 } from "../../../contracts/test/MockERC4626.sol";
+import { MockERC4626 } from "../../../contracts/test/MockERC4626.sol";
 import { MockERC4626Hyperdrive } from "../../../contracts/test/MockERC4626Hyperdrive.sol";
 import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
-import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
 import { Lib } from "../../utils/Lib.sol";
 
 contract ERC4626HyperdriveTest is HyperdriveTest {
