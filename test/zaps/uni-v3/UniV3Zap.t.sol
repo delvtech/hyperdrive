@@ -95,7 +95,7 @@ contract UniV3ZapTest is HyperdriveTest {
     /// @dev The Uniswap v3 zap contract.
     IUniV3Zap internal zap;
 
-    function setUp() public override __mainnet_fork(20_830_093) {
+    function setUp() public virtual override __mainnet_fork(20_830_093) {
         // Run the higher-level setup logic.
         super.setUp();
 

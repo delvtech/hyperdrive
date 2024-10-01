@@ -103,14 +103,18 @@ contract UniV3Zap is IUniV3Zap {
         ISwapRouter.ExactInputParams calldata _swapParams
     ) external payable returns (uint256 lpShares) {
         // Validate the zap parameters.
-        bool isETHDeposit = _validateZapIn(_hyperdrive, _options, _swapParams);
+        bool shouldConvertToETH = _validateZapIn(
+            _hyperdrive,
+            _options,
+            _swapParams
+        );
 
         // Zap the funds that will be used to add liquidity and approve the pool
         // to spend these funds.
-        uint256 proceeds = _zapIn(_swapParams, isETHDeposit);
+        uint256 proceeds = _zapIn(_swapParams, shouldConvertToETH);
 
         // If the deposit isn't in ETH, we need to set an approval on Hyperdrive.
-        if (!isETHDeposit) {
+        if (!shouldConvertToETH) {
             // NOTE: We increase the required approval amount by 1 wei so that the
             // pool ends with an approval of 1 wei. This makes future approvals
             // cheaper by keeping the storage slot warm.
@@ -128,7 +132,7 @@ contract UniV3Zap is IUniV3Zap {
         if (!_options.asBase && _isRebasing) {
             proceeds = _convertToShares(_hyperdrive, proceeds);
         }
-        uint256 value = isETHDeposit ? proceeds : 0;
+        uint256 value = shouldConvertToETH ? proceeds : 0;
         lpShares = _hyperdrive.addLiquidity{ value: value }(
             proceeds,
             _minLpSharePrice,
@@ -165,7 +169,11 @@ contract UniV3Zap is IUniV3Zap {
         ISwapRouter.ExactInputParams calldata _swapParams
     ) external returns (uint256 proceeds, uint256 withdrawalShares) {
         // Validate the zap parameters.
-        _validateZapOut(_hyperdrive, _options, _swapParams);
+        bool shouldConvertToWETH = _validateZapOut(
+            _hyperdrive,
+            _options,
+            _swapParams
+        );
 
         // Take custody of the LP shares.
         _hyperdrive.transferFrom(
@@ -188,7 +196,7 @@ contract UniV3Zap is IUniV3Zap {
             _minOutputPerShare,
             _options
         );
-        proceeds = _zapOut(proceeds, _swapParams);
+        proceeds = _zapOut(proceeds, _swapParams, shouldConvertToWETH);
 
         return (proceeds, withdrawalShares);
     }
@@ -217,7 +225,11 @@ contract UniV3Zap is IUniV3Zap {
         ISwapRouter.ExactInputParams calldata _swapParams
     ) external returns (uint256 proceeds, uint256 withdrawalSharesRedeemed) {
         // Validate the zap parameters.
-        _validateZapOut(_hyperdrive, _options, _swapParams);
+        bool shouldConvertToWETH = _validateZapOut(
+            _hyperdrive,
+            _options,
+            _swapParams
+        );
 
         // Take custody of the LP shares.
         _hyperdrive.transferFrom(
@@ -241,7 +253,7 @@ contract UniV3Zap is IUniV3Zap {
                 _minOutputPerShare,
                 _options
             );
-        proceeds = _zapOut(proceeds, _swapParams);
+        proceeds = _zapOut(proceeds, _swapParams, shouldConvertToWETH);
 
         return (proceeds, withdrawalSharesRedeemed);
     }
@@ -272,14 +284,18 @@ contract UniV3Zap is IUniV3Zap {
         ISwapRouter.ExactInputParams calldata _swapParams
     ) external payable returns (uint256 maturityTime, uint256 longAmount) {
         // Validate the zap parameters.
-        bool isETHDeposit = _validateZapIn(_hyperdrive, _options, _swapParams);
+        bool shouldConvertToETH = _validateZapIn(
+            _hyperdrive,
+            _options,
+            _swapParams
+        );
 
         // Zap the funds that will be used to open the long and approve the pool
         // to spend these funds.
-        uint256 proceeds = _zapIn(_swapParams, isETHDeposit);
+        uint256 proceeds = _zapIn(_swapParams, shouldConvertToETH);
 
         // If the deposit isn't in ETH, we need to set an approval on Hyperdrive.
-        if (!isETHDeposit) {
+        if (!shouldConvertToETH) {
             // NOTE: We increase the required approval amount by 1 wei so that the
             // pool ends with an approval of 1 wei. This makes future approvals
             // cheaper by keeping the storage slot warm.
@@ -295,7 +311,7 @@ contract UniV3Zap is IUniV3Zap {
         if (!_options.asBase && _isRebasing) {
             proceeds = _convertToShares(_hyperdrive, proceeds);
         }
-        uint256 value = isETHDeposit ? proceeds : 0;
+        uint256 value = shouldConvertToETH ? proceeds : 0;
         (maturityTime, longAmount) = _hyperdrive.openLong{ value: value }(
             proceeds,
             _minOutput,
@@ -328,7 +344,11 @@ contract UniV3Zap is IUniV3Zap {
         ISwapRouter.ExactInputParams calldata _swapParams
     ) external returns (uint256 proceeds) {
         // Validate the zap parameters.
-        _validateZapOut(_hyperdrive, _options, _swapParams);
+        bool shouldConvertToWETH = _validateZapOut(
+            _hyperdrive,
+            _options,
+            _swapParams
+        );
 
         // Take custody of the long position.
         _hyperdrive.transferFrom(
@@ -352,7 +372,7 @@ contract UniV3Zap is IUniV3Zap {
             _minOutput,
             _options
         );
-        proceeds = _zapOut(proceeds, _swapParams);
+        proceeds = _zapOut(proceeds, _swapParams, shouldConvertToWETH);
 
         return proceeds;
     }
@@ -384,15 +404,19 @@ contract UniV3Zap is IUniV3Zap {
         ISwapRouter.ExactInputParams calldata _swapParams
     ) external payable returns (uint256 maturityTime, uint256 deposit) {
         // Validate the zap parameters.
-        bool isETHDeposit = _validateZapIn(_hyperdrive, _options, _swapParams);
+        bool shouldConvertToETH = _validateZapIn(
+            _hyperdrive,
+            _options,
+            _swapParams
+        );
 
         // Zap the funds that will be used to open the long and approve the pool
         // to spend these funds.
-        uint256 proceeds = _zapIn(_swapParams, isETHDeposit);
+        uint256 proceeds = _zapIn(_swapParams, shouldConvertToETH);
 
         // If the deposit isn't in ETH, we need to set an approval on Hyperdrive.
         address tokenOut = _swapParams.path.tokenOut();
-        if (!isETHDeposit) {
+        if (!shouldConvertToETH) {
             // NOTE: We increase the required approval amount by 1 wei so that the
             // pool ends with an approval of 1 wei. This makes future approvals
             // cheaper by keeping the storage slot warm.
@@ -400,7 +424,7 @@ contract UniV3Zap is IUniV3Zap {
         }
 
         // Open a long using the proceeds of the trade.
-        uint256 value = isETHDeposit ? proceeds : 0;
+        uint256 value = shouldConvertToETH ? proceeds : 0;
         (maturityTime, deposit) = _hyperdrive.openShort{ value: value }(
             _bondAmount,
             _maxDeposit,
@@ -410,7 +434,7 @@ contract UniV3Zap is IUniV3Zap {
 
         // If the deposit was in ETH and capital is left after the trade, send
         // it back to the trader.
-        if (isETHDeposit) {
+        if (shouldConvertToETH) {
             uint256 balance = address(this).balance;
             if (balance > 0) {
                 (bool success, ) = msg.sender.call{ value: balance }("");
@@ -453,7 +477,11 @@ contract UniV3Zap is IUniV3Zap {
         ISwapRouter.ExactInputParams calldata _swapParams
     ) external returns (uint256 proceeds) {
         // Validate the zap parameters.
-        _validateZapOut(_hyperdrive, _options, _swapParams);
+        bool shouldConvertToWETH = _validateZapOut(
+            _hyperdrive,
+            _options,
+            _swapParams
+        );
 
         // Take custody of the short position.
         _hyperdrive.transferFrom(
@@ -477,7 +505,7 @@ contract UniV3Zap is IUniV3Zap {
             _minOutput,
             _options
         );
-        proceeds = _zapOut(proceeds, _swapParams);
+        proceeds = _zapOut(proceeds, _swapParams, shouldConvertToWETH);
 
         return proceeds;
     }
@@ -528,45 +556,51 @@ contract UniV3Zap is IUniV3Zap {
     /// @param _hyperdrive The Hyperdrive pool to open the long on.
     /// @param _options The options that configure how the operation is settled.
     /// @param _swapParams The Uniswap swap parameters for a multi-hop fill.
+    /// @return A flag indicating whether or not the proceeds should be
+    ///         converted to WETH for the swap.
     function _validateZapOut(
         IHyperdrive _hyperdrive,
         IHyperdrive.Options calldata _options,
         ISwapRouter.ExactInputParams memory _swapParams
-    ) internal view {
+    ) internal view returns (bool) {
         // Ensure that the swap recipient is the sender.
         if (_options.destination != address(this)) {
             revert InvalidRecipient();
         }
 
-        // Ensure that the swap recipient is the sender.
-        if (_swapParams.recipient != msg.sender) {
-            revert InvalidRecipient();
+        // If we're withdrawing with base, the input token is WETH, and the base
+        // token is ETH, we need to convert the ETH proceeds from Hyperdrive
+        // into WETH for the swap.
+        address tokenIn = _swapParams.path.tokenIn();
+        address baseToken = _hyperdrive.baseToken();
+        if (_options.asBase && tokenIn == address(weth) && baseToken == ETH) {
+            return true;
         }
-
         // Ensure that if we're opening the long with base that the output token
         // of the zap is the Hyperdrive pool's base token.
-        address tokenIn = _swapParams.path.tokenIn();
-        if (_options.asBase && tokenIn != _hyperdrive.baseToken()) {
-            revert InvalidOutputToken();
+        else if (_options.asBase && tokenIn != _hyperdrive.baseToken()) {
+            revert InvalidInputToken();
         }
         // Ensure that if we're opening the long with vault shares that the
         // output token of the zap is the Hyperdrive pool's vault shares token.
         else if (
             !_options.asBase && tokenIn != _hyperdrive.vaultSharesToken()
         ) {
-            revert InvalidOutputToken();
+            revert InvalidInputToken();
         }
+
+        return false;
     }
 
     /// @dev Zaps funds into this contract to open positions on Hyperdrive.
     /// @param _swapParams The Uniswap swap parameters for a multi-hop fill.
-    /// @param _isETHDeposit A flag indicating whether or not the proceeds have
-    ///        been converted to ETH.
+    /// @param _shouldConvertToETH A flag indicating whether or not the proceeds
+    ///        should be converted to ETH.
     /// @return proceeds The amount of assets that were zapped into this
     ///         contract.
     function _zapIn(
         ISwapRouter.ExactInputParams memory _swapParams,
-        bool _isETHDeposit
+        bool _shouldConvertToETH
     ) internal returns (uint256 proceeds) {
         // If the input token is WETH and sufficient ETH was sent to pay for the
         // swap, we'll use ETH for the swap and refund any excess.
@@ -611,7 +645,7 @@ contract UniV3Zap is IUniV3Zap {
 
         // If the proceeds should be converted to ETH, withdraw the ETH from the
         // WETH proceeds.
-        if (_isETHDeposit) {
+        if (_shouldConvertToETH) {
             weth.withdraw(proceeds);
         }
 
@@ -626,21 +660,27 @@ contract UniV3Zap is IUniV3Zap {
         return proceeds;
     }
 
-    // FIXME: We need to handle cases where ETH is the output of closing a
-    // Hyperdrive trade.
-    //
     /// @dev Zaps the proceeds of closing a Hyperdrive position into a trader's
     ///      preferred tokens.
     /// @param _proceeds The proceeds of closing a position on Hyperdrive. This
     ///        will be converted to the trader's preferred token by a Uniswap
     ///        swap.
     /// @param _swapParams The Uniswap swap parameters for a multi-hop fill.
+    /// @param _shouldConvertToWETH A flag indicating whether or not the
+    ///        Hyperdrive proceeds should be converted to WETH for the swap.
     /// @return proceeds The proceeds of the zap that were transferred to the
     ///         trader.
     function _zapOut(
         uint256 _proceeds,
-        ISwapRouter.ExactInputParams memory _swapParams
+        ISwapRouter.ExactInputParams memory _swapParams,
+        bool _shouldConvertToWETH
     ) internal returns (uint256 proceeds) {
+        // If the Hyperdrive proceeds should be converted to WETH, the
+        // Hyperdrive proceeds were in ETH.
+        if (_shouldConvertToWETH) {
+            weth.deposit{ value: _proceeds }();
+        }
+
         // Update the swap parameters so that the input amount is equal to the
         // proceeds of closing the position and the minimum amount out is scaled
         // to the size of the proceeds. This will ensure that the swap is
