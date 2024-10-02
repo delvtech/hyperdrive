@@ -81,6 +81,11 @@ interface IUniV3Zap {
     ///        of `_options.asBase`.
     /// @param _options The options that configure how the operation is settled.
     /// @param _swapParams The Uniswap swap parameters for a multi-hop fill.
+    /// @param _dustBuffer Some tokens (like stETH) have transfer methods that
+    ///        are imprecise. This may result in token transfers sending less
+    ///        funds than expected to Uniswap's swap router. To work around this
+    ///        issue, a dust buffer can be specified that will reduce the input
+    ///        amount of the swap to reduce the likelihood of failures.
     /// @return proceeds The proceeds of removing liquidity. These proceeds will
     ///         be in units determined by the Uniswap swap parameters.
     /// @return withdrawalShares The base that the LP receives buys out some of
@@ -93,7 +98,8 @@ interface IUniV3Zap {
         uint256 _lpShares,
         uint256 _minOutputPerShare,
         IHyperdrive.Options calldata _options,
-        ISwapRouter.ExactInputParams calldata _swapParams
+        ISwapRouter.ExactInputParams calldata _swapParams,
+        uint256 _dustBuffer
     ) external returns (uint256 proceeds, uint256 withdrawalShares);
 
     /// @notice Redeem withdrawal shares on Hyperdrive and converts the proceeds
@@ -107,6 +113,11 @@ interface IUniV3Zap {
     ///        value of `_options.asBase`.
     /// @param _options The options that configure how the operation is settled.
     /// @param _swapParams The Uniswap swap parameters for a multi-hop fill.
+    /// @param _dustBuffer Some tokens (like stETH) have transfer methods that
+    ///        are imprecise. This may result in token transfers sending less
+    ///        funds than expected to Uniswap's swap router. To work around this
+    ///        issue, a dust buffer can be specified that will reduce the input
+    ///        amount of the swap to reduce the likelihood of failures.
     /// @return proceeds The proceeds of redeeming withdrawal shares. These
     ///         proceeds will be in units determined by the Uniswap swap
     ///         parameters.
@@ -117,7 +128,8 @@ interface IUniV3Zap {
         uint256 _withdrawalShares,
         uint256 _minOutputPerShare,
         IHyperdrive.Options calldata _options,
-        ISwapRouter.ExactInputParams calldata _swapParams
+        ISwapRouter.ExactInputParams calldata _swapParams,
+        uint256 _dustBuffer
     ) external returns (uint256 proceeds, uint256 withdrawalSharesRedeemed);
 
     /// Longs ///
@@ -157,6 +169,11 @@ interface IUniV3Zap {
     /// @param _options The options that configure how the Hyperdrive trade is
     ///        settled.
     /// @param _swapParams The Uniswap swap parameters for a multi-hop fill.
+    /// @param _dustBuffer Some tokens (like stETH) have transfer methods that
+    ///        are imprecise. This may result in token transfers sending less
+    ///        funds than expected to Uniswap's swap router. To work around this
+    ///        issue, a dust buffer can be specified that will reduce the input
+    ///        amount of the swap to reduce the likelihood of failures.
     /// @return proceeds The proceeds of closing the long. These proceeds will
     ///         be in units determined by the Uniswap swap parameters.
     function closeLongZap(
@@ -165,7 +182,8 @@ interface IUniV3Zap {
         uint256 _bondAmount,
         uint256 _minOutput,
         IHyperdrive.Options calldata _options,
-        ISwapRouter.ExactInputParams calldata _swapParams
+        ISwapRouter.ExactInputParams calldata _swapParams,
+        uint256 _dustBuffer
     ) external returns (uint256 proceeds);
 
     /// Shorts ///
@@ -206,6 +224,11 @@ interface IUniV3Zap {
     /// @param _options The options that configure how the Hyperdrive trade is
     ///        settled.
     /// @param _swapParams The Uniswap swap parameters for a multi-hop fill.
+    /// @param _dustBuffer Some tokens (like stETH) have transfer methods that
+    ///        are imprecise. This may result in token transfers sending less
+    ///        funds than expected to Uniswap's swap router. To work around this
+    ///        issue, a dust buffer can be specified that will reduce the input
+    ///        amount of the swap to reduce the likelihood of failures.
     /// @return proceeds The proceeds of closing the short. These proceeds will
     ///         be in units determined by the Uniswap swap parameters.
     function closeShortZap(
@@ -214,7 +237,8 @@ interface IUniV3Zap {
         uint256 _bondAmount,
         uint256 _minOutput,
         IHyperdrive.Options calldata _options,
-        ISwapRouter.ExactInputParams calldata _swapParams
+        ISwapRouter.ExactInputParams calldata _swapParams,
+        uint256 _dustBuffer
     ) external returns (uint256 proceeds);
 
     /// Getters ///

@@ -154,6 +154,11 @@ contract UniV3Zap is IUniV3Zap {
     ///        of `_options.asBase`.
     /// @param _options The options that configure how the operation is settled.
     /// @param _swapParams The Uniswap swap parameters for a multi-hop fill.
+    /// @param _dustBuffer Some tokens (like stETH) have transfer methods that
+    ///        are imprecise. This may result in token transfers sending less
+    ///        funds than expected to Uniswap's swap router. To work around this
+    ///        issue, a dust buffer can be specified that will reduce the input
+    ///        amount of the swap to reduce the likelihood of failures.
     /// @return proceeds The proceeds of removing liquidity. These proceeds will
     ///         be in units determined by the Uniswap swap parameters.
     /// @return withdrawalShares The base that the LP receives buys out some of
@@ -166,7 +171,8 @@ contract UniV3Zap is IUniV3Zap {
         uint256 _lpShares,
         uint256 _minOutputPerShare,
         IHyperdrive.Options calldata _options,
-        ISwapRouter.ExactInputParams calldata _swapParams
+        ISwapRouter.ExactInputParams calldata _swapParams,
+        uint256 _dustBuffer
     ) external returns (uint256 proceeds, uint256 withdrawalShares) {
         // Validate the zap parameters.
         bool shouldConvertToWETH = _validateZapOut(
@@ -191,12 +197,12 @@ contract UniV3Zap is IUniV3Zap {
         // rebase and also ensures that this contract doesn't end up with stuck
         // tokens. As a consequence, we don't need the output value of closing
         // the long position.
-        (proceeds, withdrawalShares) = _hyperdrive.removeLiquidity(
+        (, withdrawalShares) = _hyperdrive.removeLiquidity(
             _lpShares,
             _minOutputPerShare,
             _options
         );
-        proceeds = _zapOut(proceeds, _swapParams, shouldConvertToWETH);
+        proceeds = _zapOut(_swapParams, _dustBuffer, shouldConvertToWETH);
 
         return (proceeds, withdrawalShares);
     }
@@ -212,6 +218,11 @@ contract UniV3Zap is IUniV3Zap {
     ///        value of `_options.asBase`.
     /// @param _options The options that configure how the operation is settled.
     /// @param _swapParams The Uniswap swap parameters for a multi-hop fill.
+    /// @param _dustBuffer Some tokens (like stETH) have transfer methods that
+    ///        are imprecise. This may result in token transfers sending less
+    ///        funds than expected to Uniswap's swap router. To work around this
+    ///        issue, a dust buffer can be specified that will reduce the input
+    ///        amount of the swap to reduce the likelihood of failures.
     /// @return proceeds The proceeds of redeeming withdrawal shares. These
     ///         proceeds will be in units determined by the Uniswap swap
     ///         parameters.
@@ -222,7 +233,8 @@ contract UniV3Zap is IUniV3Zap {
         uint256 _withdrawalShares,
         uint256 _minOutputPerShare,
         IHyperdrive.Options calldata _options,
-        ISwapRouter.ExactInputParams calldata _swapParams
+        ISwapRouter.ExactInputParams calldata _swapParams,
+        uint256 _dustBuffer
     ) external returns (uint256 proceeds, uint256 withdrawalSharesRedeemed) {
         // Validate the zap parameters.
         bool shouldConvertToWETH = _validateZapOut(
@@ -247,13 +259,12 @@ contract UniV3Zap is IUniV3Zap {
         // rebase and also ensures that this contract doesn't end up with stuck
         // tokens. As a consequence, we don't need the output value of closing
         // the long position.
-        (proceeds, withdrawalSharesRedeemed) = _hyperdrive
-            .redeemWithdrawalShares(
-                _withdrawalShares,
-                _minOutputPerShare,
-                _options
-            );
-        proceeds = _zapOut(proceeds, _swapParams, shouldConvertToWETH);
+        (, withdrawalSharesRedeemed) = _hyperdrive.redeemWithdrawalShares(
+            _withdrawalShares,
+            _minOutputPerShare,
+            _options
+        );
+        proceeds = _zapOut(_swapParams, _dustBuffer, shouldConvertToWETH);
 
         return (proceeds, withdrawalSharesRedeemed);
     }
@@ -333,6 +344,11 @@ contract UniV3Zap is IUniV3Zap {
     /// @param _options The options that configure how the Hyperdrive trade is
     ///        settled.
     /// @param _swapParams The Uniswap swap parameters for a multi-hop fill.
+    /// @param _dustBuffer Some tokens (like stETH) have transfer methods that
+    ///        are imprecise. This may result in token transfers sending less
+    ///        funds than expected to Uniswap's swap router. To work around this
+    ///        issue, a dust buffer can be specified that will reduce the input
+    ///        amount of the swap to reduce the likelihood of failures.
     /// @return proceeds The proceeds of closing the long. These proceeds will
     ///         be in units determined by the Uniswap swap parameters.
     function closeLongZap(
@@ -341,7 +357,8 @@ contract UniV3Zap is IUniV3Zap {
         uint256 _bondAmount,
         uint256 _minOutput,
         IHyperdrive.Options calldata _options,
-        ISwapRouter.ExactInputParams calldata _swapParams
+        ISwapRouter.ExactInputParams calldata _swapParams,
+        uint256 _dustBuffer
     ) external returns (uint256 proceeds) {
         // Validate the zap parameters.
         bool shouldConvertToWETH = _validateZapOut(
@@ -366,13 +383,8 @@ contract UniV3Zap is IUniV3Zap {
         // rebase and also ensures that this contract doesn't end up with stuck
         // tokens. As a consequence, we don't need the output value of closing
         // the long position.
-        proceeds = _hyperdrive.closeLong(
-            _maturityTime,
-            _bondAmount,
-            _minOutput,
-            _options
-        );
-        proceeds = _zapOut(proceeds, _swapParams, shouldConvertToWETH);
+        _hyperdrive.closeLong(_maturityTime, _bondAmount, _minOutput, _options);
+        proceeds = _zapOut(_swapParams, _dustBuffer, shouldConvertToWETH);
 
         return proceeds;
     }
@@ -466,6 +478,11 @@ contract UniV3Zap is IUniV3Zap {
     /// @param _options The options that configure how the Hyperdrive trade is
     ///        settled.
     /// @param _swapParams The Uniswap swap parameters for a multi-hop fill.
+    /// @param _dustBuffer Some tokens (like stETH) have transfer methods that
+    ///        are imprecise. This may result in token transfers sending less
+    ///        funds than expected to Uniswap's swap router. To work around this
+    ///        issue, a dust buffer can be specified that will reduce the input
+    ///        amount of the swap to reduce the likelihood of failures.
     /// @return proceeds The proceeds of closing the short. These proceeds will
     ///         be in units determined by the Uniswap swap parameters.
     function closeShortZap(
@@ -474,7 +491,8 @@ contract UniV3Zap is IUniV3Zap {
         uint256 _bondAmount,
         uint256 _minOutput,
         IHyperdrive.Options calldata _options,
-        ISwapRouter.ExactInputParams calldata _swapParams
+        ISwapRouter.ExactInputParams calldata _swapParams,
+        uint256 _dustBuffer
     ) external returns (uint256 proceeds) {
         // Validate the zap parameters.
         bool shouldConvertToWETH = _validateZapOut(
@@ -499,13 +517,13 @@ contract UniV3Zap is IUniV3Zap {
         // rebase and also ensures that this contract doesn't end up with stuck
         // tokens. As a consequence, we don't need the output value of closing
         // the long position.
-        proceeds = _hyperdrive.closeShort(
+        _hyperdrive.closeShort(
             _maturityTime,
             _bondAmount,
             _minOutput,
             _options
         );
-        proceeds = _zapOut(proceeds, _swapParams, shouldConvertToWETH);
+        proceeds = _zapOut(_swapParams, _dustBuffer, shouldConvertToWETH);
 
         return proceeds;
     }
@@ -662,23 +680,25 @@ contract UniV3Zap is IUniV3Zap {
 
     /// @dev Zaps the proceeds of closing a Hyperdrive position into a trader's
     ///      preferred tokens.
-    /// @param _proceeds The proceeds of closing a position on Hyperdrive. This
-    ///        will be converted to the trader's preferred token by a Uniswap
-    ///        swap.
     /// @param _swapParams The Uniswap swap parameters for a multi-hop fill.
+    /// @param _dustBuffer Some tokens (like stETH) have transfer methods that
+    ///        are imprecise. This may result in token transfers sending less
+    ///        funds than expected to Uniswap's swap router. To work around this
+    ///        issue, a dust buffer can be specified that will reduce the input
+    ///        amount of the swap to reduce the likelihood of failures.
     /// @param _shouldConvertToWETH A flag indicating whether or not the
     ///        Hyperdrive proceeds should be converted to WETH for the swap.
     /// @return proceeds The proceeds of the zap that were transferred to the
     ///         trader.
     function _zapOut(
-        uint256 _proceeds,
         ISwapRouter.ExactInputParams memory _swapParams,
+        uint256 _dustBuffer,
         bool _shouldConvertToWETH
     ) internal returns (uint256 proceeds) {
         // If the Hyperdrive proceeds should be converted to WETH, the
         // Hyperdrive proceeds were in ETH.
         if (_shouldConvertToWETH) {
-            weth.deposit{ value: _proceeds }();
+            weth.deposit{ value: address(this).balance }();
         }
 
         // Update the swap parameters so that the input amount is equal to the
@@ -686,11 +706,19 @@ contract UniV3Zap is IUniV3Zap {
         // to the size of the proceeds. This will ensure that the swap is
         // properly sized for the proceeds that need to be converted.
         address tokenIn = _swapParams.path.tokenIn();
-        _swapParams.amountOutMinimum = _proceeds.mulDivDown(
+        // NOTE: Use the zap contract's balance rather than the proceeds
+        // reported by Hyperdrive to avoid having to handle the difference
+        // between rebasing and non-rebasing tokens.
+        //
+        // NOTE: Apply the dust buffer to avoid "Insufficient Input Amount"
+        // failures.
+        uint256 balance = IERC20(tokenIn).balanceOf(address(this)) -
+            _dustBuffer;
+        _swapParams.amountOutMinimum = balance.mulDivDown(
             _swapParams.amountOutMinimum,
             _swapParams.amountIn
         );
-        _swapParams.amountIn = _proceeds;
+        _swapParams.amountIn = balance;
 
         // If the output token is WETH, we always unwrap to ETH. In this case,
         // we make this contract the recipient of the Uniswap swap.

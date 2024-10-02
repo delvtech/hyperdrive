@@ -1,6 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.22;
 
+import { ERC4626Hyperdrive } from "../../../contracts/src/instances/erc4626/ERC4626Hyperdrive.sol";
+import { ERC4626Target0 } from "../../../contracts/src/instances/erc4626/ERC4626Target0.sol";
+import { ERC4626Target1 } from "../../../contracts/src/instances/erc4626/ERC4626Target1.sol";
+import { ERC4626Target2 } from "../../../contracts/src/instances/erc4626/ERC4626Target2.sol";
+import { ERC4626Target3 } from "../../../contracts/src/instances/erc4626/ERC4626Target3.sol";
+import { ERC4626Target4 } from "../../../contracts/src/instances/erc4626/ERC4626Target4.sol";
 import { IERC20 } from "../../../contracts/src/interfaces/IERC20.sol";
 import { IERC4626 } from "../../../contracts/src/interfaces/IERC4626.sol";
 import { ILido } from "../../../contracts/src/interfaces/ILido.sol";
@@ -11,6 +17,8 @@ import { IWETH } from "../../../contracts/src/interfaces/IWETH.sol";
 import { UNI_V3_ZAP_KIND, VERSION } from "../../../contracts/src/libraries/Constants.sol";
 import { UniV3Path } from "../../../contracts/src/libraries/UniV3Path.sol";
 import { UniV3Zap } from "../../../contracts/src/zaps/UniV3Zap.sol";
+import { ERC20Mintable } from "../../../contracts/test/ERC20Mintable.sol";
+import { MockERC4626 } from "../../../contracts/test/MockERC4626.sol";
 import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
 
 contract UniV3ZapTest is HyperdriveTest {
@@ -56,6 +64,9 @@ contract UniV3ZapTest is HyperdriveTest {
     /// @dev The Wrapped Ether token address.
     address internal constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
 
+    /// @dev The rETH token address.
+    address internal constant RETH = 0xae78736Cd615f374D3085123A210448E74Fc6393;
+
     /// @dev The stETH token address.
     address internal constant STETH =
         0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84;
@@ -76,6 +87,10 @@ contract UniV3ZapTest is HyperdriveTest {
     address internal constant WETH_WHALE =
         0xF04a5cC80B1E94C69B48f5ee68a08CD2F09A7c3E;
 
+    /// @dev The rETH whale address
+    address internal constant RETH_WHALE =
+        0xCc9EE9483f662091a1de4795249E24aC0aC2630f;
+
     /// @dev The stETH whale address
     address internal constant STETH_WHALE =
         0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
@@ -91,6 +106,15 @@ contract UniV3ZapTest is HyperdriveTest {
     /// @dev The Hyperdrive mainnet stETH pool.
     IHyperdrive internal constant STETH_HYPERDRIVE =
         IHyperdrive(0xd7e470043241C10970953Bd8374ee6238e77D735);
+
+    /// @dev The Hyperdrive mainnet rETH pool.
+    IHyperdrive internal constant RETH_HYPERDRIVE =
+        IHyperdrive(0xca5dB9Bb25D09A9bF3b22360Be3763b5f2d13589);
+
+    /// @dev A Hyperdrive instance that integrates with a MockERC4626 vault that
+    ///      uses WETH as the base asset. This is useful for testing situations
+    ///      where Hyperdrive's base token is WETH.
+    IHyperdrive internal WETH_VAULT_HYPERDRIVE;
 
     /// @dev The Uniswap v3 zap contract.
     IUniV3Zap internal zap;
@@ -113,7 +137,51 @@ contract UniV3ZapTest is HyperdriveTest {
         fundAccounts(address(zap), IERC20(DAI), DAI_WHALE, accounts);
         fundAccounts(address(zap), IERC20(SDAI), SDAI_WHALE, accounts);
         fundAccounts(address(zap), IERC20(WETH), WETH_WHALE, accounts);
+        fundAccounts(address(zap), IERC20(RETH), RETH_WHALE, accounts);
         fundAccounts(address(zap), IERC20(STETH), STETH_WHALE, accounts);
+
+        // Deploy and initialize a Hyperdrive instance that integrates with a
+        // WETH yield souce.
+        MockERC4626 wethVault = new MockERC4626(
+            ERC20Mintable(address(WETH)),
+            "WETH Vault",
+            "WETH_VAULT",
+            0,
+            address(0),
+            false,
+            type(uint256).max
+        );
+        IHyperdrive.PoolConfig memory config = testConfig(
+            0.05e18,
+            POSITION_DURATION
+        );
+        config.baseToken = IERC20(WETH);
+        config.vaultSharesToken = IERC20(address(wethVault));
+        config.minimumShareReserves = 1e15;
+        WETH_VAULT_HYPERDRIVE = IHyperdrive(
+            address(
+                new ERC4626Hyperdrive(
+                    "WETH Vault Hyperdrive",
+                    config,
+                    adminController,
+                    address(new ERC4626Target0(config, adminController)),
+                    address(new ERC4626Target1(config, adminController)),
+                    address(new ERC4626Target2(config, adminController)),
+                    address(new ERC4626Target3(config, adminController)),
+                    address(new ERC4626Target4(config, adminController))
+                )
+            )
+        );
+        IERC20(WETH).approve(address(WETH_VAULT_HYPERDRIVE), 1e18);
+        WETH_VAULT_HYPERDRIVE.initialize(
+            1e18,
+            0.05e18,
+            IHyperdrive.Options({
+                destination: alice,
+                asBase: true,
+                extraData: new bytes(0)
+            })
+        );
     }
 
     // TODO: Move these tests somewhere else.
