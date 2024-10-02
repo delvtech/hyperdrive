@@ -21,6 +21,3 @@
 [submodule "lib/createx"]
 	path = lib/createx
 	url = https://github.com/pcaversaccio/createx
-[submodule "lib/v3-periphery"]
-	path = lib/v3-periphery
-	url = https://github.com/Uniswap/v3-periphery
