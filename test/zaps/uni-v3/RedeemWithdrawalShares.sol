@@ -30,14 +30,12 @@ contract RedeemWithdrawalSharesZapTest is UniV3ZapTest {
 
     /// Set Up ///
 
-    /// @notice Add liquidity in each of the markets so there are LP shares to
-    ///         remove.
+    /// @notice Prepare each of the Hyperdrive markets with withdrawal shares.
     function setUp() public override {
         // Sets up the underlying test infrastructure.
         super.setUp();
 
-        // Add liquidity in the sDAI, rETH, stETH, and WETH vault Hyperdrive
-        // markets.
+        // Prepare the sDAI, rETH, stETH, and WETH vault Hyperdrive markets.
         withdrawalSharesSDAI = _prepareHyperdrive(
             SDAI_HYPERDRIVE,
             500e18,
@@ -448,9 +446,9 @@ contract RedeemWithdrawalSharesZapTest is UniV3ZapTest {
             expectedHyperdriveVaultSharesBalanceAfter
         );
 
-        // Ensure that the LP total supply decreased by the LP shares minus the
-        // number of withdrawal shares and that Alice's balance of LP shares
-        // decreased by the LP shares.
+        // Ensure that the withdrawal shares ready to withdraw and Alice's
+        // balance of withdrawal shares decreased by the withdrawal shares
+        // redeemed.
         assertEq(
             hyperdrive.getPoolInfo().withdrawalSharesReadyToWithdraw,
             withdrawalSharesReadyToWithdrawBefore - withdrawalSharesRedeemed
