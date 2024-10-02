@@ -11,22 +11,22 @@ import { UniV3Path } from "../../../contracts/src/libraries/UniV3Path.sol";
 import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
 import { UniV3ZapTest } from "./UniV3Zap.t.sol";
 
-contract RemoveLiquidityZapTest is UniV3ZapTest {
+contract RedeemWithdrawalSharesZapTest is UniV3ZapTest {
     using FixedPointMath for uint256;
     using HyperdriveUtils for IHyperdrive;
     using UniV3Path for bytes;
 
-    /// @dev The LP shares in the sDAI pool.
-    uint256 internal lpSharesSDAI;
+    /// @dev The withdrawal shares in the sDAI pool.
+    uint256 internal withdrawalSharesSDAI;
 
-    /// @dev The LP shares in the rETH pool.
-    uint256 internal lpSharesRETH;
+    /// @dev The withdrawal shares in the rETH pool.
+    uint256 internal withdrawalSharesRETH;
 
-    /// @dev The LP shares in the stETH pool.
-    uint256 internal lpSharesStETH;
+    /// @dev The withdrawal shares in the stETH pool.
+    uint256 internal withdrawalSharesStETH;
 
-    /// @dev The LP shares in the WETH pool.
-    uint256 internal lpSharesWETHVault;
+    /// @dev The withdrawal shares in the WETH pool.
+    uint256 internal withdrawalSharesWETHVault;
 
     /// Set Up ///
 
@@ -38,17 +38,26 @@ contract RemoveLiquidityZapTest is UniV3ZapTest {
 
         // Add liquidity in the sDAI, rETH, stETH, and WETH vault Hyperdrive
         // markets.
-        lpSharesSDAI = _prepareHyperdrive(SDAI_HYPERDRIVE, 500e18, true);
-        lpSharesRETH = _prepareHyperdrive(RETH_HYPERDRIVE, 1e18, false);
-        lpSharesStETH = _prepareHyperdrive(STETH_HYPERDRIVE, 1e18, false);
-        lpSharesWETHVault = _prepareHyperdrive(
+        withdrawalSharesSDAI = _prepareHyperdrive(
+            SDAI_HYPERDRIVE,
+            500e18,
+            true
+        );
+        withdrawalSharesRETH = _prepareHyperdrive(RETH_HYPERDRIVE, 1e18, false);
+        withdrawalSharesStETH = _prepareHyperdrive(
+            STETH_HYPERDRIVE,
+            1e18,
+            false
+        );
+        withdrawalSharesWETHVault = _prepareHyperdrive(
             WETH_VAULT_HYPERDRIVE,
             1e18,
             true
         );
     }
 
-    /// @dev Prepares the Hyperdrive instance for the remove liquidity tests.
+    /// @dev Prepares the Hyperdrive instance for the redeem withdrawal shares
+    ///      tests.
     /// @param _hyperdrive The Hyperdrive instance.
     /// @param _contribution The contribution amount.
     /// @param _asBase A flag indicating whether or not the contribution is in
@@ -88,21 +97,63 @@ contract RemoveLiquidityZapTest is UniV3ZapTest {
             })
         );
 
-        // Set an approval on the zap to spend the LP shares.
-        _hyperdrive.setApproval(AssetId._LP_ASSET_ID, address(zap), lpShares);
+        // Alice opens a large short.
+        uint256 shortAmount = _hyperdrive.calculateMaxShort() -
+            _hyperdrive.getPoolConfig().minimumTransactionAmount;
+        (uint256 maturityTime, ) = _hyperdrive.openShort(
+            shortAmount,
+            type(uint256).max,
+            0,
+            IHyperdrive.Options({
+                destination: alice,
+                asBase: _asBase,
+                extraData: new bytes(0)
+            })
+        );
 
-        return lpShares;
+        // Alice removes her liquidity. We ensure that she received some
+        // withdrawal shares.
+        (, uint256 withdrawalShares) = _hyperdrive.removeLiquidity(
+            lpShares,
+            0,
+            IHyperdrive.Options({
+                destination: alice,
+                asBase: _asBase,
+                extraData: new bytes(0)
+            })
+        );
+        assertGt(withdrawalShares, 0);
+
+        // Advance to maturity and mint a chcekpoint. Ensure that the withdrawal
+        // shares are paid out now that the short is closed.
+        vm.warp(maturityTime);
+        _hyperdrive.checkpoint(hyperdrive.latestCheckpoint(), 0);
+        assertEq(
+            _hyperdrive.getPoolInfo().withdrawalSharesReadyToWithdraw,
+            withdrawalShares
+        );
+
+        // Set an approval on the zap to spend the LP shares.
+        _hyperdrive.setApproval(
+            AssetId._WITHDRAWAL_SHARE_ASSET_ID,
+            address(zap),
+            withdrawalShares
+        );
+
+        return withdrawalShares;
     }
 
     /// Tests ///
 
-    /// @notice Ensure that zapping out of `removeLiquidity` will fail when the
-    ///         recipient of `removeLong` isn't the zap contract.
-    function test_removeLiquidityZap_failure_invalidRecipient() external {
+    /// @notice Ensure that zapping out of `redeemWithdrawalShares` will fail when the
+    ///         recipient of `redeemWithdrawalShares` isn't the zap contract.
+    function test_redeemWithdrawalSharesZap_failure_invalidRecipient()
+        external
+    {
         vm.expectRevert(IUniV3Zap.InvalidRecipient.selector);
-        zap.removeLiquidityZap(
+        zap.redeemWithdrawalSharesZap(
             SDAI_HYPERDRIVE,
-            lpSharesSDAI, // lp shares
+            withdrawalSharesSDAI, // lp shares
             0, // minimum output per share
             IHyperdrive.Options({
                 destination: alice,
@@ -120,15 +171,15 @@ contract RemoveLiquidityZapTest is UniV3ZapTest {
         );
     }
 
-    /// @notice Ensure that zapping out of `removeLiquidity` with base will fail
+    /// @notice Ensure that zapping out of `redeemWithdrawalShares` with base will fail
     ///         when the input isn't the base token.
-    function test_removeLiquidityZap_failure_invalidInputToken_asBase()
+    function test_redeemWithdrawalSharesZap_failure_invalidInputToken_asBase()
         external
     {
         vm.expectRevert(IUniV3Zap.InvalidInputToken.selector);
-        zap.removeLiquidityZap(
+        zap.redeemWithdrawalSharesZap(
             SDAI_HYPERDRIVE,
-            lpSharesSDAI, // lp shares
+            withdrawalSharesSDAI, // lp shares
             0, // minimum output per share
             IHyperdrive.Options({
                 destination: address(zap),
@@ -146,15 +197,15 @@ contract RemoveLiquidityZapTest is UniV3ZapTest {
         );
     }
 
-    /// @notice Ensure that zapping out of `removeLiquidity` with vault shares
+    /// @notice Ensure that zapping out of `redeemWithdrawalShares` with vault shares
     ///         will fail when the input isn't the vault shares token.
-    function test_removeLiquidityZap_failure_invalidInputToken_asShares()
+    function test_redeemWithdrawalSharesZap_failure_invalidInputToken_asShares()
         external
     {
         vm.expectRevert(IUniV3Zap.InvalidInputToken.selector);
-        zap.removeLiquidityZap(
+        zap.redeemWithdrawalSharesZap(
             SDAI_HYPERDRIVE,
-            lpSharesSDAI, // lp shares
+            withdrawalSharesSDAI, // lp shares
             0, // minimum output per share
             IHyperdrive.Options({
                 destination: address(zap),
@@ -172,14 +223,14 @@ contract RemoveLiquidityZapTest is UniV3ZapTest {
         );
     }
 
-    /// @notice Ensure that zapping out of `removeLiquidity` with base will
+    /// @notice Ensure that zapping out of `redeemWithdrawalShares` with base will
     ///         succeed when the base token is WETH. This ensures that WETH is
     ///         handled properly despite the zap unwrapping WETH into ETH in
     ///         some cases.
-    function test_removeLiquidityZap_success_asBase_withWETH() external {
-        _verifyRemoveLiquidityZap(
+    function test_redeemWithdrawalSharesZap_success_asBase_withWETH() external {
+        _verifyRedeemWithdrawalSharesZap(
             WETH_VAULT_HYPERDRIVE,
-            lpSharesWETHVault, // lp shares
+            withdrawalSharesWETHVault, // lp shares
             ISwapRouter.ExactInputParams({
                 path: abi.encodePacked(WETH, LOW_FEE_TIER, DAI),
                 recipient: alice,
@@ -194,15 +245,15 @@ contract RemoveLiquidityZapTest is UniV3ZapTest {
         );
     }
 
-    /// @notice Ensure that zapping out of `removeLiquidity` with base will
+    /// @notice Ensure that zapping out of `redeemWithdrawalShares` with base will
     ///         succeed when the yield source is rebasing and when the input is
     ///         the base token.
     /// @dev This also tests using ETH as the output assets and verifies that
     ///      we can properly convert to WETH.
-    function test_removeLiquidityZap_success_rebasing_asBase() external {
-        _verifyRemoveLiquidityZap(
+    function test_redeemWithdrawalSharesZap_success_rebasing_asBase() external {
+        _verifyRedeemWithdrawalSharesZap(
             RETH_HYPERDRIVE,
-            lpSharesRETH, // lp shares
+            withdrawalSharesRETH, // lp shares
             ISwapRouter.ExactInputParams({
                 path: abi.encodePacked(WETH, LOW_FEE_TIER, DAI),
                 recipient: alice,
@@ -217,13 +268,15 @@ contract RemoveLiquidityZapTest is UniV3ZapTest {
         );
     }
 
-    /// @notice Ensure that zapping out of `removeLiquidity` with vault shares
+    /// @notice Ensure that zapping out of `redeemWithdrawalShares` with vault shares
     ///         will succeed when the yield source is rebasing and when the
     ///         input is the vault shares token.
-    function test_removeLiquidityZap_success_rebasing_asShares() external {
-        _verifyRemoveLiquidityZap(
+    function test_redeemWithdrawalSharesZap_success_rebasing_asShares()
+        external
+    {
+        _verifyRedeemWithdrawalSharesZap(
             STETH_HYPERDRIVE,
-            lpSharesStETH, // lp shares
+            withdrawalSharesStETH, // lp shares
             ISwapRouter.ExactInputParams({
                 path: abi.encodePacked(
                     STETH,
@@ -239,18 +292,20 @@ contract RemoveLiquidityZapTest is UniV3ZapTest {
                 amountIn: 0.3882e18,
                 amountOutMinimum: 0e6
             }),
-            100, // dust buffer
+            200, // dust buffer
             false // as base
         );
     }
 
-    /// @notice Ensure that zapping out of `removeLiquidity` with base will
+    /// @notice Ensure that zapping out of `redeemWithdrawalShares` with base will
     ///         succeed when the yield source is non-rebasing and when the input is
     ///         the base token.
-    function test_removeLiquidityZap_success_nonRebasing_asBase() external {
-        _verifyRemoveLiquidityZap(
+    function test_redeemWithdrawalSharesZap_success_nonRebasing_asBase()
+        external
+    {
+        _verifyRedeemWithdrawalSharesZap(
             SDAI_HYPERDRIVE,
-            lpSharesSDAI, // lp shares
+            withdrawalSharesSDAI, // lp shares
             ISwapRouter.ExactInputParams({
                 path: abi.encodePacked(DAI, LOW_FEE_TIER, WETH),
                 recipient: alice,
@@ -265,13 +320,15 @@ contract RemoveLiquidityZapTest is UniV3ZapTest {
         );
     }
 
-    /// @notice Ensure that zapping out of `removeLiquidity` with vault shares
+    /// @notice Ensure that zapping out of `redeemWithdrawalShares` with vault shares
     ///         will succeed when the yield source is non-rebasing and when the
     ///         input is the vault shares token.
-    function test_removeLiquidityZap_success_nonRebasing_asShares() external {
-        _verifyRemoveLiquidityZap(
+    function test_redeemWithdrawalSharesZap_success_nonRebasing_asShares()
+        external
+    {
+        _verifyRedeemWithdrawalSharesZap(
             SDAI_HYPERDRIVE,
-            lpSharesSDAI, // lp shares
+            withdrawalSharesSDAI, // lp shares
             ISwapRouter.ExactInputParams({
                 path: abi.encodePacked(
                     SDAI,
@@ -292,10 +349,10 @@ contract RemoveLiquidityZapTest is UniV3ZapTest {
         );
     }
 
-    /// @dev Verify that `removeLiquidityZap` performs correctly under the
+    /// @dev Verify that `redeemWithdrawalSharesZap` performs correctly under the
     ///      specified conditions.
     /// @param _hyperdrive The Hyperdrive instance.
-    /// @param _lpShares The amount of LP shares to remove.
+    /// @param _withdrawalShares The amount of withdrawal shares to remove.
     /// @param _swapParams The Uniswap multi-hop swap parameters.
     /// @param _dustBuffer Some tokens (like stETH) have transfer methods that
     ///        are imprecise. This may result in token transfers sending less
@@ -304,27 +361,28 @@ contract RemoveLiquidityZapTest is UniV3ZapTest {
     ///        amount of the swap to reduce the likelihood of failures.
     /// @param _asBase A flag indicating whether or not the deposit should be in
     ///        base.
-    function _verifyRemoveLiquidityZap(
+    function _verifyRedeemWithdrawalSharesZap(
         IHyperdrive _hyperdrive,
-        uint256 _lpShares,
+        uint256 _withdrawalShares,
         ISwapRouter.ExactInputParams memory _swapParams,
         uint256 _dustBuffer,
         bool _asBase
     ) internal {
         // Simulate closing the position without using the zap.
         uint256 expectedHyperdriveVaultSharesBalanceAfter;
-        uint256 expectedWithdrawalShares;
+        uint256 expectedWithdrawalSharesRedeemed;
         {
             uint256 snapshotId = vm.snapshot();
-            (, expectedWithdrawalShares) = _hyperdrive.removeLiquidity(
-                _lpShares,
-                0, // min output per shares
-                IHyperdrive.Options({
-                    destination: alice,
-                    asBase: _asBase,
-                    extraData: new bytes(0)
-                })
-            );
+            (, expectedWithdrawalSharesRedeemed) = _hyperdrive
+                .redeemWithdrawalShares(
+                    _withdrawalShares,
+                    0, // min output per shares
+                    IHyperdrive.Options({
+                        destination: alice,
+                        asBase: _asBase,
+                        extraData: new bytes(0)
+                    })
+                );
             expectedHyperdriveVaultSharesBalanceAfter = IERC20(
                 _hyperdrive.vaultSharesToken()
             ).balanceOf(address(_hyperdrive));
@@ -332,7 +390,9 @@ contract RemoveLiquidityZapTest is UniV3ZapTest {
         }
 
         // Get some data before executing the zap.
-        uint256 lpTotalSupplyBefore = _hyperdrive.getPoolInfo().lpTotalSupply;
+        uint256 withdrawalSharesReadyToWithdrawBefore = _hyperdrive
+            .getPoolInfo()
+            .withdrawalSharesReadyToWithdraw;
         uint256 aliceOutputBalanceBefore;
         address tokenOut = _swapParams.path.tokenOut();
         if (tokenOut == WETH) {
@@ -340,10 +400,6 @@ contract RemoveLiquidityZapTest is UniV3ZapTest {
         } else {
             aliceOutputBalanceBefore = IERC20(tokenOut).balanceOf(alice);
         }
-        uint256 aliceLPSharesBefore = _hyperdrive.balanceOf(
-            AssetId._LP_ASSET_ID,
-            alice
-        );
         uint256 aliceWithdrawalSharesBefore = _hyperdrive.balanceOf(
             AssetId._WITHDRAWAL_SHARE_ASSET_ID,
             alice
@@ -351,22 +407,23 @@ contract RemoveLiquidityZapTest is UniV3ZapTest {
 
         // Execute the zap.
         IHyperdrive hyperdrive = _hyperdrive; // avoid stack-too-deep
-        uint256 lpShares = _lpShares; // avoid stack-too-deep
+        uint256 withdrawalShares = _withdrawalShares; // avoid stack-too-deep
         ISwapRouter.ExactInputParams memory swapParams = _swapParams; // avoid stack-too-deep
         uint256 dustBuffer = _dustBuffer; // avoid stack-too-deep
         bool asBase = _asBase; // avoid stack-too-deep
-        (uint256 proceeds, uint256 withdrawalShares) = zap.removeLiquidityZap(
-            hyperdrive,
-            lpShares, // lp shares
-            0, // minimum output per share
-            IHyperdrive.Options({
-                destination: address(zap),
-                asBase: asBase,
-                extraData: ""
-            }),
-            swapParams,
-            dustBuffer
-        );
+        (uint256 proceeds, uint256 withdrawalSharesRedeemed) = zap
+            .redeemWithdrawalSharesZap(
+                hyperdrive,
+                withdrawalShares, // withdrawal shares
+                0, // minimum output per share
+                IHyperdrive.Options({
+                    destination: address(zap),
+                    asBase: asBase,
+                    extraData: ""
+                }),
+                swapParams,
+                dustBuffer
+            );
 
         // Ensure that Alice received the expected proceeds.
         if (tokenOut == WETH) {
@@ -378,9 +435,9 @@ contract RemoveLiquidityZapTest is UniV3ZapTest {
             );
         }
 
-        // Ensure that the withdrawal shares were equal to the expected
-        // withdrawal shares.
-        assertEq(withdrawalShares, expectedWithdrawalShares);
+        // Ensure that the withdrawal shares redeemed were equal to the expected
+        // withdrawal shares redeemed.
+        assertEq(withdrawalSharesRedeemed, expectedWithdrawalSharesRedeemed);
 
         // Ensure that the vault shares balance is what we would predict from
         // the simulation.
@@ -395,16 +452,12 @@ contract RemoveLiquidityZapTest is UniV3ZapTest {
         // number of withdrawal shares and that Alice's balance of LP shares
         // decreased by the LP shares.
         assertEq(
-            hyperdrive.getPoolInfo().lpTotalSupply,
-            lpTotalSupplyBefore - (lpShares - withdrawalShares)
-        );
-        assertEq(
-            hyperdrive.balanceOf(AssetId._LP_ASSET_ID, alice),
-            aliceLPSharesBefore - lpShares
+            hyperdrive.getPoolInfo().withdrawalSharesReadyToWithdraw,
+            withdrawalSharesReadyToWithdrawBefore - withdrawalSharesRedeemed
         );
         assertEq(
             hyperdrive.balanceOf(AssetId._WITHDRAWAL_SHARE_ASSET_ID, alice),
-            aliceWithdrawalSharesBefore + withdrawalShares
+            aliceWithdrawalSharesBefore - withdrawalSharesRedeemed
         );
     }
 }
