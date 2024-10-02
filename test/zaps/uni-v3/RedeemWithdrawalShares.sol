@@ -288,7 +288,7 @@ contract RedeemWithdrawalSharesZapTest is UniV3ZapTest {
                 // NOTE: The amount in is smaller than the proceeds will be.
                 // This will automatically be adjusted up.
                 amountIn: 0.3882e18,
-                amountOutMinimum: 0e6
+                amountOutMinimum: 950e6
             }),
             200, // dust buffer
             false // as base

@@ -17,6 +17,8 @@ import { UniV3Path } from "../libraries/UniV3Path.sol";
 
 // FIXME: Add reentrancy guards.
 //
+// FIXME: Do a read deep-dive on the dust buffer. Am I missing something?
+//
 /// @title UniV3Zap
 /// @author DELV
 /// @notice A zap contract that uses Uniswap v3 to execute swaps before or after

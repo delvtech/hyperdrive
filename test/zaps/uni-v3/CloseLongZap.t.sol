@@ -55,17 +55,17 @@ contract CloseLongZapTest is UniV3ZapTest {
         );
         (maturityTimeRETH, longAmountRETH) = _prepareHyperdrive(
             RETH_HYPERDRIVE,
-            1e18,
+            0.01e18,
             false
         );
         (maturityTimeStETH, longAmountStETH) = _prepareHyperdrive(
             STETH_HYPERDRIVE,
-            1e18,
+            0.01e18,
             false
         );
         (maturityTimeWETHVault, longAmountWETHVault) = _prepareHyperdrive(
             WETH_VAULT_HYPERDRIVE,
-            1e18,
+            0.01e18,
             true
         );
     }
@@ -77,7 +77,7 @@ contract CloseLongZapTest is UniV3ZapTest {
     /// @param _asBase A flag indicating whether or not the contribution is in
     ///        base or vault shares.
     /// @return The maturity time of the long positions.
-    /// @return The amount of long positions to close.
+    /// @return The amount of long positions that were opened.
     function _prepareHyperdrive(
         IHyperdrive _hyperdrive,
         uint256 _amount,
@@ -98,6 +98,20 @@ contract CloseLongZapTest is UniV3ZapTest {
                 type(uint256).max
             );
         }
+
+        // Add a large amount of liquidity to ensure that there is adequate
+        // liquidity to open the long.
+        _hyperdrive.addLiquidity(
+            _amount.mulDown(1_000e18),
+            0,
+            0,
+            type(uint256).max,
+            IHyperdrive.Options({
+                destination: alice,
+                asBase: _asBase,
+                extraData: new bytes(0)
+            })
+        );
 
         // Open longs in the Hyperdrive pool.
         (uint256 maturityTime, uint256 longAmount) = _hyperdrive.openLong(
@@ -266,9 +280,9 @@ contract CloseLongZapTest is UniV3ZapTest {
                 // NOTE: The amount in is smaller than the proceeds will be.
                 // This will automatically be adjusted up.
                 amountIn: 0.3882e18,
-                amountOutMinimum: 0e6
+                amountOutMinimum: 950e6
             }),
-            100, // dust buffer
+            300, // dust buffer
             false // as base
         );
     }
