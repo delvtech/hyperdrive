@@ -56,6 +56,7 @@ contract WstETHGnosisChainTest is ChainlinkHyperdriveInstanceTest {
                 // tolerances are zero.
                 //
                 // The base test tolerances.
+                closeLongWithBaseTolerance: 20,
                 roundTripLpInstantaneousWithBaseTolerance: 0,
                 roundTripLpWithdrawalSharesWithBaseTolerance: 0,
                 roundTripLongInstantaneousWithBaseUpperBoundTolerance: 0,

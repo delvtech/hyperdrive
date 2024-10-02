@@ -3,44 +3,44 @@ pragma solidity 0.8.22;
 
 import { stdStorage, StdStorage } from "forge-std/Test.sol";
 import { IERC20 } from "../../../contracts/src/interfaces/IERC20.sol";
-import { ICornSilo } from "../../../contracts/src/interfaces/ICornSilo.sol";
+import { IStakingUSDS } from "../../../contracts/src/interfaces/IStakingUSDS.sol";
 import { IHyperdrive } from "../../../contracts/src/interfaces/IHyperdrive.sol";
-import { CornHyperdriveInstanceTest } from "./CornHyperdriveInstanceTest.t.sol";
+import { StakingUSDSHyperdriveInstanceTest } from "./StakingUSDSHyperdriveInstanceTest.t.sol";
 
-contract Corn_LBTC_Hyperdrive is CornHyperdriveInstanceTest {
+contract StakingUSDS_Chronicle_Hyperdrive is StakingUSDSHyperdriveInstanceTest {
     using stdStorage for StdStorage;
 
-    /// @dev The mainnet Corn Silo.
-    ICornSilo internal constant CORN_SILO =
-        ICornSilo(0x8bc93498b861fd98277c3b51d240e7E56E48F23c);
+    /// @dev The mainnet StakingRewards vault for Chronicle rewards.
+    IStakingUSDS internal constant STAKING_USDS =
+        IStakingUSDS(0x10ab606B067C9C461d8893c47C7512472E19e2Ce);
 
-    /// @dev The mainnet LBTC token.
-    IERC20 internal constant LBTC =
-        IERC20(0x8236a87084f8B84306f72007F36F2618A5634494);
+    /// @dev The mainnet USDS token.
+    IERC20 internal constant USDS =
+        IERC20(0xdC035D45d973E3EC169d2276DDab16f1e407384F);
 
     /// @dev Whale accounts.
     address internal BASE_TOKEN_WHALE =
-        0x208567a5FF415f1081fa0f47d3A1bD60b8B03199;
+        0x2621CC0B3F3c079c1Db0E80794AA24976F0b9e3c;
     address[] internal baseTokenWhaleAccounts = [BASE_TOKEN_WHALE];
 
     /// @notice Instantiates the instance testing suite with the configuration.
     constructor()
-        CornHyperdriveInstanceTest(
+        StakingUSDSHyperdriveInstanceTest(
             InstanceTestConfig({
                 name: "Hyperdrive",
-                kind: "CornHyperdrive",
-                decimals: 8,
+                kind: "StakingUSDSHyperdrive",
+                decimals: 18,
                 baseTokenWhaleAccounts: baseTokenWhaleAccounts,
                 vaultSharesTokenWhaleAccounts: new address[](0),
-                baseToken: LBTC,
+                baseToken: USDS,
                 vaultSharesToken: IERC20(address(0)),
                 shareTolerance: 0,
-                minimumShareReserves: 1e5,
-                minimumTransactionAmount: 1e5,
+                minimumShareReserves: 1e15,
+                minimumTransactionAmount: 1e15,
                 positionDuration: POSITION_DURATION,
                 fees: IHyperdrive.Fees({
-                    curve: 0.001e18,
-                    flat: 0.0001e18,
+                    curve: 0,
+                    flat: 0,
                     governanceLP: 0,
                     governanceZombie: 0
                 }),
@@ -56,15 +56,15 @@ contract Corn_LBTC_Hyperdrive is CornHyperdriveInstanceTest {
                 // The base test tolerances.
                 closeLongWithBaseTolerance: 2,
                 roundTripLpInstantaneousWithBaseTolerance: 1e3,
-                roundTripLpWithdrawalSharesWithBaseTolerance: 1e5,
-                roundTripLongInstantaneousWithBaseUpperBoundTolerance: 100,
+                roundTripLpWithdrawalSharesWithBaseTolerance: 1e7,
+                roundTripLongInstantaneousWithBaseUpperBoundTolerance: 1e3,
                 // NOTE: Since the curve fee isn't zero, this check is ignored.
-                roundTripLongInstantaneousWithBaseTolerance: 0,
+                roundTripLongInstantaneousWithBaseTolerance: 1e4,
                 roundTripLongMaturityWithBaseUpperBoundTolerance: 100,
                 roundTripLongMaturityWithBaseTolerance: 1e3,
-                roundTripShortInstantaneousWithBaseUpperBoundTolerance: 100,
+                roundTripShortInstantaneousWithBaseUpperBoundTolerance: 1e3,
                 // NOTE: Since the curve fee isn't zero, this check is ignored.
-                roundTripShortInstantaneousWithBaseTolerance: 0,
+                roundTripShortInstantaneousWithBaseTolerance: 1e3,
                 roundTripShortMaturityWithBaseTolerance: 1e3,
                 // NOTE: Share deposits and withdrawals are disabled, so these are
                 // 0.
@@ -85,12 +85,12 @@ contract Corn_LBTC_Hyperdrive is CornHyperdriveInstanceTest {
                 verifyDepositTolerance: 2,
                 verifyWithdrawalTolerance: 3
             }),
-            CORN_SILO
+            STAKING_USDS
         )
     {}
 
     /// @notice Forge function that is invoked to setup the testing environment.
-    function setUp() public override __mainnet_fork(20_744_342) {
+    function setUp() public override __mainnet_fork(20_865_206) {
         // Invoke the instance testing suite setup.
         super.setUp();
     }

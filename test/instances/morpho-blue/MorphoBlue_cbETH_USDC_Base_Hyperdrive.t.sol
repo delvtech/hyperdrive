@@ -62,6 +62,7 @@ contract MorphoBlue_cbETH_USDC_Base_HyperdriveTest is
                 isRebasing: false,
                 shouldAccrueInterest: true,
                 // The base test tolerances.
+                closeLongWithBaseTolerance: 2,
                 roundTripLpInstantaneousWithBaseTolerance: 1e3,
                 roundTripLpWithdrawalSharesWithBaseTolerance: 1e5,
                 roundTripLongInstantaneousWithBaseUpperBoundTolerance: 100,
