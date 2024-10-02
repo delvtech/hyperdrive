@@ -5,7 +5,7 @@ pragma solidity ^0.8.20;
 address constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
 /// @dev The version of the contracts.
-string constant VERSION = "v1.0.19";
+string constant VERSION = "v1.0.20";
 
 /// @dev The number of targets that must be deployed for a full deployment.
 uint256 constant NUM_TARGETS = 5;
