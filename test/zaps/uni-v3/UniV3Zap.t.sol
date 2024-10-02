@@ -119,6 +119,8 @@ contract UniV3ZapTest is HyperdriveTest {
     /// @dev The Uniswap v3 zap contract.
     IUniV3Zap internal zap;
 
+    /// @dev Set up balances and Hyperdrive instances to test the zap. This is
+    ///      a mainnet fork test that uses real Hyperdrive instances.
     function setUp() public virtual override __mainnet_fork(20_830_093) {
         // Run the higher-level setup logic.
         super.setUp();
@@ -183,39 +185,6 @@ contract UniV3ZapTest is HyperdriveTest {
             })
         );
     }
-
-    // TODO: Move these tests somewhere else.
-    //
-    /// Metadata ///
-
-    /// @notice Ensure that the name is set up correctly.
-    function test_name() external view {
-        assertEq(zap.name(), NAME);
-    }
-
-    /// @notice Ensure that the kind is set up correctly.
-    function test_kind() external view {
-        assertEq(zap.kind(), UNI_V3_ZAP_KIND);
-    }
-
-    /// @notice Ensure that the version is set up correctly.
-    function test_version() external view {
-        assertEq(zap.version(), VERSION);
-    }
-
-    /// Remove Liquidity ///
-
-    // FIXME
-
-    /// Redeem Withdrawal Shares ///
-
-    /// Close Long ///
-
-    // FIXME
-
-    /// Close Short ///
-
-    // FIXME
 
     /// Helpers ///
 
