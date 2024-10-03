@@ -61,7 +61,7 @@ class TestInstance():
         whale_account: str,
         agents: list[LocalHyperdriveAgent],
     ) -> None:
-        source_balance = base_token_contract.functions.balanceOf(whale_account)
+        source_balance = base_token_contract.functions.balanceOf(whale_account).call()
         for agent in agents:
             agent.fund_from_whale(base_token_contract, whale_account, amount=source_balance/len(agents), fund_whale_with_eth=True,)
     
