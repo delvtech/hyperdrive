@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.22;
 
+import { UNI_V3_ZAP_KIND, VERSION } from "../../../contracts/src/libraries/Constants.sol";
 import { UniV3ZapTest } from "./UniV3Zap.t.sol";
 
 contract MetadataTest is UniV3ZapTest {

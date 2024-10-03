@@ -22,6 +22,9 @@ interface IUniV3Zap {
     /// @notice Thrown when attempting to zap to an invalid recipient.
     error InvalidRecipient();
 
+    /// @notice Thrown when receiving ether outside of an zap.
+    error InvalidTransfer();
+
     /// @notice Thrown when ether is sent to an instance that doesn't accept
     ///         ether as a deposit asset.
     error NotPayable();

@@ -1,7 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.22;
 
+// FIXME
+import { console2 as console } from "forge-std/console2.sol";
+
 import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
+import { ReentrancyGuard } from "openzeppelin/utils/ReentrancyGuard.sol";
 import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { IERC20 } from "../interfaces/IERC20.sol";
 import { IERC4626 } from "../interfaces/IERC4626.sol";
@@ -15,9 +19,7 @@ import { ETH, UNI_V3_ZAP_KIND, VERSION } from "../libraries/Constants.sol";
 import { FixedPointMath } from "../libraries/FixedPointMath.sol";
 import { UniV3Path } from "../libraries/UniV3Path.sol";
 
-// FIXME: Add reentrancy guards.
-//
-// FIXME: Do a read deep-dive on the dust buffer. Am I missing something?
+// FIXME: Add wrapping before `_zapIn` and `_zapOut`.
 //
 /// @title UniV3Zap
 /// @author DELV
@@ -26,7 +28,7 @@ import { UniV3Path } from "../libraries/UniV3Path.sol";
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-contract UniV3Zap is IUniV3Zap {
+contract UniV3Zap is IUniV3Zap, ReentrancyGuard {
     using FixedPointMath for uint256;
     using SafeERC20 for ERC20;
     using UniV3Path for bytes;
@@ -74,8 +76,17 @@ contract UniV3Zap is IUniV3Zap {
 
     /// Receive ///
 
-    // FIXME: Spruce this up and add a lock.
-    receive() external payable {}
+    /// @notice Allows ETH to be received within the context of a zap.
+    /// @dev This fails if it isn't called within the context of a zap to reduce
+    ///      the likelihood of users sending ether to this contract accidentally.
+    receive() external payable {
+        // Ensures that the zap is receiving ether inside the context of another
+        // call. This means that the ether transfer should be the result of a
+        // Hyperdrive trade or unwrapping WETH.
+        if (!_reentrancyGuardEntered()) {
+            revert InvalidTransfer();
+        }
+    }
 
     /// LPs ///
 
@@ -103,7 +114,7 @@ contract UniV3Zap is IUniV3Zap {
         IHyperdrive.Options calldata _options,
         bool _isRebasing,
         ISwapRouter.ExactInputParams calldata _swapParams
-    ) external payable returns (uint256 lpShares) {
+    ) external payable nonReentrant returns (uint256 lpShares) {
         // Validate the zap parameters.
         bool shouldConvertToETH = _validateZapIn(
             _hyperdrive,
@@ -175,7 +186,11 @@ contract UniV3Zap is IUniV3Zap {
         IHyperdrive.Options calldata _options,
         ISwapRouter.ExactInputParams calldata _swapParams,
         uint256 _dustBuffer
-    ) external returns (uint256 proceeds, uint256 withdrawalShares) {
+    )
+        external
+        nonReentrant
+        returns (uint256 proceeds, uint256 withdrawalShares)
+    {
         // Validate the zap parameters.
         bool shouldConvertToWETH = _validateZapOut(
             _hyperdrive,
@@ -237,7 +252,11 @@ contract UniV3Zap is IUniV3Zap {
         IHyperdrive.Options calldata _options,
         ISwapRouter.ExactInputParams calldata _swapParams,
         uint256 _dustBuffer
-    ) external returns (uint256 proceeds, uint256 withdrawalSharesRedeemed) {
+    )
+        external
+        nonReentrant
+        returns (uint256 proceeds, uint256 withdrawalSharesRedeemed)
+    {
         // Validate the zap parameters.
         bool shouldConvertToWETH = _validateZapOut(
             _hyperdrive,
@@ -295,7 +314,12 @@ contract UniV3Zap is IUniV3Zap {
         IHyperdrive.Options calldata _options,
         bool _isRebasing,
         ISwapRouter.ExactInputParams calldata _swapParams
-    ) external payable returns (uint256 maturityTime, uint256 longAmount) {
+    )
+        external
+        payable
+        nonReentrant
+        returns (uint256 maturityTime, uint256 longAmount)
+    {
         // Validate the zap parameters.
         bool shouldConvertToETH = _validateZapIn(
             _hyperdrive,
@@ -361,7 +385,7 @@ contract UniV3Zap is IUniV3Zap {
         IHyperdrive.Options calldata _options,
         ISwapRouter.ExactInputParams calldata _swapParams,
         uint256 _dustBuffer
-    ) external returns (uint256 proceeds) {
+    ) external nonReentrant returns (uint256 proceeds) {
         // Validate the zap parameters.
         bool shouldConvertToWETH = _validateZapOut(
             _hyperdrive,
@@ -416,7 +440,12 @@ contract UniV3Zap is IUniV3Zap {
         uint256 _minVaultSharePrice,
         IHyperdrive.Options calldata _options,
         ISwapRouter.ExactInputParams calldata _swapParams
-    ) external payable returns (uint256 maturityTime, uint256 deposit) {
+    )
+        external
+        payable
+        nonReentrant
+        returns (uint256 maturityTime, uint256 deposit)
+    {
         // Validate the zap parameters.
         bool shouldConvertToETH = _validateZapIn(
             _hyperdrive,
@@ -495,7 +524,7 @@ contract UniV3Zap is IUniV3Zap {
         IHyperdrive.Options calldata _options,
         ISwapRouter.ExactInputParams calldata _swapParams,
         uint256 _dustBuffer
-    ) external returns (uint256 proceeds) {
+    ) external nonReentrant returns (uint256 proceeds) {
         // Validate the zap parameters.
         bool shouldConvertToWETH = _validateZapOut(
             _hyperdrive,
@@ -612,6 +641,9 @@ contract UniV3Zap is IUniV3Zap {
         return false;
     }
 
+    // FIXME: We're probably going to need conversion functions that send funds
+    //        in.
+    //
     /// @dev Zaps funds into this contract to open positions on Hyperdrive.
     /// @param _swapParams The Uniswap swap parameters for a multi-hop fill.
     /// @param _shouldConvertToETH A flag indicating whether or not the proceeds
@@ -680,6 +712,9 @@ contract UniV3Zap is IUniV3Zap {
         return proceeds;
     }
 
+    // FIXME: We're probably going to need conversion functions that send funds
+    //        in.
+    //
     /// @dev Zaps the proceeds of closing a Hyperdrive position into a trader's
     ///      preferred tokens.
     /// @param _swapParams The Uniswap swap parameters for a multi-hop fill.

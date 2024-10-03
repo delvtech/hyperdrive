@@ -14,7 +14,6 @@ import { IHyperdrive } from "../../../contracts/src/interfaces/IHyperdrive.sol";
 import { ISwapRouter } from "../../../contracts/src/interfaces/ISwapRouter.sol";
 import { IUniV3Zap } from "../../../contracts/src/interfaces/IUniV3Zap.sol";
 import { IWETH } from "../../../contracts/src/interfaces/IWETH.sol";
-import { UNI_V3_ZAP_KIND, VERSION } from "../../../contracts/src/libraries/Constants.sol";
 import { UniV3Path } from "../../../contracts/src/libraries/UniV3Path.sol";
 import { UniV3Zap } from "../../../contracts/src/zaps/UniV3Zap.sol";
 import { ERC20Mintable } from "../../../contracts/test/ERC20Mintable.sol";
