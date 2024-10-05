@@ -20,19 +20,23 @@ from hyperdrivetypes.types.IHyperdriveTypes import (
     RedeemWithdrawalSharesEvent,
     RemoveLiquidityEvent,
 )
-
+from pypechain.core import BaseEventArgs
 
 # TODO: These dataclasses are similar to pypechain except for
 #  - snake_case attributes instead of camelCase
 #  - FixedPoint types instead of int
-#  - nested dataclasses (PoolConfig) include a __post_init__ that allows for
-#  instantiation with a nested dictionary
 #  - Helper factory function for each corresponding pypechain type for conversions
 #
 # We'd like to rely on the pypechain classes as much as possible.
 # One solution could be to build our own interface wrapper that pulls in the pypechain
 # dataclass and makes this fixed set of changes?
 # pylint: disable=too-many-instance-attributes
+
+# We overwrite the args nested dataclass in events to change their type from
+# the original pypechain type to the fixed point type.
+# type: ignore[override]
+
+
 @dataclass
 class FeesFP:
     """Fees struct."""
@@ -296,12 +300,12 @@ class CheckpointFP:
 # the args type
 
 
-@dataclass(kw_only=True)
+@dataclass(kw_only=True, frozen=True)
 class AddLiquidityEventFP(AddLiquidityEvent):
     """Add liquidity event."""
 
-    @dataclass
-    class AddLiquidityEventArgsFP:
+    @dataclass(kw_only=True, frozen=True)
+    class AddLiquidityEventArgsFP(BaseEventArgs):
         """The args to the event AddLiquidity"""
 
         provider: str
@@ -312,7 +316,8 @@ class AddLiquidityEventFP(AddLiquidityEvent):
         lp_share_price: FixedPoint
         extra_data: bytes
 
-    args: AddLiquidityEventArgsFP
+    # We redefine the type in the subclass
+    args: AddLiquidityEventArgsFP  # type: ignore[override]
 
     @classmethod
     def from_pypechain(cls, in_val: AddLiquidityEvent) -> AddLiquidityEventFP:
@@ -375,12 +380,12 @@ class AddLiquidityEventFP(AddLiquidityEvent):
         )
 
 
-@dataclass(kw_only=True)
+@dataclass(kw_only=True, frozen=True)
 class CloseLongEventFP(CloseLongEvent):
     """CloseLong event."""
 
-    @dataclass
-    class CloseLongEventArgsFP:
+    @dataclass(kw_only=True, frozen=True)
+    class CloseLongEventArgsFP(BaseEventArgs):
         """The args to the event CloseLong"""
 
         trader: str
@@ -393,7 +398,8 @@ class CloseLongEventFP(CloseLongEvent):
         bond_amount: FixedPoint
         extra_data: bytes
 
-    args: CloseLongEventArgsFP
+    # We redefine the type in the subclass
+    args: CloseLongEventArgsFP  # type: ignore[override]
 
     @classmethod
     def from_pypechain(cls, in_val: CloseLongEvent) -> CloseLongEventFP:
@@ -460,12 +466,12 @@ class CloseLongEventFP(CloseLongEvent):
         )
 
 
-@dataclass(kw_only=True)
+@dataclass(kw_only=True, frozen=True)
 class CloseShortEventFP(CloseShortEvent):
     """CloseShort event."""
 
-    @dataclass
-    class CloseShortEventArgsFP:
+    @dataclass(kw_only=True, frozen=True)
+    class CloseShortEventArgsFP(BaseEventArgs):
         """The args to the event CloseShort"""
 
         trader: str
@@ -479,7 +485,8 @@ class CloseShortEventFP(CloseShortEvent):
         bond_amount: FixedPoint
         extra_data: bytes
 
-    args: CloseShortEventArgsFP
+    # We redefine the type in the subclass
+    args: CloseShortEventArgsFP  # type: ignore[override]
 
     @classmethod
     def from_pypechain(cls, in_val: CloseShortEvent) -> CloseShortEventFP:
@@ -548,12 +555,12 @@ class CloseShortEventFP(CloseShortEvent):
         )
 
 
-@dataclass(kw_only=True)
+@dataclass(kw_only=True, frozen=True)
 class CreateCheckpointEventFP(CreateCheckpointEvent):
     """CreateCheckpoint event."""
 
-    @dataclass
-    class CreateCheckpointEventArgsFP:
+    @dataclass(kw_only=True, frozen=True)
+    class CreateCheckpointEventArgsFP(BaseEventArgs):
         """The args to the event CreateCheckpoint"""
 
         checkpoint_time: int
@@ -563,7 +570,8 @@ class CreateCheckpointEventFP(CreateCheckpointEvent):
         matured_longs: FixedPoint
         lp_share_price: FixedPoint
 
-    args: CreateCheckpointEventArgsFP
+    # We redefine the type in the subclass
+    args: CreateCheckpointEventArgsFP  # type: ignore[override]
 
     @classmethod
     def from_pypechain(cls, in_val: CreateCheckpointEvent) -> CreateCheckpointEventFP:
@@ -624,12 +632,12 @@ class CreateCheckpointEventFP(CreateCheckpointEvent):
         )
 
 
-@dataclass(kw_only=True)
+@dataclass(kw_only=True, frozen=True)
 class InitializeEventFP(InitializeEvent):
     """InitializeEvent event."""
 
-    @dataclass
-    class InitializeEventArgsFP:
+    @dataclass(kw_only=True, frozen=True)
+    class InitializeEventArgsFP(BaseEventArgs):
         """The args to the event InitializeEvent"""
 
         provider: str
@@ -640,7 +648,8 @@ class InitializeEventFP(InitializeEvent):
         apr: FixedPoint
         extra_data: bytes
 
-    args: InitializeEventArgsFP
+    # We redefine the type in the subclass
+    args: InitializeEventArgsFP  # type: ignore[override]
 
     @classmethod
     def from_pypechain(cls, in_val: InitializeEvent) -> InitializeEventFP:
@@ -703,12 +712,12 @@ class InitializeEventFP(InitializeEvent):
         )
 
 
-@dataclass(kw_only=True)
+@dataclass(kw_only=True, frozen=True)
 class OpenLongEventFP(OpenLongEvent):
     """OpenLongEvent event."""
 
-    @dataclass
-    class OpenLongEventArgsFP:
+    @dataclass(kw_only=True, frozen=True)
+    class OpenLongEventArgsFP(BaseEventArgs):
         """The args to the event OpenLongEvent"""
 
         trader: str
@@ -720,7 +729,8 @@ class OpenLongEventFP(OpenLongEvent):
         bond_amount: FixedPoint
         extra_data: bytes
 
-    args: OpenLongEventArgsFP
+    # We redefine the type in the subclass
+    args: OpenLongEventArgsFP  # type: ignore[override]
 
     @classmethod
     def from_pypechain(cls, in_val: OpenLongEvent) -> OpenLongEventFP:
@@ -785,12 +795,12 @@ class OpenLongEventFP(OpenLongEvent):
         )
 
 
-@dataclass(kw_only=True)
+@dataclass(kw_only=True, frozen=True)
 class OpenShortEventFP(OpenShortEvent):
     """OpenShortEvent event."""
 
-    @dataclass
-    class OpenShortEventArgsFP:
+    @dataclass(kw_only=True, frozen=True)
+    class OpenShortEventArgsFP(BaseEventArgs):
         """The args to the event OpenShortEvent"""
 
         trader: str
@@ -803,7 +813,8 @@ class OpenShortEventFP(OpenShortEvent):
         bond_amount: FixedPoint
         extra_data: bytes
 
-    args: OpenShortEventArgsFP
+    # We redefine the type in the subclass
+    args: OpenShortEventArgsFP  # type: ignore[override]
 
     @classmethod
     def from_pypechain(cls, in_val: OpenShortEvent) -> OpenShortEventFP:
@@ -870,12 +881,12 @@ class OpenShortEventFP(OpenShortEvent):
         )
 
 
-@dataclass(kw_only=True)
+@dataclass(kw_only=True, frozen=True)
 class RedeemWithdrawalSharesEventFP(RedeemWithdrawalSharesEvent):
     """RedeemWithdrawalSharesEvent event."""
 
-    @dataclass
-    class RedeemWithdrawalSharesEventArgsFP:
+    @dataclass(kw_only=True, frozen=True)
+    class RedeemWithdrawalSharesEventArgsFP(BaseEventArgs):
         """The args to the event RedeemWithdrawalSharesEvent"""
 
         provider: str
@@ -886,7 +897,8 @@ class RedeemWithdrawalSharesEventFP(RedeemWithdrawalSharesEvent):
         as_base: bool
         extra_data: bytes
 
-    args: RedeemWithdrawalSharesEventArgsFP
+    # We redefine the type in the subclass
+    args: RedeemWithdrawalSharesEventArgsFP  # type: ignore[override]
 
     @classmethod
     def from_pypechain(cls, in_val: RedeemWithdrawalSharesEvent) -> RedeemWithdrawalSharesEventFP:
@@ -949,12 +961,12 @@ class RedeemWithdrawalSharesEventFP(RedeemWithdrawalSharesEvent):
         )
 
 
-@dataclass(kw_only=True)
+@dataclass(kw_only=True, frozen=True)
 class RemoveLiquidityEventFP(RemoveLiquidityEvent):
     """RemoveLiquidity event."""
 
-    @dataclass
-    class RemoveLiquidityEventArgsFP:
+    @dataclass(kw_only=True, frozen=True)
+    class RemoveLiquidityEventArgsFP(BaseEventArgs):
         """The args to the event RemoveLiquidityEvent"""
 
         provider: str
@@ -967,7 +979,8 @@ class RemoveLiquidityEventFP(RemoveLiquidityEvent):
         lp_share_price: FixedPoint
         extra_data: bytes
 
-    args: RemoveLiquidityEventArgsFP
+    # We redefine the type in the subclass
+    args: RemoveLiquidityEventArgsFP  # type: ignore[override]
 
     @classmethod
     def from_pypechain(cls, in_val: RemoveLiquidityEvent) -> RemoveLiquidityEventFP:
