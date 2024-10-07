@@ -1,5 +1,8 @@
 """Hyperdrive python type definitions."""
 
+# Expose base event in hyperdrivetypes
+from pypechain.core import BaseEvent
+
 from .fixedpoint_types import (
     AddLiquidityEventFP,
     CheckpointFP,
