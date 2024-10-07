@@ -300,11 +300,11 @@ class CheckpointFP:
 # the args type
 
 
-@dataclass(kw_only=True, frozen=True)
+@dataclass(kw_only=True)
 class AddLiquidityEventFP(AddLiquidityEvent):
     """Add liquidity event."""
 
-    @dataclass(kw_only=True, frozen=True)
+    @dataclass(kw_only=True)
     class AddLiquidityEventArgsFP(BaseEventArgs):
         """The args to the event AddLiquidity"""
 
@@ -380,11 +380,11 @@ class AddLiquidityEventFP(AddLiquidityEvent):
         )
 
 
-@dataclass(kw_only=True, frozen=True)
+@dataclass(kw_only=True)
 class CloseLongEventFP(CloseLongEvent):
     """CloseLong event."""
 
-    @dataclass(kw_only=True, frozen=True)
+    @dataclass(kw_only=True)
     class CloseLongEventArgsFP(BaseEventArgs):
         """The args to the event CloseLong"""
 
@@ -466,11 +466,11 @@ class CloseLongEventFP(CloseLongEvent):
         )
 
 
-@dataclass(kw_only=True, frozen=True)
+@dataclass(kw_only=True)
 class CloseShortEventFP(CloseShortEvent):
     """CloseShort event."""
 
-    @dataclass(kw_only=True, frozen=True)
+    @dataclass(kw_only=True)
     class CloseShortEventArgsFP(BaseEventArgs):
         """The args to the event CloseShort"""
 
@@ -555,11 +555,11 @@ class CloseShortEventFP(CloseShortEvent):
         )
 
 
-@dataclass(kw_only=True, frozen=True)
+@dataclass(kw_only=True)
 class CreateCheckpointEventFP(CreateCheckpointEvent):
     """CreateCheckpoint event."""
 
-    @dataclass(kw_only=True, frozen=True)
+    @dataclass(kw_only=True)
     class CreateCheckpointEventArgsFP(BaseEventArgs):
         """The args to the event CreateCheckpoint"""
 
@@ -632,11 +632,11 @@ class CreateCheckpointEventFP(CreateCheckpointEvent):
         )
 
 
-@dataclass(kw_only=True, frozen=True)
+@dataclass(kw_only=True)
 class InitializeEventFP(InitializeEvent):
     """InitializeEvent event."""
 
-    @dataclass(kw_only=True, frozen=True)
+    @dataclass(kw_only=True)
     class InitializeEventArgsFP(BaseEventArgs):
         """The args to the event InitializeEvent"""
 
@@ -712,11 +712,11 @@ class InitializeEventFP(InitializeEvent):
         )
 
 
-@dataclass(kw_only=True, frozen=True)
+@dataclass(kw_only=True)
 class OpenLongEventFP(OpenLongEvent):
     """OpenLongEvent event."""
 
-    @dataclass(kw_only=True, frozen=True)
+    @dataclass(kw_only=True)
     class OpenLongEventArgsFP(BaseEventArgs):
         """The args to the event OpenLongEvent"""
 
@@ -795,11 +795,11 @@ class OpenLongEventFP(OpenLongEvent):
         )
 
 
-@dataclass(kw_only=True, frozen=True)
+@dataclass(kw_only=True)
 class OpenShortEventFP(OpenShortEvent):
     """OpenShortEvent event."""
 
-    @dataclass(kw_only=True, frozen=True)
+    @dataclass(kw_only=True)
     class OpenShortEventArgsFP(BaseEventArgs):
         """The args to the event OpenShortEvent"""
 
@@ -881,11 +881,11 @@ class OpenShortEventFP(OpenShortEvent):
         )
 
 
-@dataclass(kw_only=True, frozen=True)
+@dataclass(kw_only=True)
 class RedeemWithdrawalSharesEventFP(RedeemWithdrawalSharesEvent):
     """RedeemWithdrawalSharesEvent event."""
 
-    @dataclass(kw_only=True, frozen=True)
+    @dataclass(kw_only=True)
     class RedeemWithdrawalSharesEventArgsFP(BaseEventArgs):
         """The args to the event RedeemWithdrawalSharesEvent"""
 
@@ -961,11 +961,11 @@ class RedeemWithdrawalSharesEventFP(RedeemWithdrawalSharesEvent):
         )
 
 
-@dataclass(kw_only=True, frozen=True)
+@dataclass(kw_only=True)
 class RemoveLiquidityEventFP(RemoveLiquidityEvent):
     """RemoveLiquidity event."""
 
-    @dataclass(kw_only=True, frozen=True)
+    @dataclass(kw_only=True)
     class RemoveLiquidityEventArgsFP(BaseEventArgs):
         """The args to the event RemoveLiquidityEvent"""
 
