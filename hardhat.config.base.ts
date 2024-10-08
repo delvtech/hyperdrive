@@ -9,7 +9,9 @@ import "./tasks";
 import {
     BASE_CBETH_182DAY,
     BASE_CHAINLINK_COORDINATOR,
+    BASE_ERC4626_COORDINATOR,
     BASE_FACTORY,
+    BASE_MOONWELL_ETH_182DAY,
     BASE_MORPHO_BLUE_COORDINATOR,
 } from "./tasks/deploy/config/base";
 import { BASE_MORPHO_BLUE_CBETH_USDC_182DAY } from "./tasks/deploy/config/base/morpho-blue-cbeth-usdc-182day";
@@ -28,10 +30,12 @@ const config: HardhatUserConfig = {
                 coordinators: [
                     BASE_CHAINLINK_COORDINATOR,
                     BASE_MORPHO_BLUE_COORDINATOR,
+                    BASE_ERC4626_COORDINATOR,
                 ],
                 instances: [
                     BASE_CBETH_182DAY,
                     BASE_MORPHO_BLUE_CBETH_USDC_182DAY,
+                    BASE_MOONWELL_ETH_182DAY,
                 ],
                 checkpointRewarders: [],
                 checkpointSubrewarders: [],
