@@ -4,9 +4,9 @@ pragma solidity 0.8.22;
 import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
 import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { Hyperdrive } from "../../external/Hyperdrive.sol";
-import { IERC20 } from "../../interfaces/IERC20.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IHyperdriveAdminController } from "../../interfaces/IHyperdriveAdminController.sol";
+import { IStakedToken } from "../../interfaces/IStakedToken.sol";
 import { StkWellBase } from "./StkWellBase.sol";
 
 ///      ______  __                           _________      _____
@@ -89,14 +89,22 @@ contract StkWellHyperdrive is Hyperdrive, StkWellBase {
             _target4
         )
     {
-        // ****************************************************************
-        // FIXME: Implement this for new instances. ERC4626 example provided.
-
-        // Approve the base token with 1 wei. This ensures that all of the
-        // subsequent approvals will be writing to a dirty storage slot.
+        // Approve the vault with 1 wei. This ensures that all of the subsequent
+        // approvals will be writing to a dirty storage slot.
         ERC20(address(_config.baseToken)).forceApprove(
             address(_config.vaultSharesToken),
             1
+        );
+    }
+
+    /// @notice Allows anyone to claim the Well rewards accrued by this contract.
+    ///         These rewards will need to be swept by the sweep collector to be
+    ///         distributed.
+    function claimRewards() external {
+        IStakedToken stkWell = IStakedToken(address(_vaultSharesToken));
+        stkWell.claimRewards(
+            address(this),
+            stkWell.stakerRewardsToClaim(address(this))
         );
     }
 }

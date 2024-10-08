@@ -4,9 +4,8 @@ pragma solidity 0.8.22;
 import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
 import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { StkWellConversions } from "../../instances/stk-well/StkWellConversions.sol";
-import { IStkWell } from "../../interfaces/IStkWell.sol";
+import { IStakedToken } from "../../interfaces/IStakedToken.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
-import { IStkWellHyperdrive } from "../../interfaces/IStkWellHyperdrive.sol";
 import { IHyperdriveDeployerCoordinator } from "../../interfaces/IHyperdriveDeployerCoordinator.sol";
 import { STK_WELL_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND } from "../../libraries/Constants.sol";
 import { ONE } from "../../libraries/FixedPointMath.sol";
@@ -84,13 +83,10 @@ contract StkWellHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
             token = _hyperdrive.vaultSharesToken();
         }
 
-        // ****************************************************************
-        // FIXME: Implement this for new instances. ERC20 example provided.
         // Take custody of the contribution and approve Hyperdrive to pull the
         // tokens.
         ERC20(token).safeTransferFrom(_lp, address(this), _contribution);
         ERC20(token).forceApprove(address(_hyperdrive), _contribution);
-        // ****************************************************************
 
         return value;
     }
@@ -98,7 +94,7 @@ contract StkWellHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     /// @notice Convert an amount of vault shares to an amount of base.
     /// @param _shareAmount The vault shares amount.
     /// @return The base amount.
-    function convertToBase(uint256 _shareAmount) public view returns (uint256) {
+    function convertToBase(uint256 _shareAmount) public pure returns (uint256) {
         return StkWellConversions.convertToBase(_shareAmount);
     }
 
@@ -107,7 +103,7 @@ contract StkWellHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     /// @return The vault shares amount.
     function convertToShares(
         uint256 _baseAmount
-    ) public view returns (uint256) {
+    ) public pure returns (uint256) {
         return StkWellConversions.convertToShares(_baseAmount);
     }
 
@@ -119,8 +115,6 @@ contract StkWellHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         }
     }
 
-    // FIXME: Update the extra data comment if the extra data isn't empty.
-    //
     /// @notice Checks the pool configuration to ensure that it is valid.
     /// @param _deployConfig The deploy configuration of the Hyperdrive pool.
     /// @param _extraData The empty extra data.
@@ -131,30 +125,40 @@ contract StkWellHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         // Perform the default checks.
         super._checkPoolConfig(_deployConfig, _extraData);
 
-        // ****************************************************************
-        // FIXME: Implement this for new instances.
         // Ensure that the vault shares token address is properly configured.
         if (address(_deployConfig.vaultSharesToken) != address(0)) {
             revert IHyperdriveDeployerCoordinator.InvalidVaultSharesToken();
         }
 
         // Ensure that the base token address is properly configured.
-        if (address(_deployConfig.baseToken) != address(0)) {
+        if (
+            IStakedToken(address(_deployConfig.vaultSharesToken))
+                .STAKED_TOKEN() != _deployConfig.baseToken
+        ) {
             revert IHyperdriveDeployerCoordinator.InvalidBaseToken();
         }
-        // *****************************************************************
 
-        // Ensure that the minimum share reserves are equal to 1e15. This value
-        // has been tested to prevent arithmetic overflows in the
-        // `_updateLiquidity` function when the share reserves are as high as
-        // 200 million.
-        if (_deployConfig.minimumShareReserves != 1e15) {
+        // Ensure that the minimum share reserves are large enough to meet the
+        // minimum requirements for safety.
+        //
+        // NOTE: Some pools may require larger minimum share reserves to be
+        // considered safe. This is just a sanity check.
+        if (
+            _deployConfig.minimumShareReserves <
+            10 ** (_deployConfig.baseToken.decimals() - 3)
+        ) {
             revert IHyperdriveDeployerCoordinator.InvalidMinimumShareReserves();
         }
 
-        // Ensure that the minimum transaction amount are equal to 1e15. This
-        // value has been tested to prevent precision issues.
-        if (_deployConfig.minimumTransactionAmount != 1e15) {
+        // Ensure that the minimum transaction amount is large enough to meet
+        // the minimum requirements for safety.
+        //
+        // NOTE: Some pools may require larger minimum transaction amounts to be
+        // considered safe. This is just a sanity check.
+        if (
+            _deployConfig.minimumTransactionAmount <
+            10 ** (_deployConfig.baseToken.decimals() - 3)
+        ) {
             revert IHyperdriveDeployerCoordinator
                 .InvalidMinimumTransactionAmount();
         }
@@ -166,9 +170,6 @@ contract StkWellHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         IHyperdrive.PoolDeployConfig memory, // unused _deployConfig
         bytes memory // unused _extraData
     ) internal pure override returns (uint256) {
-        // ****************************************************************
-        // FIXME:  Implement this for new instances.
         return convertToBase(ONE);
-        // ****************************************************************
     }
 }

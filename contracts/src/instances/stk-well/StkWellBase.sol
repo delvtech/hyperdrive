@@ -3,10 +3,10 @@ pragma solidity 0.8.22;
 
 import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
 import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
-import { IERC4626 } from "../../interfaces/IERC4626.sol";
-import { IStkWell } from "../../interfaces/IStkWell.sol";
+import { IStakedToken } from "../../interfaces/IStakedToken.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { HyperdriveBase } from "../../internal/HyperdriveBase.sol";
+import { StkWellConversions } from "./StkWellConversions.sol";
 
 /// @author DELV
 /// @title StkWellBase
@@ -31,8 +31,6 @@ abstract contract StkWellBase is HyperdriveBase {
         uint256 _baseAmount,
         bytes calldata // unused
     ) internal override returns (uint256, uint256) {
-        // ****************************************************************
-        // FIXME: Implement this for new instances. ERC4626 example provided.
         // Take custody of the deposit in base.
         ERC20(address(_baseToken)).safeTransferFrom(
             msg.sender,
@@ -49,13 +47,13 @@ abstract contract StkWellBase is HyperdriveBase {
             address(_vaultSharesToken),
             _baseAmount + 1
         );
-        uint256 sharesMinted = IERC4626(address(_vaultSharesToken)).deposit(
-            _baseAmount,
-            address(this)
+        IStakedToken(address(_vaultSharesToken)).stake(
+            address(this),
+            _baseAmount
         );
+        uint256 sharesMinted = _baseAmount;
 
         return (sharesMinted, 0);
-        // ****************************************************************
     }
 
     /// @dev Process a deposit in vault shares.
@@ -64,40 +62,24 @@ abstract contract StkWellBase is HyperdriveBase {
         uint256 _shareAmount,
         bytes calldata // unused _extraData
     ) internal override {
-        // ****************************************************************
-        // FIXME: Implement this for new instances. ERC20 example provided.
         // Take custody of the deposit in vault shares.
         ERC20(address(_vaultSharesToken)).safeTransferFrom(
             msg.sender,
             address(this),
             _shareAmount
         );
-        // ****************************************************************
     }
 
     /// @dev Process a withdrawal in base and send the proceeds to the
     ///      destination.
-
-    /// @param _shareAmount The amount of vault shares to withdraw.
-    /// @param _destination The destination of the withdrawal.
-    /// @return amountWithdrawn The amount of base withdrawn.
     function _withdrawWithBase(
-        uint256 _shareAmount,
-        address _destination,
+        uint256, // unused
+        address, // unused
         bytes calldata // unused
-    ) internal override returns (uint256 amountWithdrawn) {
-        // ****************************************************************
-        // FIXME: Implement this for new instances. ERC4626 example provided.
-        // Redeem from the yield source and transfer the
-        // resulting base to the destination address.
-        amountWithdrawn = IERC4626(address(_vaultSharesToken)).redeem(
-            _shareAmount,
-            _destination,
-            address(this)
-        );
-
-        return amountWithdrawn;
-        // ****************************************************************
+    ) internal pure override returns (uint256) {
+        // stkWell withdrawals aren't necessarily instantaneous. Users that want
+        // to withdraw can manage their withdrawal separately.
+        revert IHyperdrive.UnsupportedToken();
     }
 
     /// @dev Process a withdrawal in vault shares and send the proceeds to the
@@ -109,14 +91,11 @@ abstract contract StkWellBase is HyperdriveBase {
         address _destination,
         bytes calldata // unused
     ) internal override {
-        // ****************************************************************
-        // FIXME: Implement this for new instances. ERC20 example provided.
         // Transfer vault shares to the destination.
         ERC20(address(_vaultSharesToken)).safeTransfer(
             _destination,
             _shareAmount
         );
-        // ****************************************************************
     }
 
     /// @dev Convert an amount of vault shares to an amount of base.
@@ -124,12 +103,8 @@ abstract contract StkWellBase is HyperdriveBase {
     /// @return The base amount.
     function _convertToBase(
         uint256 _shareAmount
-    ) internal view override returns (uint256) {
-        // ****************************************************************
-        // FIXME: Implement this for new instances.
-        return
-            IERC4626(address(_vaultSharesToken)).convertToAssets(_shareAmount);
-        // ****************************************************************
+    ) internal pure override returns (uint256) {
+        return StkWellConversions.convertToBase(_shareAmount);
     }
 
     /// @dev Convert an amount of base to an amount of vault shares.
@@ -137,12 +112,8 @@ abstract contract StkWellBase is HyperdriveBase {
     /// @return The vault shares amount.
     function _convertToShares(
         uint256 _baseAmount
-    ) internal view override returns (uint256) {
-        // ****************************************************************
-        // FIXME: Implement this for new instances.
-        return
-            IERC4626(address(_vaultSharesToken)).convertToShares(_baseAmount);
-        // ****************************************************************
+    ) internal pure override returns (uint256) {
+        return StkWellConversions.convertToShares(_baseAmount);
     }
 
     /// @dev Gets the total amount of shares held by the pool in the yield
