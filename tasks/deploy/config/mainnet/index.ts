@@ -20,3 +20,4 @@ export * from "./staking-usds-sky-182day";
 export * from "./steth-182day";
 export * from "./steth-coordinator";
 export * from "./stusd-182day";
+export * from "./susds-182day";

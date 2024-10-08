@@ -1,4 +1,4 @@
-import { Address, keccak256, parseEther, toBytes, zeroAddress } from "viem";
+import { Address, keccak256, parseEther, toBytes } from "viem";
 import {
     HyperdriveInstanceConfig,
     getLinkerDetails,
@@ -54,6 +54,11 @@ export const MAINNET_SUSDS_182DAY: HyperdriveInstanceConfig<"ERC4626"> = {
         await pc.waitForTransactionReceipt({ hash: tx });
     },
     poolDeployConfig: async (hre) => {
+        let factoryContract = await hre.viem.getContractAt(
+            "HyperdriveFactory",
+            hre.hyperdriveDeploy.deployments.byName(MAINNET_FACTORY_NAME)
+                .address,
+        );
         return {
             baseToken: USDS_ADDRESS_MAINNET,
             vaultSharesToken: SUSDS_ADDRESS_MAINNET,
@@ -63,11 +68,10 @@ export const MAINNET_SUSDS_182DAY: HyperdriveInstanceConfig<"ERC4626"> = {
             positionDuration: parseDuration(SIX_MONTHS),
             checkpointDuration: parseDuration("1 day"),
             timeStretch: 0n,
-            // TODO: Read from the factory.
-            governance: (await hre.getNamedAccounts())["deployer"] as Address,
-            feeCollector: zeroAddress,
-            sweepCollector: zeroAddress,
-            checkpointRewarder: zeroAddress,
+            governance: await factoryContract.read.hyperdriveGovernance(),
+            feeCollector: await factoryContract.read.feeCollector(),
+            sweepCollector: await factoryContract.read.sweepCollector(),
+            checkpointRewarder: await factoryContract.read.checkpointRewarder(),
             ...(await getLinkerDetails(
                 hre,
                 hre.hyperdriveDeploy.deployments.byName(MAINNET_FACTORY_NAME)
