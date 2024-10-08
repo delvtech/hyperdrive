@@ -1,6 +1,6 @@
 [project]
 name = "hyperdrivetypes"
-version = "1.0.18.5"
+version = "1.0.19.6"
 
 # Authors are the current, primary stewards of the repo
 # contributors can be found on github
@@ -19,7 +19,7 @@ classifiers = [
     "Natural Language :: English",
 ]
 
-dependencies = ["pypechain>=0.0.38", "fixedpointmath"]
+dependencies = ["pypechain>=0.0.43", "fixedpointmath"]
 
 [project.optional-dependencies]
 dev = ["pyright", "pytest"]

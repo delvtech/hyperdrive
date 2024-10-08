@@ -1,4 +1,21 @@
 """Hyperdrive python type definitions."""
 
-from .fixedpoint_types import *
+# Expose base event in hyperdrivetypes
+from pypechain.core import BaseEvent
+
+from .fixedpoint_types import (
+    AddLiquidityEventFP,
+    CheckpointFP,
+    CloseLongEventFP,
+    CloseShortEventFP,
+    CreateCheckpointEventFP,
+    FeesFP,
+    InitializeEventFP,
+    OpenLongEventFP,
+    OpenShortEventFP,
+    PoolConfigFP,
+    PoolInfoFP,
+    RedeemWithdrawalSharesEventFP,
+    RemoveLiquidityEventFP,
+)
 from .types import *
