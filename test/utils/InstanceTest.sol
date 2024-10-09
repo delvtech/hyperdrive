@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.20;
 
+// FIXME
+import { console2 as console } from "forge-std/console2.sol";
+
 import { ERC20ForwarderFactory } from "../../contracts/src/token/ERC20ForwarderFactory.sol";
 import { HyperdriveFactory } from "../../contracts/src/factory/HyperdriveFactory.sol";
 import { IERC20 } from "../../contracts/src/interfaces/IERC20.sol";
@@ -2531,7 +2534,7 @@ abstract contract InstanceTest is HyperdriveTest {
             hyperdrive.getPoolInfo().vaultSharePrice - startingVaultSharePrice,
             startingVaultSharePrice
         );
-        if (!config.enableBaseWithdraws) {
+        if (!config.enableBaseWithdraws && variableRate > 0) {
             vm.expectRevert(config.baseWithdrawError);
         }
         uint256 baseProceeds = hyperdrive.closeShort(

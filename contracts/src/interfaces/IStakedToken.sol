@@ -3,7 +3,7 @@ pragma solidity ^0.8.20;
 
 import { IERC20 } from "./IERC20.sol";
 
-interface IStakedToken {
+interface IStakedToken is IERC20 {
     function STAKED_TOKEN() external view returns (IERC20);
 
     function REWARD_TOKEN() external view returns (IERC20);

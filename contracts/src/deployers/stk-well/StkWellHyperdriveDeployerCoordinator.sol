@@ -126,7 +126,7 @@ contract StkWellHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
         super._checkPoolConfig(_deployConfig, _extraData);
 
         // Ensure that the vault shares token address is properly configured.
-        if (address(_deployConfig.vaultSharesToken) != address(0)) {
+        if (address(_deployConfig.vaultSharesToken) == address(0)) {
             revert IHyperdriveDeployerCoordinator.InvalidVaultSharesToken();
         }
 

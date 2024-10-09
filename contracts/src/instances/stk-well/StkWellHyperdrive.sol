@@ -52,6 +52,20 @@ import { StkWellBase } from "./StkWellBase.sol";
 /// @author DELV
 /// @title StkWellHyperdrive
 /// @notice A Hyperdrive instance that uses a StkWell vault as the yield source.
+/// @dev This instance supports the Well staking vault on Base. The vault shares
+///      token is staked well. Some high-level features of this yield source:
+///
+///      - The base token address is the staked token of the vault (the WELL
+///        token).
+///      - The vault shares token address is the StkWell address.
+///      - The vault share price is always one since the staking contract doesn't
+///        accrue interest.
+///      - Base withdrawals aren't supported since there isn't an instantaneous
+///        way to withdraw from StkWell.
+///      - The minimum share reserves and minimum transaction amount are both
+///        1e15.
+///      - WELL rewards accrue to Hyperdrive over time and can be sent to
+///        Hyperdrive by calling `claimRewards`.
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.

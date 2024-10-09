@@ -11,9 +11,6 @@ import { StkWellConversions } from "./StkWellConversions.sol";
 /// @author DELV
 /// @title StkWellBase
 /// @notice The base contract for the StkWell Hyperdrive implementation.
-/// @dev This Hyperdrive implementation is designed to work with standard
-///      StkWell vaults. Non-standard implementations may not work correctly
-///      and should be carefully checked.
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
