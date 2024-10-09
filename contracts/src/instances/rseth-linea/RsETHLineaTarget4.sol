@@ -9,7 +9,7 @@ import { RsETHLineaBase } from "./RsETHLineaBase.sol";
 
 /// @author DELV
 /// @title RsETHLineaTarget4
-/// @notice RsETHLineaHyperdrive's target3 logic contract. This contract contains
+/// @notice RsETHLineaHyperdrive's target4 logic contract. This contract contains
 ///         several stateful functions that couldn't fit into the Hyperdrive
 ///         contract.
 /// @custom:disclaimer The language used in this code is for coding convenience

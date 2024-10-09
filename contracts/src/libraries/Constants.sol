@@ -67,6 +67,9 @@ string constant STETH_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND = "StETHHyperdriveDep
 /// @dev The kind of the StakingUSDSHyperdrive deployer coordinator.
 string constant STAKING_USDS_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND = "StakingUSDSHyperdriveDeployerCoordinator";
 
+/// @dev The kind of the StkWellHyperdrive deployer coordinator.
+string constant STK_WELL_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND = "StkWellHyperdriveDeployerCoordinator";
+
 /// @dev The kind of AaveHyperdrive.
 string constant AAVE_HYPERDRIVE_KIND = "AaveHyperdrive";
 
@@ -105,6 +108,9 @@ string constant STETH_HYPERDRIVE_KIND = "StETHHyperdrive";
 
 /// @dev The kind of StakingUSDSHyperdrive.
 string constant STAKING_USDS_HYPERDRIVE_KIND = "StakingUSDSHyperdrive";
+
+/// @dev The kind of StkWellSHyperdrive.
+string constant STK_WELL_HYPERDRIVE_KIND = "StkWellHyperdrive";
 
 /// @dev The kind of UniV3Zap.
 string constant UNI_V3_ZAP_KIND = "UniV3Zap";

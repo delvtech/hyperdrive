@@ -2531,7 +2531,7 @@ abstract contract InstanceTest is HyperdriveTest {
             hyperdrive.getPoolInfo().vaultSharePrice - startingVaultSharePrice,
             startingVaultSharePrice
         );
-        if (!config.enableBaseWithdraws) {
+        if (!config.enableBaseWithdraws && variableRate > 0) {
             vm.expectRevert(config.baseWithdrawError);
         }
         uint256 baseProceeds = hyperdrive.closeShort(

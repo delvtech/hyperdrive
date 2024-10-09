@@ -1,37 +1,37 @@
-import { Address, keccak256, parseEther, toBytes } from "viem";
+import { Address, keccak256, parseEther, toHex, zeroAddress } from "viem";
 import {
     HyperdriveInstanceConfig,
+    SIX_MONTHS,
+    USDC_ADDRESS_BASE,
     getLinkerDetails,
     normalizeFee,
     parseDuration,
     toBytes32,
 } from "../../lib";
-import {
-    SIX_MONTHS,
-    SUSDS_ADDRESS_MAINNET,
-    USDS_ADDRESS_MAINNET,
-} from "../../lib/constants";
-import { MAINNET_ERC4626_COORDINATOR_NAME } from "./erc4626-coordinator";
-import { MAINNET_FACTORY_NAME } from "./factory";
+import { BASE_FACTORY_NAME } from "./factory";
+import { BASE_MORPHO_BLUE_COORDINATOR_NAME } from "./morpho-blue-coordinator";
 
-// The name of the pool.
-export const MAINNET_SUSDS_182DAY_NAME = "ElementDAO 182 Day sUSDS Hyperdrive";
+export const BASE_STK_WELL_182DAY_NAME =
+    "ElementDAO 182 Day Moonwell StkWell Hyperdrive";
 
-// The initial contribution of the pool.
-const CONTRIBUTION = parseEther("100");
+// WELL is currently worth ~$0.03, so this is a contribution of around $80.
+const CONTRIBUTION = parseEther("2700");
 
-export const MAINNET_SUSDS_182DAY: HyperdriveInstanceConfig<"ERC4626"> = {
-    name: MAINNET_SUSDS_182DAY_NAME,
-    prefix: "ERC4626",
+export const BASE_STK_WELL_182DAY: HyperdriveInstanceConfig<"StkWell"> = {
+    name: BASE_STK_WELL_182DAY_NAME,
+    prefix: "StkWell",
     coordinatorAddress: async (hre) =>
-        hre.hyperdriveDeploy.deployments.byName(
-            MAINNET_ERC4626_COORDINATOR_NAME,
-        ).address,
-    deploymentId: keccak256(toBytes(MAINNET_SUSDS_182DAY_NAME)),
-    salt: toBytes32("0x69420"),
+        hre.hyperdriveDeploy.deployments.byName(BASE_STK_WELL_COORDINATOR_NAME)
+            .address,
+    deploymentId: keccak256(toHex(BASE_STK_WELL_182DAY_NAME)),
+    salt: toBytes32("0x42080085"),
     extraData: "0x",
     contribution: CONTRIBUTION,
-    fixedAPR: parseEther("0.0625"),
+    // NOTE: The latest variable rate on Moonwell's Staked Well market is
+    // 10.53% APY:
+    //
+    // https://moonwell.fi/stake/base
+    fixedAPR: parseEther("0.1053"),
     timestretchAPR: parseEther("0.05"),
     options: async (hre) => ({
         extraData: "0x",
@@ -39,42 +39,41 @@ export const MAINNET_SUSDS_182DAY: HyperdriveInstanceConfig<"ERC4626"> = {
         destination: (await hre.getNamedAccounts())["deployer"] as Address,
     }),
     // Prepare to deploy the contract by setting approvals.
-    prepare: async (hre) => {
+    prepare: async (hre, options) => {
+        let pc = await hre.viem.getPublicClient();
         let baseToken = await hre.viem.getContractAt(
             "contracts/src/interfaces/IERC20.sol:IERC20",
-            USDS_ADDRESS_MAINNET,
+            USDC_ADDRESS_BASE,
         );
         let tx = await baseToken.write.approve([
             hre.hyperdriveDeploy.deployments.byName(
-                MAINNET_ERC4626_COORDINATOR_NAME,
+                BASE_MORPHO_BLUE_COORDINATOR_NAME,
             ).address,
             CONTRIBUTION,
         ]);
-        let pc = await hre.viem.getPublicClient();
         await pc.waitForTransactionReceipt({ hash: tx });
     },
     poolDeployConfig: async (hre) => {
         let factoryContract = await hre.viem.getContractAt(
             "HyperdriveFactory",
-            hre.hyperdriveDeploy.deployments.byName(MAINNET_FACTORY_NAME)
-                .address,
+            hre.hyperdriveDeploy.deployments.byName(BASE_FACTORY_NAME).address,
         );
         return {
-            baseToken: USDS_ADDRESS_MAINNET,
-            vaultSharesToken: SUSDS_ADDRESS_MAINNET,
+            baseToken: USDC_ADDRESS_BASE,
+            vaultSharesToken: zeroAddress,
             circuitBreakerDelta: parseEther("0.05"),
-            minimumShareReserves: parseEther("10"),
+            minimumShareReserves: parseEther("0.001"),
             minimumTransactionAmount: parseEther("0.001"),
             positionDuration: parseDuration(SIX_MONTHS),
             checkpointDuration: parseDuration("1 day"),
             timeStretch: 0n,
-            governance: await factoryContract.read.hyperdriveGovernance(),
+            governance: await factoryContract.read.governance(),
             feeCollector: await factoryContract.read.feeCollector(),
             sweepCollector: await factoryContract.read.sweepCollector(),
             checkpointRewarder: await factoryContract.read.checkpointRewarder(),
             ...(await getLinkerDetails(
                 hre,
-                hre.hyperdriveDeploy.deployments.byName(MAINNET_FACTORY_NAME)
+                hre.hyperdriveDeploy.deployments.byName(BASE_FACTORY_NAME)
                     .address,
             )),
             fees: {
