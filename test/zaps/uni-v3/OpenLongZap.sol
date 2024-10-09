@@ -12,7 +12,6 @@ import { UniV3Path } from "../../../contracts/src/libraries/UniV3Path.sol";
 import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
 import { UniV3ZapTest } from "./UniV3Zap.t.sol";
 
-// FIXME: I need to add wrapping tests.
 contract OpenLongZapTest is UniV3ZapTest {
     using FixedPointMath for uint256;
     using HyperdriveUtils for IHyperdrive;
@@ -411,6 +410,64 @@ contract OpenLongZapTest is UniV3ZapTest {
         );
     }
 
+    /// @notice Ensure that zapping into `openLong` with base succeeds when
+    ///         the input needs to be wrapped.
+    function test_openLongZap_success_shouldWrap_asBase() external {
+        _verifyOpenLongZap(
+            SDAI_HYPERDRIVE,
+            IUniV3Zap.ZapInOptions({
+                swapParams: ISwapRouter.ExactInputParams({
+                    path: abi.encodePacked(
+                        WSTETH,
+                        LOWEST_FEE_TIER,
+                        WETH,
+                        LOW_FEE_TIER,
+                        DAI
+                    ),
+                    recipient: address(zap),
+                    deadline: block.timestamp + 1 minutes,
+                    amountIn: 0.2534e18,
+                    amountOutMinimum: 771e18
+                }),
+                sourceAsset: STETH,
+                sourceAmount: 0.3e18,
+                shouldWrap: true,
+                isRebasing: false
+            }),
+            10e18, // this should be completely refunded
+            true // as base
+        );
+    }
+
+    /// @notice Ensure that zapping into `openLong` with vault shares
+    ///         succeeds when the input needs to be wrapped.
+    function test_openLongZap_success_shouldWrap_asShares() external {
+        _verifyOpenLongZap(
+            SDAI_HYPERDRIVE,
+            IUniV3Zap.ZapInOptions({
+                swapParams: ISwapRouter.ExactInputParams({
+                    path: abi.encodePacked(
+                        WSTETH,
+                        LOWEST_FEE_TIER,
+                        WETH,
+                        LOW_FEE_TIER,
+                        SDAI
+                    ),
+                    recipient: address(zap),
+                    deadline: block.timestamp + 1 minutes,
+                    amountIn: 0.2534e18,
+                    amountOutMinimum: 691e18
+                }),
+                sourceAsset: STETH,
+                sourceAmount: 0.3e18,
+                shouldWrap: true,
+                isRebasing: false
+            }),
+            10e18, // this should be completely refunded
+            false // as shares
+        );
+    }
+
     /// @dev Verify that `openLongZap` performs correctly under the
     ///      specified conditions.
     /// @param _hyperdrive The Hyperdrive instance.
@@ -431,8 +488,9 @@ contract OpenLongZapTest is UniV3ZapTest {
         if (isETHInput) {
             aliceBalanceBefore = alice.balance;
         } else {
-            aliceBalanceBefore = IERC20(_zapInOptions.swapParams.path.tokenIn())
-                .balanceOf(alice);
+            aliceBalanceBefore = IERC20(_zapInOptions.sourceAsset).balanceOf(
+                alice
+            );
         }
         uint256 hyperdriveVaultSharesBalanceBefore = IERC20(
             _hyperdrive.vaultSharesToken()
@@ -479,12 +537,12 @@ contract OpenLongZapTest is UniV3ZapTest {
         if (isETHInput) {
             assertEq(
                 alice.balance,
-                aliceBalanceBefore - zapInOptions.swapParams.amountIn
+                aliceBalanceBefore - zapInOptions.sourceAmount
             );
         } else {
             assertEq(
-                IERC20(zapInOptions.swapParams.path.tokenIn()).balanceOf(alice),
-                aliceBalanceBefore - zapInOptions.swapParams.amountIn
+                IERC20(zapInOptions.sourceAsset).balanceOf(alice),
+                aliceBalanceBefore - zapInOptions.sourceAmount
             );
         }
 

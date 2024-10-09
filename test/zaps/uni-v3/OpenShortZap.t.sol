@@ -12,7 +12,6 @@ import { UniV3Path } from "../../../contracts/src/libraries/UniV3Path.sol";
 import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
 import { UniV3ZapTest } from "./UniV3Zap.t.sol";
 
-// FIXME: I need to add wrapping tests.
 contract OpenShortZapTest is UniV3ZapTest {
     using FixedPointMath for uint256;
     using HyperdriveUtils for IHyperdrive;
@@ -424,6 +423,66 @@ contract OpenShortZapTest is UniV3ZapTest {
         );
     }
 
+    /// @notice Ensure that zapping into `openShort` with base succeeds when
+    ///         the input needs to be wrapped.
+    function test_openShortZap_success_shouldWrap_asBase() external {
+        _verifyOpenShortZap(
+            SDAI_HYPERDRIVE,
+            3_000e18, // bond amount
+            IUniV3Zap.ZapInOptions({
+                swapParams: ISwapRouter.ExactInputParams({
+                    path: abi.encodePacked(
+                        WSTETH,
+                        LOWEST_FEE_TIER,
+                        WETH,
+                        LOW_FEE_TIER,
+                        DAI
+                    ),
+                    recipient: address(zap),
+                    deadline: block.timestamp + 1 minutes,
+                    amountIn: 0.2534e18,
+                    amountOutMinimum: 771e18
+                }),
+                sourceAsset: STETH,
+                sourceAmount: 0.3e18,
+                shouldWrap: true,
+                isRebasing: false
+            }),
+            10e18, // this should be completely refunded
+            true // as base
+        );
+    }
+
+    /// @notice Ensure that zapping into `openShort` with vault shares
+    ///         succeeds when the input needs to be wrapped.
+    function test_openShortZap_success_shouldWrap_asShares() external {
+        _verifyOpenShortZap(
+            SDAI_HYPERDRIVE,
+            3_000e18, // bond amount
+            IUniV3Zap.ZapInOptions({
+                swapParams: ISwapRouter.ExactInputParams({
+                    path: abi.encodePacked(
+                        WSTETH,
+                        LOWEST_FEE_TIER,
+                        WETH,
+                        LOW_FEE_TIER,
+                        SDAI
+                    ),
+                    recipient: address(zap),
+                    deadline: block.timestamp + 1 minutes,
+                    amountIn: 0.2534e18,
+                    amountOutMinimum: 691e18
+                }),
+                sourceAsset: STETH,
+                sourceAmount: 0.3e18,
+                shouldWrap: true,
+                isRebasing: false
+            }),
+            10e18, // this should be completely refunded
+            false // as shares
+        );
+    }
+
     struct VerifyOpenShortParams {
         /// @dev A flag indicating whether or not the swap input is in ETH.
         bool isETHInput;
@@ -466,9 +525,8 @@ contract OpenShortZapTest is UniV3ZapTest {
         if (params.isETHInput) {
             params.aliceInputBalanceBefore = alice.balance;
         } else {
-            params.aliceInputBalanceBefore = IERC20(
-                _zapInOptions.swapParams.path.tokenIn()
-            ).balanceOf(alice);
+            params.aliceInputBalanceBefore = IERC20(_zapInOptions.sourceAsset)
+                .balanceOf(alice);
         }
         params.isETHOutput = _asBase && _hyperdrive.baseToken() == ETH;
         if (params.isETHOutput) {
@@ -520,16 +578,12 @@ contract OpenShortZapTest is UniV3ZapTest {
         if (params.isETHInput) {
             assertEq(
                 alice.balance,
-                params.aliceInputBalanceBefore -
-                    _zapInOptions.swapParams.amountIn
+                params.aliceInputBalanceBefore - _zapInOptions.sourceAmount
             );
         } else {
             assertEq(
-                IERC20(_zapInOptions.swapParams.path.tokenIn()).balanceOf(
-                    alice
-                ),
-                params.aliceInputBalanceBefore -
-                    _zapInOptions.swapParams.amountIn
+                IERC20(_zapInOptions.sourceAsset).balanceOf(alice),
+                params.aliceInputBalanceBefore - _zapInOptions.sourceAmount
             );
         }
 
