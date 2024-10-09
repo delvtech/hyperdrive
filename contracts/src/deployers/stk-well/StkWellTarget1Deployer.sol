@@ -2,7 +2,6 @@
 pragma solidity 0.8.22;
 
 import { StkWellTarget1 } from "../../instances/stk-well/StkWellTarget1.sol";
-import { IStkWell } from "../../interfaces/IStkWell.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IHyperdriveAdminController } from "../../interfaces/IHyperdriveAdminController.sol";
 import { IHyperdriveTargetDeployer } from "../../interfaces/IHyperdriveTargetDeployer.sol";

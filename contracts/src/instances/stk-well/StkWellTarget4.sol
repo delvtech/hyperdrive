@@ -8,7 +8,7 @@ import { StkWellBase } from "./StkWellBase.sol";
 
 /// @author DELV
 /// @title StkWellTarget4
-/// @notice StkWellHyperdrive's target3 logic contract. This contract contains
+/// @notice StkWellHyperdrive's target4 logic contract. This contract contains
 ///         several stateful functions that couldn't fit into the Hyperdrive
 ///         contract.
 /// @custom:disclaimer The language used in this code is for coding convenience

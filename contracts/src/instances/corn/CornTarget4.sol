@@ -9,7 +9,7 @@ import { CornBase } from "./CornBase.sol";
 
 /// @author DELV
 /// @title CornTarget4
-/// @notice CornHyperdrive's target3 logic contract. This contract contains
+/// @notice CornHyperdrive's target4 logic contract. This contract contains
 ///         several stateful functions that couldn't fit into the Hyperdrive
 ///         contract.
 /// @custom:disclaimer The language used in this code is for coding convenience

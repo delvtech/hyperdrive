@@ -9,7 +9,7 @@ import { StakingUSDSBase } from "./StakingUSDSBase.sol";
 
 /// @author DELV
 /// @title StakingUSDSTarget4
-/// @notice StakingUSDSHyperdrive's target3 logic contract. This contract contains
+/// @notice StakingUSDSHyperdrive's target4 logic contract. This contract contains
 ///         several stateful functions that couldn't fit into the Hyperdrive
 ///         contract.
 /// @custom:disclaimer The language used in this code is for coding convenience
