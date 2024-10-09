@@ -40,7 +40,7 @@ export const BASE_STK_WELL_182DAY: HyperdriveInstanceConfig<"StkWell"> = {
         destination: (await hre.getNamedAccounts())["deployer"] as Address,
     }),
     // Prepare to deploy the contract by setting approvals.
-    prepare: async (hre, options) => {
+    prepare: async (hre) => {
         let pc = await hre.viem.getPublicClient();
         let baseToken = await hre.viem.getContractAt(
             "contracts/src/interfaces/IERC20.sol:IERC20",
