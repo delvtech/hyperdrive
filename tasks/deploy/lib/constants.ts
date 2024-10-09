@@ -164,6 +164,12 @@ export const USDC_ADDRESS_BASE =
 export const WETH_ADDRESS_BASE =
     "0x4200000000000000000000000000000000000006" as Address;
 
+export const WELL_ADDRESS_BASE =
+    "0xA88594D404727625A9437C3f886C7643872296AE" as Address;
+
+export const STK_WELL_ADDRESS_BASE =
+    "0xe66E3A37C3274Ac24FE8590f7D84A2427194DC17" as Address;
+
 // ╭─────────────────────────────────────────────────────────╮
 // │ Base Whales                                             │
 // ╰─────────────────────────────────────────────────────────╯

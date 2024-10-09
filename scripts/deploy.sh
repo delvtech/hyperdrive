@@ -15,4 +15,4 @@ if [[ "${NETWORK}" == "hardhat" ]]; then
   config_filename="hardhat.config.ts"
 fi
 npx hardhat deploy:hyperdrive --show-stack-traces --network ${NETWORK} --config "$config_filename"
-npx hardhat deploy:verify --show-stack-traces --network ${NETWORK} --config "$config_filename"
+# npx hardhat deploy:verify --show-stack-traces --network ${NETWORK} --config "$config_filename"

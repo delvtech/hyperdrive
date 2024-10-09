@@ -1,15 +1,16 @@
-import { Address, keccak256, parseEther, toHex, zeroAddress } from "viem";
+import { Address, keccak256, parseEther, toHex } from "viem";
 import {
     HyperdriveInstanceConfig,
     SIX_MONTHS,
-    USDC_ADDRESS_BASE,
+    STK_WELL_ADDRESS_BASE,
+    WELL_ADDRESS_BASE,
     getLinkerDetails,
     normalizeFee,
     parseDuration,
     toBytes32,
 } from "../../lib";
 import { BASE_FACTORY_NAME } from "./factory";
-import { BASE_MORPHO_BLUE_COORDINATOR_NAME } from "./morpho-blue-coordinator";
+import { BASE_STK_WELL_COORDINATOR_NAME } from "./stk-well-coordinator";
 
 export const BASE_STK_WELL_182DAY_NAME =
     "ElementDAO 182 Day Moonwell StkWell Hyperdrive";
@@ -31,7 +32,7 @@ export const BASE_STK_WELL_182DAY: HyperdriveInstanceConfig<"StkWell"> = {
     // 10.53% APY:
     //
     // https://moonwell.fi/stake/base
-    fixedAPR: parseEther("0.1053"),
+    fixedAPR: parseEther("0.1"),
     timestretchAPR: parseEther("0.05"),
     options: async (hre) => ({
         extraData: "0x",
@@ -43,11 +44,11 @@ export const BASE_STK_WELL_182DAY: HyperdriveInstanceConfig<"StkWell"> = {
         let pc = await hre.viem.getPublicClient();
         let baseToken = await hre.viem.getContractAt(
             "contracts/src/interfaces/IERC20.sol:IERC20",
-            USDC_ADDRESS_BASE,
+            WELL_ADDRESS_BASE,
         );
         let tx = await baseToken.write.approve([
             hre.hyperdriveDeploy.deployments.byName(
-                BASE_MORPHO_BLUE_COORDINATOR_NAME,
+                BASE_STK_WELL_COORDINATOR_NAME,
             ).address,
             CONTRIBUTION,
         ]);
@@ -59,8 +60,8 @@ export const BASE_STK_WELL_182DAY: HyperdriveInstanceConfig<"StkWell"> = {
             hre.hyperdriveDeploy.deployments.byName(BASE_FACTORY_NAME).address,
         );
         return {
-            baseToken: USDC_ADDRESS_BASE,
-            vaultSharesToken: zeroAddress,
+            baseToken: WELL_ADDRESS_BASE,
+            vaultSharesToken: STK_WELL_ADDRESS_BASE,
             circuitBreakerDelta: parseEther("0.05"),
             minimumShareReserves: parseEther("0.001"),
             minimumTransactionAmount: parseEther("0.001"),
