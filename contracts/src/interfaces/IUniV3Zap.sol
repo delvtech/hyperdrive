@@ -22,6 +22,17 @@ interface IUniV3Zap {
     /// @notice Thrown when attempting to zap to an invalid recipient.
     error InvalidRecipient();
 
+    /// @notice Thrown when attempting to zap with an invalid source amount. If
+    ///         the source asset doesn't needs to be wrapped, this needs to be
+    ///         the same as the swap's input amount.
+    error InvalidSourceAmount();
+
+    /// @notice Thrown when attempting to zap with an invalid source asset. If
+    ///         the source asset needs to be wrapped, this shouldn't be the same
+    ///         address as the input token to the swap. Otherwise, they should
+    ///         be the same.
+    error InvalidSourceAsset();
+
     /// @notice Thrown when receiving ether outside of an zap.
     error InvalidTransfer();
 
@@ -29,8 +40,45 @@ interface IUniV3Zap {
     ///         ether as a deposit asset.
     error NotPayable();
 
+    /// @notice Thrown when we should be wrapping assets, but the zap isn't
+    ///         configured to wrap.
+    error ShouldWrapAssets();
+
     /// @notice Thrown when an ether transfer fails.
     error TransferFailed();
+
+    /// Structs ///
+
+    /// @dev The options parameter provided to all of the functions that zap
+    ///      funds into Hyperdrive.
+    struct ZapInOptions {
+        /// @dev The Uniswap swap parameters to use when swapping assets to the
+        ///      deposit asset.
+        ISwapRouter.ExactInputParams swapParams;
+        /// @dev In most cases, this should be equal to the input token of the
+        ///      swap. In some cases, this will be a rebasing token like stETH
+        ///      that needs to be wrapped to make it suitable for swapping on
+        ///      Uniswap.
+        address sourceAsset;
+        /// @dev The amount of source tokens that should be swapped. In most
+        ///      cases, this should be equal to the `swapParams.amountIn`, but
+        ///      in the case of wrapped tokens, this amount will supersede that
+        ///      quantity.
+        uint256 sourceAmount;
+        /// @dev A flag that indicates whether or not the source token should
+        ///      be wrapped into the input token. Uniswap v3 demands complete
+        ///      precision on the input token amounts, which makes it hard to
+        ///      work with rebasing tokens that have imprecise transfer
+        ///      functions. Wrapping tokens provides a workaround for these
+        ///      issues.
+        bool shouldWrap;
+        /// @dev A flag that indicates whether or not the Hyperdrive vault
+        ///      shares token is a vault shares token. This is used to ensure
+        ///      that the input into Hyperdrive properly handles rebasing tokens.
+        bool isRebasing;
+    }
+
+    // FIXME: Add ZapOutOptions
 
     /// Metadata ///
 
@@ -59,19 +107,18 @@ interface IUniV3Zap {
     ///        shares, depending on the value of `_options.asBase`.
     /// @param _minApr The minimum APR at which the LP is willing to supply.
     /// @param _maxApr The maximum APR at which the LP is willing to supply.
-    /// @param _options The options that configure how the operation is settled.
-    /// @param _isRebasing A flag indicating whether or not the vault shares
-    ///        token is rebasing.
-    /// @param _swapParams The Uniswap swap parameters for a multi-hop fill.
+    /// @param _hyperdriveOptions The options that configure how the Hyperdrive
+    ///        operation is settled.
+    /// @param _zapInOptions The options that configure how the zap will be
+    ///        settled.
     /// @return lpShares The LP shares received by the LP.
     function addLiquidityZap(
         IHyperdrive _hyperdrive,
         uint256 _minLpSharePrice,
         uint256 _minApr,
         uint256 _maxApr,
-        IHyperdrive.Options calldata _options,
-        bool _isRebasing,
-        ISwapRouter.ExactInputParams calldata _swapParams
+        IHyperdrive.Options calldata _hyperdriveOptions,
+        IUniV3Zap.ZapInOptions calldata _zapInOptions
     ) external payable returns (uint256 lpShares);
 
     /// @notice Removes liquidity on Hyperdrive and converts the proceeds to the
@@ -84,11 +131,8 @@ interface IUniV3Zap {
     ///        of `_options.asBase`.
     /// @param _options The options that configure how the operation is settled.
     /// @param _swapParams The Uniswap swap parameters for a multi-hop fill.
-    /// @param _dustBuffer Some tokens (like stETH) have transfer methods that
-    ///        are imprecise. This may result in token transfers sending less
-    ///        funds than expected to Uniswap's swap router. To work around this
-    ///        issue, a dust buffer can be specified that will reduce the input
-    ///        amount of the swap to reduce the likelihood of failures.
+    /// @param _shouldWrap A flag indicating whether or not the proceeds need to
+    ///        be wrapped.
     /// @return proceeds The proceeds of removing liquidity. These proceeds will
     ///         be in units determined by the Uniswap swap parameters.
     /// @return withdrawalShares The base that the LP receives buys out some of
@@ -102,7 +146,7 @@ interface IUniV3Zap {
         uint256 _minOutputPerShare,
         IHyperdrive.Options calldata _options,
         ISwapRouter.ExactInputParams calldata _swapParams,
-        uint256 _dustBuffer
+        bool _shouldWrap
     ) external returns (uint256 proceeds, uint256 withdrawalShares);
 
     /// @notice Redeem withdrawal shares on Hyperdrive and converts the proceeds
@@ -116,11 +160,8 @@ interface IUniV3Zap {
     ///        value of `_options.asBase`.
     /// @param _options The options that configure how the operation is settled.
     /// @param _swapParams The Uniswap swap parameters for a multi-hop fill.
-    /// @param _dustBuffer Some tokens (like stETH) have transfer methods that
-    ///        are imprecise. This may result in token transfers sending less
-    ///        funds than expected to Uniswap's swap router. To work around this
-    ///        issue, a dust buffer can be specified that will reduce the input
-    ///        amount of the swap to reduce the likelihood of failures.
+    /// @param _shouldWrap A flag indicating whether or not the proceeds need to
+    ///        be wrapped.
     /// @return proceeds The proceeds of redeeming withdrawal shares. These
     ///         proceeds will be in units determined by the Uniswap swap
     ///         parameters.
@@ -132,7 +173,7 @@ interface IUniV3Zap {
         uint256 _minOutputPerShare,
         IHyperdrive.Options calldata _options,
         ISwapRouter.ExactInputParams calldata _swapParams,
-        uint256 _dustBuffer
+        bool _shouldWrap
     ) external returns (uint256 proceeds, uint256 withdrawalSharesRedeemed);
 
     /// Longs ///
@@ -145,20 +186,18 @@ interface IUniV3Zap {
     ///        open the long. This allows traders to protect themselves from
     ///        opening a long in a checkpoint where negative interest has
     ///        accrued.
-    /// @param _options The options that configure how the Hyperdrive trade is
+    /// @param _hyperdriveOptions The options that configure how the Hyperdrive
+    ///        operation is settled.
+    /// @param _zapInOptions The options that configure how the zap will be
     ///        settled.
-    /// @param _isRebasing A flag indicating whether or not the vault shares
-    ///        token is rebasing.
-    /// @param _swapParams The Uniswap swap parameters for a multi-hop fill.
     /// @return maturityTime The maturity time of the bonds.
     /// @return longAmount The amount of bonds the trader received.
     function openLongZap(
         IHyperdrive _hyperdrive,
         uint256 _minOutput,
         uint256 _minVaultSharePrice,
-        IHyperdrive.Options calldata _options,
-        bool _isRebasing,
-        ISwapRouter.ExactInputParams calldata _swapParams
+        IHyperdrive.Options calldata _hyperdriveOptions,
+        IUniV3Zap.ZapInOptions calldata _zapInOptions
     ) external payable returns (uint256 maturityTime, uint256 longAmount);
 
     /// @notice Closes a long on Hyperdrive and converts the proceeds to the
@@ -172,11 +211,8 @@ interface IUniV3Zap {
     /// @param _options The options that configure how the Hyperdrive trade is
     ///        settled.
     /// @param _swapParams The Uniswap swap parameters for a multi-hop fill.
-    /// @param _dustBuffer Some tokens (like stETH) have transfer methods that
-    ///        are imprecise. This may result in token transfers sending less
-    ///        funds than expected to Uniswap's swap router. To work around this
-    ///        issue, a dust buffer can be specified that will reduce the input
-    ///        amount of the swap to reduce the likelihood of failures.
+    /// @param _shouldWrap A flag indicating whether or not the proceeds need to
+    ///        be wrapped.
     /// @return proceeds The proceeds of closing the long. These proceeds will
     ///         be in units determined by the Uniswap swap parameters.
     function closeLongZap(
@@ -186,7 +222,7 @@ interface IUniV3Zap {
         uint256 _minOutput,
         IHyperdrive.Options calldata _options,
         ISwapRouter.ExactInputParams calldata _swapParams,
-        uint256 _dustBuffer
+        bool _shouldWrap
     ) external returns (uint256 proceeds);
 
     /// Shorts ///
@@ -200,9 +236,10 @@ interface IUniV3Zap {
     /// @param _minVaultSharePrice The minimum vault share price at which to open
     ///        the short. This allows traders to protect themselves from opening
     ///        a short in a checkpoint where negative interest has accrued.
-    /// @param _options The options that configure how the Hyperdrive trade is
+    /// @param _hyperdriveOptions The options that configure how the Hyperdrive
+    ///        operation is settled.
+    /// @param _zapInOptions The options that configure how the zap will be
     ///        settled.
-    /// @param _swapParams The Uniswap swap parameters for a multi-hop fill.
     /// @return maturityTime The maturity time of the bonds.
     /// @return deposit The amount the user deposited for this trade. The units
     ///         of this quantity are either base or vault shares, depending on
@@ -212,8 +249,8 @@ interface IUniV3Zap {
         uint256 _bondAmount,
         uint256 _maxDeposit,
         uint256 _minVaultSharePrice,
-        IHyperdrive.Options calldata _options,
-        ISwapRouter.ExactInputParams calldata _swapParams
+        IHyperdrive.Options calldata _hyperdriveOptions,
+        IUniV3Zap.ZapInOptions calldata _zapInOptions
     ) external payable returns (uint256 maturityTime, uint256 deposit);
 
     /// @notice Closes a short on Hyperdrive and converts the proceeds to the
@@ -227,11 +264,8 @@ interface IUniV3Zap {
     /// @param _options The options that configure how the Hyperdrive trade is
     ///        settled.
     /// @param _swapParams The Uniswap swap parameters for a multi-hop fill.
-    /// @param _dustBuffer Some tokens (like stETH) have transfer methods that
-    ///        are imprecise. This may result in token transfers sending less
-    ///        funds than expected to Uniswap's swap router. To work around this
-    ///        issue, a dust buffer can be specified that will reduce the input
-    ///        amount of the swap to reduce the likelihood of failures.
+    /// @param _shouldWrap A flag indicating whether or not the proceeds need to
+    ///        be wrapped.
     /// @return proceeds The proceeds of closing the short. These proceeds will
     ///         be in units determined by the Uniswap swap parameters.
     function closeShortZap(
@@ -241,7 +275,7 @@ interface IUniV3Zap {
         uint256 _minOutput,
         IHyperdrive.Options calldata _options,
         ISwapRouter.ExactInputParams calldata _swapParams,
-        uint256 _dustBuffer
+        bool _shouldWrap
     ) external returns (uint256 proceeds);
 
     /// Getters ///

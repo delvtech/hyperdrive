@@ -6,11 +6,13 @@ import { IHyperdrive } from "../../../contracts/src/interfaces/IHyperdrive.sol";
 import { ISwapRouter } from "../../../contracts/src/interfaces/ISwapRouter.sol";
 import { IUniV3Zap } from "../../../contracts/src/interfaces/IUniV3Zap.sol";
 import { AssetId } from "../../../contracts/src/libraries/AssetId.sol";
+import { ETH } from "../../../contracts/src/libraries/Constants.sol";
 import { FixedPointMath } from "../../../contracts/src/libraries/FixedPointMath.sol";
 import { UniV3Path } from "../../../contracts/src/libraries/UniV3Path.sol";
 import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
 import { UniV3ZapTest } from "./UniV3Zap.t.sol";
 
+// FIXME: I need to add wrapping tests.
 contract OpenLongZapTest is UniV3ZapTest {
     using FixedPointMath for uint256;
     using HyperdriveUtils for IHyperdrive;
@@ -30,13 +32,18 @@ contract OpenLongZapTest is UniV3ZapTest {
                 asBase: true,
                 extraData: ""
             }),
-            false, // is rebasing
-            ISwapRouter.ExactInputParams({
-                path: abi.encodePacked(USDC, LOWEST_FEE_TIER, DAI),
-                recipient: bob,
-                deadline: block.timestamp + 1 minutes,
-                amountIn: 1_000e6,
-                amountOutMinimum: 999e18
+            IUniV3Zap.ZapInOptions({
+                swapParams: ISwapRouter.ExactInputParams({
+                    path: abi.encodePacked(USDC, LOWEST_FEE_TIER, DAI),
+                    recipient: bob,
+                    deadline: block.timestamp + 1 minutes,
+                    amountIn: 1_000e6,
+                    amountOutMinimum: 999e18
+                }),
+                sourceAsset: USDC,
+                sourceAmount: 1_000e6,
+                shouldWrap: false,
+                isRebasing: false
             })
         );
     }
@@ -56,19 +63,24 @@ contract OpenLongZapTest is UniV3ZapTest {
                 asBase: true,
                 extraData: ""
             }),
-            false, // is rebasing
-            ISwapRouter.ExactInputParams({
-                path: abi.encodePacked(
-                    USDC,
-                    LOW_FEE_TIER,
-                    WETH,
-                    LOW_FEE_TIER,
-                    SDAI
-                ),
-                recipient: address(zap),
-                deadline: block.timestamp + 1 minutes,
-                amountIn: 1_000e6,
-                amountOutMinimum: 850e18
+            IUniV3Zap.ZapInOptions({
+                swapParams: ISwapRouter.ExactInputParams({
+                    path: abi.encodePacked(
+                        USDC,
+                        LOW_FEE_TIER,
+                        WETH,
+                        LOW_FEE_TIER,
+                        SDAI
+                    ),
+                    recipient: address(zap),
+                    deadline: block.timestamp + 1 minutes,
+                    amountIn: 1_000e6,
+                    amountOutMinimum: 850e18
+                }),
+                sourceAsset: USDC,
+                sourceAmount: 1_000e6,
+                shouldWrap: false,
+                isRebasing: false
             })
         );
     }
@@ -88,13 +100,18 @@ contract OpenLongZapTest is UniV3ZapTest {
                 asBase: false,
                 extraData: ""
             }),
-            false, // is rebasing
-            ISwapRouter.ExactInputParams({
-                path: abi.encodePacked(USDC, LOWEST_FEE_TIER, DAI),
-                recipient: address(zap),
-                deadline: block.timestamp + 1 minutes,
-                amountIn: 1_000e6,
-                amountOutMinimum: 999e18
+            IUniV3Zap.ZapInOptions({
+                swapParams: ISwapRouter.ExactInputParams({
+                    path: abi.encodePacked(USDC, LOWEST_FEE_TIER, DAI),
+                    recipient: address(zap),
+                    deadline: block.timestamp + 1 minutes,
+                    amountIn: 1_000e6,
+                    amountOutMinimum: 999e18
+                }),
+                sourceAsset: USDC,
+                sourceAmount: 1_000e6,
+                shouldWrap: false,
+                isRebasing: false
             })
         );
     }
@@ -115,13 +132,18 @@ contract OpenLongZapTest is UniV3ZapTest {
                 asBase: true,
                 extraData: ""
             }),
-            false, // is rebasing
-            ISwapRouter.ExactInputParams({
-                path: abi.encodePacked(USDC, LOWEST_FEE_TIER, DAI),
-                recipient: address(zap),
-                deadline: block.timestamp + 1 minutes,
-                amountIn: 1_000e6,
-                amountOutMinimum: 999e18
+            IUniV3Zap.ZapInOptions({
+                swapParams: ISwapRouter.ExactInputParams({
+                    path: abi.encodePacked(USDC, LOWEST_FEE_TIER, DAI),
+                    recipient: address(zap),
+                    deadline: block.timestamp + 1 minutes,
+                    amountIn: 1_000e6,
+                    amountOutMinimum: 999e18
+                }),
+                sourceAsset: USDC,
+                sourceAmount: 1_000e6,
+                shouldWrap: false,
+                isRebasing: false
             })
         );
 
@@ -147,19 +169,24 @@ contract OpenLongZapTest is UniV3ZapTest {
                 asBase: false,
                 extraData: ""
             }),
-            false, // is rebasing
-            ISwapRouter.ExactInputParams({
-                path: abi.encodePacked(
-                    USDC,
-                    LOW_FEE_TIER,
-                    WETH,
-                    LOW_FEE_TIER,
-                    SDAI
-                ),
-                recipient: address(zap),
-                deadline: block.timestamp + 1 minutes,
-                amountIn: 1_000e6,
-                amountOutMinimum: 850e18
+            IUniV3Zap.ZapInOptions({
+                swapParams: ISwapRouter.ExactInputParams({
+                    path: abi.encodePacked(
+                        USDC,
+                        LOW_FEE_TIER,
+                        WETH,
+                        LOW_FEE_TIER,
+                        SDAI
+                    ),
+                    recipient: address(zap),
+                    deadline: block.timestamp + 1 minutes,
+                    amountIn: 1_000e6,
+                    amountOutMinimum: 850e18
+                }),
+                sourceAsset: USDC,
+                sourceAmount: 1_000e6,
+                shouldWrap: false,
+                isRebasing: false
             })
         );
 
@@ -176,15 +203,20 @@ contract OpenLongZapTest is UniV3ZapTest {
         // ETH (via WETH) to DAI is successful.
         _verifyOpenLongZap(
             SDAI_HYPERDRIVE,
-            ISwapRouter.ExactInputParams({
-                path: abi.encodePacked(WETH, LOW_FEE_TIER, DAI),
-                recipient: address(zap),
-                deadline: block.timestamp + 1 minutes,
-                amountIn: 0.3882e18,
-                amountOutMinimum: 999e18
+            IUniV3Zap.ZapInOptions({
+                swapParams: ISwapRouter.ExactInputParams({
+                    path: abi.encodePacked(WETH, LOW_FEE_TIER, DAI),
+                    recipient: address(zap),
+                    deadline: block.timestamp + 1 minutes,
+                    amountIn: 0.3882e18,
+                    amountOutMinimum: 999e18
+                }),
+                sourceAsset: WETH,
+                sourceAmount: 0.3882e18,
+                shouldWrap: false,
+                isRebasing: false
             }),
             0.1e18, // this should be refunded
-            false, // is rebasing
             true // as base
         );
     }
@@ -197,15 +229,20 @@ contract OpenLongZapTest is UniV3ZapTest {
         // ETH (via WETH) to sDAI is successful.
         _verifyOpenLongZap(
             SDAI_HYPERDRIVE,
-            ISwapRouter.ExactInputParams({
-                path: abi.encodePacked(WETH, LOW_FEE_TIER, SDAI),
-                recipient: address(zap),
-                deadline: block.timestamp + 1 minutes,
-                amountIn: 0.3882e18,
-                amountOutMinimum: 886e18
+            IUniV3Zap.ZapInOptions({
+                swapParams: ISwapRouter.ExactInputParams({
+                    path: abi.encodePacked(WETH, LOW_FEE_TIER, SDAI),
+                    recipient: address(zap),
+                    deadline: block.timestamp + 1 minutes,
+                    amountIn: 0.3882e18,
+                    amountOutMinimum: 886e18
+                }),
+                sourceAsset: WETH,
+                sourceAmount: 0.3882e18,
+                shouldWrap: false,
+                isRebasing: false
             }),
             0.1e18, // this should be refunded
-            false, // is rebasing
             false // as base
         );
     }
@@ -218,15 +255,20 @@ contract OpenLongZapTest is UniV3ZapTest {
         // ETH (via WETH) to DAI is successful.
         _verifyOpenLongZap(
             SDAI_HYPERDRIVE,
-            ISwapRouter.ExactInputParams({
-                path: abi.encodePacked(WETH, LOW_FEE_TIER, DAI),
-                recipient: address(zap),
-                deadline: block.timestamp + 1 minutes,
-                amountIn: 0.3882e18,
-                amountOutMinimum: 999e18
+            IUniV3Zap.ZapInOptions({
+                swapParams: ISwapRouter.ExactInputParams({
+                    path: abi.encodePacked(WETH, LOW_FEE_TIER, DAI),
+                    recipient: address(zap),
+                    deadline: block.timestamp + 1 minutes,
+                    amountIn: 0.3882e18,
+                    amountOutMinimum: 999e18
+                }),
+                sourceAsset: ETH,
+                sourceAmount: 0.3882e18,
+                shouldWrap: true,
+                isRebasing: false
             }),
             10e18, // most of this should be refunded
-            false, // is rebasing
             true // as base
         );
     }
@@ -239,15 +281,20 @@ contract OpenLongZapTest is UniV3ZapTest {
         // ETH (via WETH) to sDAI is successful.
         _verifyOpenLongZap(
             SDAI_HYPERDRIVE,
-            ISwapRouter.ExactInputParams({
-                path: abi.encodePacked(WETH, LOW_FEE_TIER, SDAI),
-                recipient: address(zap),
-                deadline: block.timestamp + 1 minutes,
-                amountIn: 0.3882e18,
-                amountOutMinimum: 886e18
+            IUniV3Zap.ZapInOptions({
+                swapParams: ISwapRouter.ExactInputParams({
+                    path: abi.encodePacked(WETH, LOW_FEE_TIER, SDAI),
+                    recipient: address(zap),
+                    deadline: block.timestamp + 1 minutes,
+                    amountIn: 0.3882e18,
+                    amountOutMinimum: 886e18
+                }),
+                sourceAsset: ETH,
+                sourceAmount: 0.3882e18,
+                shouldWrap: true,
+                isRebasing: false
             }),
             10e18, // most of this should be refunded
-            false, // is rebasing
             false // as base
         );
     }
@@ -259,15 +306,20 @@ contract OpenLongZapTest is UniV3ZapTest {
         // (and ultimately into ETH) is successful.
         _verifyOpenLongZap(
             STETH_HYPERDRIVE,
-            ISwapRouter.ExactInputParams({
-                path: abi.encodePacked(USDC, MEDIUM_FEE_TIER, WETH),
-                recipient: address(zap),
-                deadline: block.timestamp + 1 minutes,
-                amountIn: 1_000e6,
-                amountOutMinimum: 0.38e18
+            IUniV3Zap.ZapInOptions({
+                swapParams: ISwapRouter.ExactInputParams({
+                    path: abi.encodePacked(USDC, MEDIUM_FEE_TIER, WETH),
+                    recipient: address(zap),
+                    deadline: block.timestamp + 1 minutes,
+                    amountIn: 1_000e6,
+                    amountOutMinimum: 0.3869e18
+                }),
+                sourceAsset: USDC,
+                sourceAmount: 1_000e6,
+                shouldWrap: false,
+                isRebasing: true
             }),
             10e18, // this should be completely refunded
-            true, // is rebasing
             true // as base
         );
     }
@@ -279,21 +331,26 @@ contract OpenLongZapTest is UniV3ZapTest {
         // USDC to stETH is successful.
         _verifyOpenLongZap(
             STETH_HYPERDRIVE,
-            ISwapRouter.ExactInputParams({
-                path: abi.encodePacked(
-                    USDC,
-                    MEDIUM_FEE_TIER,
-                    WETH,
-                    HIGH_FEE_TIER,
-                    STETH
-                ),
-                recipient: address(zap),
-                deadline: block.timestamp + 1 minutes,
-                amountIn: 1_000e6,
-                amountOutMinimum: 0.38e18
+            IUniV3Zap.ZapInOptions({
+                swapParams: ISwapRouter.ExactInputParams({
+                    path: abi.encodePacked(
+                        USDC,
+                        MEDIUM_FEE_TIER,
+                        WETH,
+                        HIGH_FEE_TIER,
+                        STETH
+                    ),
+                    recipient: address(zap),
+                    deadline: block.timestamp + 1 minutes,
+                    amountIn: 1_000e6,
+                    amountOutMinimum: 0.383997e18
+                }),
+                sourceAsset: USDC,
+                sourceAmount: 1_000e6,
+                shouldWrap: false,
+                isRebasing: true
             }),
             0,
-            true, // is rebasing
             false // as base
         );
     }
@@ -305,15 +362,20 @@ contract OpenLongZapTest is UniV3ZapTest {
         // is successful.
         _verifyOpenLongZap(
             SDAI_HYPERDRIVE,
-            ISwapRouter.ExactInputParams({
-                path: abi.encodePacked(USDC, LOWEST_FEE_TIER, DAI),
-                recipient: address(zap),
-                deadline: block.timestamp + 1 minutes,
-                amountIn: 1_000e6,
-                amountOutMinimum: 999e18
+            IUniV3Zap.ZapInOptions({
+                swapParams: ISwapRouter.ExactInputParams({
+                    path: abi.encodePacked(USDC, LOWEST_FEE_TIER, DAI),
+                    recipient: address(zap),
+                    deadline: block.timestamp + 1 minutes,
+                    amountIn: 1_000e6,
+                    amountOutMinimum: 999e18
+                }),
+                sourceAsset: USDC,
+                sourceAmount: 1_000e6,
+                shouldWrap: false,
+                isRebasing: false
             }),
             0,
-            false, // is rebasing
             true // as base
         );
     }
@@ -325,21 +387,26 @@ contract OpenLongZapTest is UniV3ZapTest {
         // USDC to sDAI is successful.
         _verifyOpenLongZap(
             SDAI_HYPERDRIVE,
-            ISwapRouter.ExactInputParams({
-                path: abi.encodePacked(
-                    USDC,
-                    LOW_FEE_TIER,
-                    WETH,
-                    LOW_FEE_TIER,
-                    SDAI
-                ),
-                recipient: address(zap),
-                deadline: block.timestamp + 1 minutes,
-                amountIn: 1_000e6,
-                amountOutMinimum: 885e18
+            IUniV3Zap.ZapInOptions({
+                swapParams: ISwapRouter.ExactInputParams({
+                    path: abi.encodePacked(
+                        USDC,
+                        LOW_FEE_TIER,
+                        WETH,
+                        LOW_FEE_TIER,
+                        SDAI
+                    ),
+                    recipient: address(zap),
+                    deadline: block.timestamp + 1 minutes,
+                    amountIn: 1_000e6,
+                    amountOutMinimum: 885e18
+                }),
+                sourceAsset: USDC,
+                sourceAmount: 1_000e6,
+                shouldWrap: false,
+                isRebasing: false
             }),
             10e18, // this should be completely refunded
-            false, // is rebasing
             false // as base
         );
     }
@@ -347,29 +414,25 @@ contract OpenLongZapTest is UniV3ZapTest {
     /// @dev Verify that `openLongZap` performs correctly under the
     ///      specified conditions.
     /// @param _hyperdrive The Hyperdrive instance.
-    /// @param _swapParams The Uniswap multi-hop swap parameters.
+    /// @param _zapInOptions The options for the zap.
     /// @param _value The ETH value to send in the transaction.
-    /// @param _isRebasing A flag indicating whether or not the yield source is
-    ///        rebasing.
     /// @param _asBase A flag indicating whether or not the deposit should be in
     ///        base.
     function _verifyOpenLongZap(
         IHyperdrive _hyperdrive,
-        ISwapRouter.ExactInputParams memory _swapParams,
+        IUniV3Zap.ZapInOptions memory _zapInOptions,
         uint256 _value,
-        bool _isRebasing,
         bool _asBase
     ) internal {
         // Gets some data about the trader and the pool before the zap.
-        bool isETHInput = _swapParams.path.tokenIn() == WETH &&
-            _value > _swapParams.amountIn;
+        bool isETHInput = _zapInOptions.swapParams.path.tokenIn() == WETH &&
+            _value > _zapInOptions.swapParams.amountIn;
         uint256 aliceBalanceBefore;
         if (isETHInput) {
             aliceBalanceBefore = alice.balance;
         } else {
-            aliceBalanceBefore = IERC20(_swapParams.path.tokenIn()).balanceOf(
-                alice
-            );
+            aliceBalanceBefore = IERC20(_zapInOptions.swapParams.path.tokenIn())
+                .balanceOf(alice);
         }
         uint256 hyperdriveVaultSharesBalanceBefore = IERC20(
             _hyperdrive.vaultSharesToken()
@@ -388,9 +451,8 @@ contract OpenLongZapTest is UniV3ZapTest {
 
         // Zap into `openLong`.
         uint256 value = _value; // avoid stack-too-deep
-        ISwapRouter.ExactInputParams memory swapParams = _swapParams; // avoid stack-too-deep
+        IUniV3Zap.ZapInOptions memory zapInOptions = _zapInOptions; // avoid stack-too-deep
         IHyperdrive hyperdrive = _hyperdrive; // avoid stack-too-deep
-        bool isRebasing = _isRebasing; // avoid stack-too-deep
         bool asBase = _asBase; // avoid stack-too-deep
         (uint256 maturityTime, uint256 longAmount) = zap.openLongZap{
             value: value
@@ -403,8 +465,7 @@ contract OpenLongZapTest is UniV3ZapTest {
                 asBase: asBase,
                 extraData: ""
             }),
-            isRebasing, // is rebasing
-            swapParams
+            zapInOptions
         );
 
         // Ensure that the maturity time is the latest checkpoint.
@@ -416,11 +477,14 @@ contract OpenLongZapTest is UniV3ZapTest {
 
         // Ensure that Alice was charged the correct amount of the input token.
         if (isETHInput) {
-            assertEq(alice.balance, aliceBalanceBefore - swapParams.amountIn);
+            assertEq(
+                alice.balance,
+                aliceBalanceBefore - zapInOptions.swapParams.amountIn
+            );
         } else {
             assertEq(
-                IERC20(swapParams.path.tokenIn()).balanceOf(alice),
-                aliceBalanceBefore - swapParams.amountIn
+                IERC20(zapInOptions.swapParams.path.tokenIn()).balanceOf(alice),
+                aliceBalanceBefore - zapInOptions.swapParams.amountIn
             );
         }
 
@@ -429,38 +493,67 @@ contract OpenLongZapTest is UniV3ZapTest {
         uint256 hyperdriveVaultSharesBalanceAfter = IERC20(
             hyperdrive.vaultSharesToken()
         ).balanceOf(address(hyperdrive));
-        if (isRebasing) {
+        if (zapInOptions.isRebasing) {
             // NOTE: Since the vault shares rebase, the units are in base.
             assertGt(
                 hyperdriveVaultSharesBalanceAfter,
-                hyperdriveVaultSharesBalanceBefore + swapParams.amountOutMinimum
+                hyperdriveVaultSharesBalanceBefore +
+                    zapInOptions.swapParams.amountOutMinimum
             );
         } else if (asBase) {
             // NOTE: Since the vault shares don't rebase, the units are in shares.
             assertGt(
                 hyperdriveVaultSharesBalanceAfter,
                 hyperdriveVaultSharesBalanceBefore +
-                    _convertToShares(hyperdrive, swapParams.amountOutMinimum)
+                    _convertToShares(
+                        hyperdrive,
+                        zapInOptions.swapParams.amountOutMinimum
+                    )
             );
         } else {
             // NOTE: Since the vault shares don't rebase, the units are in shares.
             assertGt(
                 hyperdriveVaultSharesBalanceAfter,
-                hyperdriveVaultSharesBalanceBefore + swapParams.amountOutMinimum
+                hyperdriveVaultSharesBalanceBefore +
+                    zapInOptions.swapParams.amountOutMinimum
             );
         }
 
         // Ensure that Alice received an appropriate amount of LP shares and
         // that the LP total supply increased.
-        if (!asBase && !isRebasing) {
-            // Ensure that the realized price is higher than the spot price
-            // before.
-            assertGt(
-                _convertToBase(hyperdrive, swapParams.amountOutMinimum).divDown(
-                    longAmount
-                ),
-                spotPriceBefore
-            );
+        if (_zapInOptions.isRebasing) {
+            if (_asBase) {
+                assertGt(
+                    zapInOptions.swapParams.amountOutMinimum.divDown(
+                        longAmount
+                    ),
+                    spotPriceBefore
+                );
+            } else {
+                assertGt(
+                    zapInOptions.swapParams.amountOutMinimum.divDown(
+                        longAmount
+                    ),
+                    spotPriceBefore
+                );
+            }
+        } else {
+            if (_asBase) {
+                assertGt(
+                    zapInOptions.swapParams.amountOutMinimum.divDown(
+                        longAmount
+                    ),
+                    spotPriceBefore
+                );
+            } else {
+                assertGt(
+                    _convertToBase(
+                        hyperdrive,
+                        zapInOptions.swapParams.amountOutMinimum
+                    ).divDown(longAmount),
+                    spotPriceBefore
+                );
+            }
         }
         assertEq(
             hyperdrive.balanceOf(

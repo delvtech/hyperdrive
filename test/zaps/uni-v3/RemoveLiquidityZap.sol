@@ -115,7 +115,7 @@ contract RemoveLiquidityZapTest is UniV3ZapTest {
                 amountIn: 1_000e18,
                 amountOutMinimum: 999e6
             }),
-            0 // dust buffer
+            false // should wrap
         );
     }
 
@@ -141,7 +141,7 @@ contract RemoveLiquidityZapTest is UniV3ZapTest {
                 amountIn: 1_000e6,
                 amountOutMinimum: 999e18
             }),
-            0 // dust buffer
+            false // should wrap
         );
     }
 
@@ -167,7 +167,7 @@ contract RemoveLiquidityZapTest is UniV3ZapTest {
                 amountIn: 1_000e18,
                 amountOutMinimum: 999e6
             }),
-            0 // dust buffer
+            false // should wrap
         );
     }
 
@@ -188,7 +188,7 @@ contract RemoveLiquidityZapTest is UniV3ZapTest {
                 amountIn: 0.3882e18,
                 amountOutMinimum: 999e18
             }),
-            0, // dust buffer
+            false, // should wrap
             true // as base
         );
     }
@@ -211,7 +211,7 @@ contract RemoveLiquidityZapTest is UniV3ZapTest {
                 amountIn: 0.3882e18,
                 amountOutMinimum: 999e18
             }),
-            0, // dust buffer
+            true, // should wrap
             true // as base
         );
     }
@@ -225,20 +225,20 @@ contract RemoveLiquidityZapTest is UniV3ZapTest {
             lpSharesStETH, // lp shares
             ISwapRouter.ExactInputParams({
                 path: abi.encodePacked(
-                    STETH,
-                    HIGH_FEE_TIER,
+                    WSTETH,
+                    LOWEST_FEE_TIER,
                     WETH,
-                    MEDIUM_FEE_TIER,
+                    LOW_FEE_TIER,
                     USDC
                 ),
                 recipient: alice,
                 deadline: block.timestamp + 1 minutes,
                 // NOTE: The amount in is smaller than the proceeds will be.
                 // This will automatically be adjusted up.
-                amountIn: 0.3882e18,
+                amountIn: 0.32796e18,
                 amountOutMinimum: 950e6
             }),
-            100, // dust buffer
+            true, // should wrap
             false // as base
         );
     }
@@ -259,7 +259,7 @@ contract RemoveLiquidityZapTest is UniV3ZapTest {
                 amountIn: 1_000e18,
                 amountOutMinimum: 0.38e18
             }),
-            0, // dust buffer
+            false, // should wrap
             true // as base
         );
     }
@@ -286,7 +286,7 @@ contract RemoveLiquidityZapTest is UniV3ZapTest {
                 amountIn: 885e18,
                 amountOutMinimum: 900e6
             }),
-            0, // dust buffer
+            false, // should wrap
             false // as base
         );
     }
@@ -296,18 +296,15 @@ contract RemoveLiquidityZapTest is UniV3ZapTest {
     /// @param _hyperdrive The Hyperdrive instance.
     /// @param _lpShares The amount of LP shares to remove.
     /// @param _swapParams The Uniswap multi-hop swap parameters.
-    /// @param _dustBuffer Some tokens (like stETH) have transfer methods that
-    ///        are imprecise. This may result in token transfers sending less
-    ///        funds than expected to Uniswap's swap router. To work around this
-    ///        issue, a dust buffer can be specified that will reduce the input
-    ///        amount of the swap to reduce the likelihood of failures.
+    /// @param _shouldWrap A flag indicating whether or not the proceeds should
+    ///        be wrapped before the swap.
     /// @param _asBase A flag indicating whether or not the deposit should be in
     ///        base.
     function _verifyRemoveLiquidityZap(
         IHyperdrive _hyperdrive,
         uint256 _lpShares,
         ISwapRouter.ExactInputParams memory _swapParams,
-        uint256 _dustBuffer,
+        bool _shouldWrap,
         bool _asBase
     ) internal {
         // Simulate closing the position without using the zap.
@@ -352,7 +349,7 @@ contract RemoveLiquidityZapTest is UniV3ZapTest {
         IHyperdrive hyperdrive = _hyperdrive; // avoid stack-too-deep
         uint256 lpShares = _lpShares; // avoid stack-too-deep
         ISwapRouter.ExactInputParams memory swapParams = _swapParams; // avoid stack-too-deep
-        uint256 dustBuffer = _dustBuffer; // avoid stack-too-deep
+        bool shouldWrap = _shouldWrap; // avoid stack-too-deep
         bool asBase = _asBase; // avoid stack-too-deep
         (uint256 proceeds, uint256 withdrawalShares) = zap.removeLiquidityZap(
             hyperdrive,
@@ -364,7 +361,7 @@ contract RemoveLiquidityZapTest is UniV3ZapTest {
                 extraData: ""
             }),
             swapParams,
-            dustBuffer
+            shouldWrap
         );
 
         // Ensure that Alice received the expected proceeds.

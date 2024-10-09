@@ -70,6 +70,10 @@ contract UniV3ZapTest is HyperdriveTest {
     address internal constant STETH =
         0xae7ab96520DE3A18E5e111B5EaAb095312D7fE84;
 
+    /// @dev The wstETH token address.
+    address internal constant WSTETH =
+        0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
+
     /// @dev The USDC whale address
     address internal constant USDC_WHALE =
         0x37305B1cD40574E4C5Ce33f8e8306Be057fD7341;
