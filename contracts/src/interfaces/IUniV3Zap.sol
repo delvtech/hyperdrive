@@ -78,8 +78,6 @@ interface IUniV3Zap {
         bool isRebasing;
     }
 
-    // FIXME: Add ZapOutOptions
-
     /// Metadata ///
 
     /// @notice Returns the name of this zap.
