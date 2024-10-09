@@ -7,8 +7,6 @@ import { ISwapRouter } from "../interfaces/ISwapRouter.sol";
 /// @author DELV
 /// @notice This is a library for interacting with Uniswap's multi-hop paths.
 library UniV3Path {
-    // FIXME: Test this.
-    //
     /// @dev Returns the input token of a Uniswap swap.
     /// @param _path The Uniswap path for a multi-hop fill.
     /// @return tokenIn_ The input token of a Uniswap swap.
@@ -26,8 +24,6 @@ library UniV3Path {
         return tokenIn_;
     }
 
-    // FIXME: Test this.
-    //
     /// @dev Returns the output token of a Uniswap swap.
     /// @param _path The Uniswap path for a multi-hop fill.
     /// @return tokenOut_ The output token of a Uniswap swap.
