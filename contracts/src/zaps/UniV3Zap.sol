@@ -562,9 +562,17 @@ contract UniV3Zap is IUniV3Zap, ReentrancyGuard {
             revert InvalidRecipient();
         }
 
+        // Ensure that the input and output tokens of the swap are different.
+        // If they are the same, this will fail at best or lead to an
+        // unnecessary swap at worst.
+        address tokenIn = _zapInOptions.swapParams.path.tokenIn();
+        address tokenOut = _zapInOptions.swapParams.path.tokenOut();
+        if (tokenIn == tokenOut) {
+            revert InvalidSwap();
+        }
+
         // Ensure that the options are properly configured if we are wrapping
         // tokens.
-        address tokenIn = _zapInOptions.swapParams.path.tokenIn();
         if (_zapInOptions.shouldWrap) {
             // Ensure that the source asset isn't the same as the input asset.
             if (_zapInOptions.sourceAsset == tokenIn) {
@@ -608,7 +616,6 @@ contract UniV3Zap is IUniV3Zap, ReentrancyGuard {
         // If we're depositing with base, the output token is WETH, and the base
         // token is ETH, we need to convert the WETH proceeds of the zap to ETH
         // before executing the Hyperdrive trade.
-        address tokenOut = _zapInOptions.swapParams.path.tokenOut();
         address baseToken = _hyperdrive.baseToken();
         if (
             _hyperdriveOptions.asBase &&
@@ -656,6 +663,15 @@ contract UniV3Zap is IUniV3Zap, ReentrancyGuard {
             revert InvalidRecipient();
         }
 
+        // Ensure that the input and output tokens of the swap are different.
+        // If they are the same, this will fail at best or lead to an
+        // unnecessary swap at worst.
+        address tokenIn = _swapParams.path.tokenIn();
+        address tokenOut = _swapParams.path.tokenOut();
+        if (tokenIn == tokenOut) {
+            revert InvalidSwap();
+        }
+
         // If the withdrawal is in base, the proceeds are in the base token.
         // Otherwise, they are in the vault shares token.
         address proceedsAsset;
@@ -666,7 +682,6 @@ contract UniV3Zap is IUniV3Zap, ReentrancyGuard {
         }
 
         // Validate the zap if the proceeds are in ETH.
-        address tokenIn = _swapParams.path.tokenIn();
         if (proceedsAsset == ETH) {
             // Ensure that we are wrapping the proceeds.
             if (!_shouldWrap) {

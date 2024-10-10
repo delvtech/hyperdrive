@@ -169,6 +169,31 @@ contract RedeemWithdrawalSharesZapTest is UniV3ZapTest {
         );
     }
 
+    /// @notice Ensure that zapping out of `redeemWithdrawalShares` will fail
+    ///         when the recipient of `redeemWithdrawalShares` isn't the zap
+    ///         contract.
+    function test_redeemWithdrawalSharesZap_failure_invalidSwap() external {
+        vm.expectRevert(IUniV3Zap.InvalidSwap.selector);
+        zap.redeemWithdrawalSharesZap(
+            SDAI_HYPERDRIVE,
+            withdrawalSharesSDAI, // lp shares
+            0, // minimum output per share
+            IHyperdrive.Options({
+                destination: address(zap),
+                asBase: true,
+                extraData: ""
+            }),
+            ISwapRouter.ExactInputParams({
+                path: abi.encodePacked(DAI, LOWEST_FEE_TIER, DAI),
+                recipient: bob,
+                deadline: block.timestamp + 1 minutes,
+                amountIn: 1_000e18,
+                amountOutMinimum: 999e18
+            }),
+            false // should wrap
+        );
+    }
+
     /// @notice Ensure that zapping out of `redeemWithdrawalShares` with base will fail
     ///         when the input isn't the base token.
     function test_redeemWithdrawalSharesZap_failure_invalidInputToken_asBase()

@@ -167,6 +167,31 @@ contract CloseShortZapTest is UniV3ZapTest {
         );
     }
 
+    /// @notice Ensure that zapping out of `closeShort` will fail when the
+    ///         recipient of `closeShort` isn't the zap contract.
+    function test_closeShortZap_failure_invalidSwap() external {
+        vm.expectRevert(IUniV3Zap.InvalidSwap.selector);
+        zap.closeShortZap(
+            SDAI_HYPERDRIVE,
+            maturityTimeSDAI, // maturity time
+            shortAmountSDAI, // long amount
+            0, // min output
+            IHyperdrive.Options({
+                destination: address(zap),
+                asBase: true,
+                extraData: ""
+            }),
+            ISwapRouter.ExactInputParams({
+                path: abi.encodePacked(DAI, LOWEST_FEE_TIER, DAI),
+                recipient: bob,
+                deadline: block.timestamp + 1 minutes,
+                amountIn: 1_000e18,
+                amountOutMinimum: 999e18
+            }),
+            false // should wrap
+        );
+    }
+
     /// @notice Ensure that zapping out of `closeShort` with base will fail
     ///         when the input isn't the base token.
     function test_closeShortZap_failure_invalidInputToken_asBase() external {
@@ -314,7 +339,7 @@ contract CloseShortZapTest is UniV3ZapTest {
         );
     }
 
-    /// @notice Ensure that zapping out of `removeLiquidity` with vault shares
+    /// @notice Ensure that zapping out of `closeShort` with vault shares
     ///         will succeed when the yield source is non-rebasing and when the
     ///         input is the vault shares token.
     function test_closeShortZap_success_nonRebasing_asShares() external {

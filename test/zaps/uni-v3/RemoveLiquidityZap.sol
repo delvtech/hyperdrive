@@ -119,6 +119,30 @@ contract RemoveLiquidityZapTest is UniV3ZapTest {
         );
     }
 
+    /// @notice Ensure that zapping out of `removeLiquidity` will fail when the
+    ///         recipient of `removeLiquidity` isn't the zap contract.
+    function test_removeLiquidityZap_failure_invalidSwap() external {
+        vm.expectRevert(IUniV3Zap.InvalidSwap.selector);
+        zap.removeLiquidityZap(
+            SDAI_HYPERDRIVE,
+            lpSharesSDAI, // lp shares
+            0, // minimum output per share
+            IHyperdrive.Options({
+                destination: address(zap),
+                asBase: true,
+                extraData: ""
+            }),
+            ISwapRouter.ExactInputParams({
+                path: abi.encodePacked(DAI, LOWEST_FEE_TIER, DAI),
+                recipient: bob,
+                deadline: block.timestamp + 1 minutes,
+                amountIn: 1_000e18,
+                amountOutMinimum: 999e18
+            }),
+            false // should wrap
+        );
+    }
+
     /// @notice Ensure that zapping out of `removeLiquidity` with base will fail
     ///         when the input isn't the base token.
     function test_removeLiquidityZap_failure_invalidInputToken_asBase()

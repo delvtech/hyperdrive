@@ -162,6 +162,31 @@ contract CloseLongZapTest is UniV3ZapTest {
         );
     }
 
+    /// @notice Ensure that zapping out of `closeLong` will fail when the
+    ///         recipient of `closeLong` isn't the zap contract.
+    function test_closeLongZap_failure_invalidSwap() external {
+        vm.expectRevert(IUniV3Zap.InvalidSwap.selector);
+        zap.closeLongZap(
+            SDAI_HYPERDRIVE,
+            maturityTimeSDAI, // maturity time
+            longAmountSDAI, // long amount
+            0, // min output
+            IHyperdrive.Options({
+                destination: address(zap),
+                asBase: true,
+                extraData: ""
+            }),
+            ISwapRouter.ExactInputParams({
+                path: abi.encodePacked(DAI, LOWEST_FEE_TIER, DAI),
+                recipient: bob,
+                deadline: block.timestamp + 1 minutes,
+                amountIn: 1_000e18,
+                amountOutMinimum: 999e18
+            }),
+            false // should wrap
+        );
+    }
+
     /// @notice Ensure that zapping out of `closeLong` with base will fail
     ///         when the input isn't the base token.
     function test_closeLongZap_failure_invalidInputToken_asBase() external {

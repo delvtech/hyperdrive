@@ -20,7 +20,6 @@ contract OpenShortZapTest is UniV3ZapTest {
     /// @notice Ensure that zapping into `openShort` will fail when the
     ///         recipient isn't the zap contract.
     function test_openShortZap_failure_invalidRecipient() external {
-        // Ensure that the zap fails when the recipient isn't Hyperdrive.
         vm.expectRevert(IUniV3Zap.InvalidRecipient.selector);
         zap.openShortZap(
             SDAI_HYPERDRIVE,
@@ -48,11 +47,39 @@ contract OpenShortZapTest is UniV3ZapTest {
         );
     }
 
+    /// @notice Ensure that zapping into `openShort` will fail when the
+    ///         input and output tokens are the same.
+    function test_openShortZap_failure_invalidSwap() external {
+        vm.expectRevert(IUniV3Zap.InvalidSwap.selector);
+        zap.openShortZap(
+            SDAI_HYPERDRIVE,
+            3_000e18, // bond amount
+            type(uint256).max, // maximum deposit
+            0, // minimum vault share price
+            IHyperdrive.Options({
+                destination: alice,
+                asBase: true,
+                extraData: ""
+            }),
+            IUniV3Zap.ZapInOptions({
+                swapParams: ISwapRouter.ExactInputParams({
+                    path: abi.encodePacked(DAI, LOWEST_FEE_TIER, DAI),
+                    recipient: address(zap),
+                    deadline: block.timestamp + 1 minutes,
+                    amountIn: 1_000e18,
+                    amountOutMinimum: 999e18
+                }),
+                sourceAsset: DAI,
+                sourceAmount: 1_000e18,
+                shouldWrap: false,
+                isRebasing: false
+            })
+        );
+    }
+
     /// @notice Ensure that zapping into `openShort` with base will fail when
     ///         the output isn't the base token.
     function test_openShortZap_failure_invalidOutputToken_asBase() external {
-        // Ensure that the zap fails when `asBase` is true and the output token
-        // isn't the base token.
         vm.expectRevert(IUniV3Zap.InvalidOutputToken.selector);
         zap.openShortZap(
             SDAI_HYPERDRIVE,
@@ -89,8 +116,6 @@ contract OpenShortZapTest is UniV3ZapTest {
     /// @notice Ensure that zapping into `openShort` with vault shares will
     ///         fail when the output isn't the vault shares token.
     function test_openShortZap_failure_invalidOutputToken_asShares() external {
-        // Ensure that the zap fails when `asBase` is false and the output token
-        // isn't the vault shares token.
         vm.expectRevert(IUniV3Zap.InvalidOutputToken.selector);
         zap.openShortZap(
             SDAI_HYPERDRIVE,
@@ -307,7 +332,7 @@ contract OpenShortZapTest is UniV3ZapTest {
         );
     }
 
-    /// @notice Ensure that zapping into `openLong` with base succeeds with
+    /// @notice Ensure that zapping into `openShort` with base succeeds with
     ///         a rebasing yield source.
     function test_openShortZap_success_rebasing_asBase() external {
         // Ensure that adding liquidity with base using a zap from USDC to WETH
@@ -333,7 +358,7 @@ contract OpenShortZapTest is UniV3ZapTest {
         );
     }
 
-    /// @notice Ensure that zapping into `openLong` with vault shares
+    /// @notice Ensure that zapping into `openShort` with vault shares
     ///         succeeds with a rebasing yield source.
     function test_openShortZap_success_rebasing_asShares() external {
         // Ensure that adding liquidity with vault shares using a zap from
@@ -365,7 +390,7 @@ contract OpenShortZapTest is UniV3ZapTest {
         );
     }
 
-    /// @notice Ensure that zapping into `openLong` with base succeeds with
+    /// @notice Ensure that zapping into `openShort` with base succeeds with
     ///         a non-rebasing yield source.
     function test_openShortZap_success_nonRebasing_asBase() external {
         // Ensure that adding liquidity with base using a zap from USDC to DAI
@@ -391,7 +416,7 @@ contract OpenShortZapTest is UniV3ZapTest {
         );
     }
 
-    /// @notice Ensure that zapping into `openLong` with vault shares
+    /// @notice Ensure that zapping into `openShort` with vault shares
     ///         succeeds with a non-rebasing yield source.
     function test_openShortZap_success_nonRebasing_asShares() external {
         // Ensure that adding liquidity with vault shares using a zap from

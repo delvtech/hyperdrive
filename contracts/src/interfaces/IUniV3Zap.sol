@@ -33,6 +33,11 @@ interface IUniV3Zap {
     ///         be the same.
     error InvalidSourceAsset();
 
+    /// @notice Thrown when attempting to zap from an asset to itself. This
+    ///         protects users from swaps that could only lead them to incur
+    ///         losses through fees and slippage.
+    error InvalidSwap();
+
     /// @notice Thrown when receiving ether outside of an zap.
     error InvalidTransfer();
 

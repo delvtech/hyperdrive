@@ -20,7 +20,6 @@ contract AddLiquidityZapTest is UniV3ZapTest {
     /// @notice Ensure that zapping into `addLiquidity` will fail when the
     ///         recipient isn't the zap contract.
     function test_addLiquidityZap_failure_invalidRecipient() external {
-        // Ensure that the zap fails when the recipient isn't Hyperdrive.
         vm.expectRevert(IUniV3Zap.InvalidRecipient.selector);
         zap.addLiquidityZap(
             SDAI_HYPERDRIVE,
@@ -41,7 +40,37 @@ contract AddLiquidityZapTest is UniV3ZapTest {
                     amountOutMinimum: 999e18
                 }),
                 sourceAsset: USDC,
-                sourceAmount: 1_0006,
+                sourceAmount: 1_000e6,
+                shouldWrap: false,
+                isRebasing: false
+            })
+        );
+    }
+
+    /// @notice Ensure that zapping into `addLiquidity` will fail when the
+    ///         input and output tokens are the same.
+    function test_addLiquidityZap_failure_invalidSwap() external {
+        vm.expectRevert(IUniV3Zap.InvalidSwap.selector);
+        zap.addLiquidityZap(
+            SDAI_HYPERDRIVE,
+            0, // minimum LP share price
+            0, // minimum APR
+            type(uint256).max, // maximum APR
+            IHyperdrive.Options({
+                destination: alice,
+                asBase: true,
+                extraData: ""
+            }),
+            IUniV3Zap.ZapInOptions({
+                swapParams: ISwapRouter.ExactInputParams({
+                    path: abi.encodePacked(DAI, LOWEST_FEE_TIER, DAI),
+                    recipient: address(zap),
+                    deadline: block.timestamp + 1 minutes,
+                    amountIn: 1_000e18,
+                    amountOutMinimum: 999e18
+                }),
+                sourceAsset: DAI,
+                sourceAmount: 1_000e18,
                 shouldWrap: false,
                 isRebasing: false
             })
@@ -51,8 +80,6 @@ contract AddLiquidityZapTest is UniV3ZapTest {
     /// @notice Ensure that zapping into `addLiquidity` with base will fail when
     ///         the output isn't the base token.
     function test_addLiquidityZap_failure_invalidOutputToken_asBase() external {
-        // Ensure that the zap fails when `asBase` is true and the output token
-        // isn't the base token.
         vm.expectRevert(IUniV3Zap.InvalidOutputToken.selector);
         zap.addLiquidityZap(
             SDAI_HYPERDRIVE,
@@ -91,8 +118,6 @@ contract AddLiquidityZapTest is UniV3ZapTest {
     function test_addLiquidityZap_failure_invalidOutputToken_asShares()
         external
     {
-        // Ensure that the zap fails when `asBase` is false and the output token
-        // isn't the vault shares token.
         vm.expectRevert(IUniV3Zap.InvalidOutputToken.selector);
         zap.addLiquidityZap(
             SDAI_HYPERDRIVE,

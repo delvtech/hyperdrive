@@ -47,6 +47,35 @@ contract OpenLongZapTest is UniV3ZapTest {
         );
     }
 
+    /// @notice Ensure that zapping into `openLong` will fail when the
+    ///         input and output tokens are the same.
+    function test_openLongZap_failure_invalidSwap() external {
+        vm.expectRevert(IUniV3Zap.InvalidSwap.selector);
+        zap.openLongZap(
+            SDAI_HYPERDRIVE,
+            0, // minimum output
+            0, // minimum vault share price
+            IHyperdrive.Options({
+                destination: alice,
+                asBase: true,
+                extraData: ""
+            }),
+            IUniV3Zap.ZapInOptions({
+                swapParams: ISwapRouter.ExactInputParams({
+                    path: abi.encodePacked(DAI, LOWEST_FEE_TIER, DAI),
+                    recipient: address(zap),
+                    deadline: block.timestamp + 1 minutes,
+                    amountIn: 1_000e18,
+                    amountOutMinimum: 999e18
+                }),
+                sourceAsset: DAI,
+                sourceAmount: 1_000e18,
+                shouldWrap: false,
+                isRebasing: false
+            })
+        );
+    }
+
     /// @notice Ensure that zapping into `openLong` with base will fail when
     ///         the output isn't the base token.
     function test_openLongZap_failure_invalidOutputToken_asBase() external {
