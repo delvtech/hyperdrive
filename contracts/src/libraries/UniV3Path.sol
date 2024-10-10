@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.20;
 
-import { ISwapRouter } from "../interfaces/ISwapRouter.sol";
-
 /// @title Path
 /// @author DELV
 /// @notice This is a library for interacting with Uniswap's multi-hop paths.
