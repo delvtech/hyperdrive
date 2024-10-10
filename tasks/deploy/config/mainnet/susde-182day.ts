@@ -31,8 +31,8 @@ export const MAINNET_SUSDE_182DAY: HyperdriveInstanceConfig<"ERC4626"> = {
     salt: toBytes32("0x69420"),
     extraData: "0x",
     contribution: CONTRIBUTION,
-    // The current Pendle fixed rate is 12.56%
-    fixedAPR: parseEther("0.1256"),
+    // The current Pendle fixed rate is 12.56%, but the max fixed rate is 10%.
+    fixedAPR: parseEther("0.1"),
     timestretchAPR: parseEther("0.1"),
     options: async (hre) => ({
         extraData: "0x",
