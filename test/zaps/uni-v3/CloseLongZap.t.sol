@@ -334,7 +334,7 @@ contract CloseLongZapTest is UniV3ZapTest {
         );
     }
 
-    /// @notice Ensure that zapping out of `removeLiquidity` with vault shares
+    /// @notice Ensure that zapping out of `closeLong` with vault shares
     ///         will succeed when the yield source is non-rebasing and when the
     ///         input is the vault shares token.
     function test_closeLongZap_success_nonRebasing_asShares() external {
