@@ -5,7 +5,7 @@ pragma solidity ^0.8.20;
 address constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
 /// @dev The version of the contracts.
-string constant VERSION = "v1.0.19";
+string constant VERSION = "v1.0.20";
 
 /// @dev The number of targets that must be deployed for a full deployment.
 uint256 constant NUM_TARGETS = 5;
@@ -111,3 +111,6 @@ string constant STAKING_USDS_HYPERDRIVE_KIND = "StakingUSDSHyperdrive";
 
 /// @dev The kind of StkWellSHyperdrive.
 string constant STK_WELL_HYPERDRIVE_KIND = "StkWellHyperdrive";
+
+/// @dev The kind of UniV3Zap.
+string constant UNI_V3_ZAP_KIND = "UniV3Zap";
