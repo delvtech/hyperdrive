@@ -7,9 +7,6 @@ import { HardhatUserConfig } from "hardhat/config";
 import baseConfig from "./hardhat.config";
 import "./tasks";
 import {
-    MAINNET_CORN_COORDINATOR,
-    MAINNET_CORN_LBTC_91DAY,
-    MAINNET_CORN_SDAI_91DAY,
     MAINNET_ERC4626_COORDINATOR,
     MAINNET_EZETH_182DAY,
     MAINNET_EZETH_COORDINATOR,
@@ -20,9 +17,8 @@ import {
     MAINNET_MORPHO_BLUE_WSTETH_USDA_182DAY,
     MAINNET_RETH_182DAY,
     MAINNET_RETH_COORDINATOR,
-    MAINNET_STAKING_USDS_COORDINATOR,
-    MAINNET_STAKING_USDS_SKY_182DAY,
     MAINNET_STUSD_182DAY,
+    MAINNET_SUSDE_182DAY,
 } from "./tasks/deploy/config/mainnet";
 
 const { env } = process;
@@ -41,8 +37,6 @@ const config: HardhatUserConfig = {
                     MAINNET_EZETH_COORDINATOR,
                     MAINNET_RETH_COORDINATOR,
                     MAINNET_MORPHO_BLUE_COORDINATOR,
-                    MAINNET_CORN_COORDINATOR,
-                    MAINNET_STAKING_USDS_COORDINATOR,
                 ],
                 instances: [
                     MAINNET_EZETH_182DAY,
@@ -51,9 +45,7 @@ const config: HardhatUserConfig = {
                     MAINNET_MORPHO_BLUE_USDE_DAI_182DAY,
                     MAINNET_MORPHO_BLUE_WSTETH_USDA_182DAY,
                     MAINNET_STUSD_182DAY,
-                    MAINNET_CORN_LBTC_91DAY,
-                    MAINNET_CORN_SDAI_91DAY,
-                    MAINNET_STAKING_USDS_SKY_182DAY,
+                    MAINNET_SUSDE_182DAY,
                 ],
                 checkpointRewarders: [],
                 checkpointSubrewarders: [],

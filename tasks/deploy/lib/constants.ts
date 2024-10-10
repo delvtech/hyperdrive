@@ -80,6 +80,9 @@ export const STUSD_ADDRESS_MAINNET =
 export const SUSDS_ADDRESS_MAINNET =
     "0xa3931d71877C0E7a3148CB7Eb4463524FEc27fbD" as Address;
 
+export const SUSDE_ADDRESS_MAINNET =
+    "0x9D39A5DE30e57443BfF2A8307A4256c8797A3497" as Address;
+
 export const RENZO_RESTAKE_MANAGER_ADDRESS_MAINNET =
     "0x74a09653A083691711cF8215a6ab074BB4e99ef5" as Address;
 
@@ -163,6 +166,12 @@ export const USDC_ADDRESS_BASE =
 
 export const WETH_ADDRESS_BASE =
     "0x4200000000000000000000000000000000000006" as Address;
+
+export const WELL_ADDRESS_BASE =
+    "0xA88594D404727625A9437C3f886C7643872296AE" as Address;
+
+export const STK_WELL_ADDRESS_BASE =
+    "0xe66E3A37C3274Ac24FE8590f7D84A2427194DC17" as Address;
 
 // ╭─────────────────────────────────────────────────────────╮
 // │ Base Whales                                             │
