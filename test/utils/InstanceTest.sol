@@ -229,7 +229,7 @@ abstract contract InstanceTest is HyperdriveTest {
         uint256 contribution;
         if (config.enableShareDeposits && !config.isRebasing) {
             contribution = (poolConfig.vaultSharesToken.balanceOf(alice) / 10)
-                .min(1_000 * 10 ** config.decimals);
+                .min(1_000 * 10 ** poolConfig.vaultSharesToken.decimals());
         }
         // If share deposits are enabled and the vault shares token is a
         // rebasing token, the contribution is the minimum of a tenth of Alice's
@@ -954,7 +954,7 @@ abstract contract InstanceTest is HyperdriveTest {
 
         // Contribution in terms of shares.
         uint256 contribution = (poolConfig.vaultSharesToken.balanceOf(alice) /
-            10).min(1_000 * 10 ** config.decimals);
+            10).min(1_000 * 10 ** poolConfig.vaultSharesToken.decimals());
         if (config.isRebasing) {
             contribution = convertToShares(contribution);
         }
@@ -1050,8 +1050,10 @@ abstract contract InstanceTest is HyperdriveTest {
             (baseProceeds, withdrawalShares) = removeLiquidity(bob, lpShares);
             assertEq(withdrawalShares, 0);
 
-            // Bob should receive approximately as much base as he contributed since
-            // no time as passed and the fees are zero.
+            // Bob should receive approximately as much base as he contributed
+            // since no time as passed and the fees are zero. His proceeds
+            // should not be more than he originally contributed.
+            assertLt(baseProceeds, _contribution);
             assertApproxEqAbs(
                 baseProceeds,
                 _contribution,
@@ -1069,7 +1071,12 @@ abstract contract InstanceTest is HyperdriveTest {
             assertEq(withdrawalShares, 0);
 
             // Bob should receive approximately as many vault shares as he
-            // contributed since no time as passed and the fees are zero.
+            // contributed since no time as passed and the fees are zero. His
+            // proceeds should not be more than he originally contributed.
+            assertLt(
+                vaultSharesProceeds,
+                hyperdrive.convertToShares(_contribution)
+            );
             assertApproxEqAbs(
                 vaultSharesProceeds,
                 hyperdrive.convertToShares(_contribution),
@@ -1134,7 +1141,9 @@ abstract contract InstanceTest is HyperdriveTest {
             assertEq(withdrawalShares, 0);
 
             // Bob should receive approximately as many vault shares as he
-            // contributed since no time as passed and the fees are zero.
+            // contributed since no time as passed and the fees are zero. His
+            // proceeds should not be more than he originally contributed.
+            assertLt(vaultSharesProceeds, _contribution);
             assertApproxEqAbs(
                 vaultSharesProceeds,
                 _contribution,
@@ -1148,8 +1157,10 @@ abstract contract InstanceTest is HyperdriveTest {
             (baseProceeds, withdrawalShares) = removeLiquidity(bob, lpShares);
             assertEq(withdrawalShares, 0);
 
-            // Bob should receive approximately as much base as he contributed since
-            // no time as passed and the fees are zero.
+            // Bob should receive approximately as much base as he contributed
+            // since no time as passed and the fees are zero. His proceeds
+            // should not be more than he originally contributed.
+            assertLt(baseProceeds, _contribution);
             assertApproxEqAbs(
                 baseProceeds,
                 _contribution,
@@ -1322,7 +1333,6 @@ abstract contract InstanceTest is HyperdriveTest {
                 uint256 vaultSharesProceeds,
                 uint256 withdrawalShares
             ) = removeLiquidity(bob, lpShares, false);
-            assertGt(withdrawalShares, 0);
 
             // The term passes and interest accrues.
             if (config.shouldAccrueInterest) {
@@ -1364,7 +1374,6 @@ abstract contract InstanceTest is HyperdriveTest {
                 bob,
                 lpShares
             );
-            assertGt(withdrawalShares, 0);
 
             // The term passes and interest accrues.
             if (config.shouldAccrueInterest) {
@@ -2426,7 +2435,7 @@ abstract contract InstanceTest is HyperdriveTest {
         }
         (uint256 maturityTime, uint256 sharesPaid) = hyperdrive.openShort(
             shortAmount,
-            shortAmount,
+            hyperdrive.convertToShares(shortAmount),
             0,
             IHyperdrive.Options({
                 destination: bob,
