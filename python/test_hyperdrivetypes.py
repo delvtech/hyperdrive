@@ -15,7 +15,7 @@ from hyperdrivetypes import (
     RedeemWithdrawalSharesEventFP,
     RemoveLiquidityEventFP,
 )
-from hyperdrivetypes.types.IHyperdriveTypes import (
+from hyperdrivetypes.types.IHyperdrive import (
     AddLiquidityEvent,
     Checkpoint,
     CloseLongEvent,
