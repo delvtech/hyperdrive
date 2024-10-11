@@ -124,7 +124,7 @@ abstract contract ERC4626HyperdriveInstanceTest is InstanceTest {
     /// @dev Fuzz test that verifies that the vault share price is the price
     ///      that dictates the conversion between base and shares.
     /// @param basePaid the fuzz parameter for the base paid.
-    function test__pricePerVaultShare(uint256 basePaid) external {
+    function test__pricePerVaultShare(uint256 basePaid) external virtual {
         // Ensure that the share price is the expected value.
         (uint256 totalBase, uint256 totalSupply) = getSupply();
         uint256 vaultSharePrice = hyperdrive.getPoolInfo().vaultSharePrice;
