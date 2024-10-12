@@ -1053,7 +1053,7 @@ abstract contract InstanceTest is HyperdriveTest {
             // Bob should receive approximately as much base as he contributed
             // since no time as passed and the fees are zero. His proceeds
             // should not be more than he originally contributed.
-            assertLt(baseProceeds, _contribution);
+            assertLe(baseProceeds, _contribution);
             assertApproxEqAbs(
                 baseProceeds,
                 _contribution,
@@ -1073,7 +1073,7 @@ abstract contract InstanceTest is HyperdriveTest {
             // Bob should receive approximately as many vault shares as he
             // contributed since no time as passed and the fees are zero. His
             // proceeds should not be more than he originally contributed.
-            assertLt(
+            assertLe(
                 vaultSharesProceeds,
                 hyperdrive.convertToShares(_contribution)
             );
@@ -1143,7 +1143,7 @@ abstract contract InstanceTest is HyperdriveTest {
             // Bob should receive approximately as many vault shares as he
             // contributed since no time as passed and the fees are zero. His
             // proceeds should not be more than he originally contributed.
-            assertLt(vaultSharesProceeds, _contribution);
+            assertLe(vaultSharesProceeds, _contribution);
             assertApproxEqAbs(
                 vaultSharesProceeds,
                 _contribution,
@@ -1160,7 +1160,7 @@ abstract contract InstanceTest is HyperdriveTest {
             // Bob should receive approximately as much base as he contributed
             // since no time as passed and the fees are zero. His proceeds
             // should not be more than he originally contributed.
-            assertLt(baseProceeds, _contribution);
+            assertLe(baseProceeds, _contribution);
             assertApproxEqAbs(
                 baseProceeds,
                 _contribution,
