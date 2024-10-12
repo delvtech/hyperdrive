@@ -452,7 +452,7 @@ contract UniV3Zap is IUniV3Zap, ReentrancyGuard {
             ERC20(tokenOut).forceApprove(address(_hyperdrive), proceeds + 1);
         }
 
-        // Open a long using the proceeds of the trade.
+        // Open a short using the proceeds of the trade.
         uint256 value = shouldConvertToETH ? proceeds : 0;
         (maturityTime, deposit) = _hyperdrive.openShort{ value: value }(
             _bondAmount,
