@@ -707,7 +707,7 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
         address trader,
         uint256 bondAmount,
         DepositOverrides memory overrides
-    ) internal returns (uint256 maturityTime, uint256 baseAmount) {
+    ) internal returns (uint256 maturityTime, uint256 amount) {
         vm.stopPrank();
         vm.startPrank(trader);
 
@@ -715,37 +715,13 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
         maturityTime = HyperdriveUtils.maturityTimeFromLatestCheckpoint(
             hyperdrive
         );
-        if (overrides.asBase) {
-            if (address(hyperdrive.getPoolConfig().baseToken) == address(ETH)) {
-                (maturityTime, baseAmount) = hyperdrive.openShort{
-                    value: overrides.depositAmount
-                }(
-                    bondAmount,
-                    overrides.maxSlippage, // max base payment
-                    overrides.minSharePrice, // min vault share price
-                    IHyperdrive.Options({
-                        destination: overrides.destination,
-                        asBase: overrides.asBase,
-                        extraData: overrides.extraData
-                    })
-                );
-            } else {
-                baseToken.mint(overrides.depositAmount);
-                baseToken.approve(address(hyperdrive), overrides.maxSlippage);
-                (maturityTime, baseAmount) = hyperdrive.openShort(
-                    bondAmount,
-                    overrides.maxSlippage, // max base payment
-                    overrides.minSharePrice, // min vault share price
-                    IHyperdrive.Options({
-                        destination: overrides.destination,
-                        asBase: overrides.asBase,
-                        extraData: overrides.extraData
-                    })
-                );
-                baseToken.burn(overrides.depositAmount - baseAmount);
-            }
-        } else {
-            (maturityTime, baseAmount) = hyperdrive.openShort(
+        if (
+            address(hyperdrive.getPoolConfig().baseToken) == address(ETH) &&
+            overrides.asBase
+        ) {
+            (maturityTime, amount) = hyperdrive.openShort{
+                value: overrides.depositAmount
+            }(
                 bondAmount,
                 overrides.maxSlippage, // max base payment
                 overrides.minSharePrice, // min vault share price
@@ -755,15 +731,29 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
                     extraData: overrides.extraData
                 })
             );
+        } else {
+            baseToken.mint(overrides.depositAmount);
+            baseToken.approve(address(hyperdrive), overrides.maxSlippage);
+            (maturityTime, amount) = hyperdrive.openShort(
+                bondAmount,
+                overrides.maxSlippage, // max base payment
+                overrides.minSharePrice, // min vault share price
+                IHyperdrive.Options({
+                    destination: overrides.destination,
+                    asBase: overrides.asBase,
+                    extraData: overrides.extraData
+                })
+            );
+            baseToken.burn(overrides.depositAmount - amount);
         }
 
-        return (maturityTime, baseAmount);
+        return (maturityTime, amount);
     }
 
     function openShort(
         address trader,
         uint256 bondAmount
-    ) internal returns (uint256 maturityTime, uint256 baseAmount) {
+    ) internal returns (uint256 maturityTime, uint256 amount) {
         return
             openShort(
                 trader,
@@ -784,7 +774,10 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
         address trader,
         uint256 bondAmount,
         bool asBase
-    ) internal returns (uint256 maturityTime, uint256 baseAmount) {
+    ) internal returns (uint256 maturityTime, uint256 amount) {
+        uint256 depositAmount = asBase
+            ? bondAmount
+            : hyperdrive.convertToShares(bondAmount);
         uint256 maxDeposit = asBase
             ? bondAmount
             : hyperdrive.convertToShares(bondAmount);
@@ -795,7 +788,7 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
                 DepositOverrides({
                     asBase: asBase,
                     destination: trader,
-                    depositAmount: bondAmount,
+                    depositAmount: depositAmount,
                     minSharePrice: 0, // min vault share price of 0
                     minSlippage: 0, // unused
                     maxSlippage: maxDeposit, // max base payment of bondAmount
@@ -1128,7 +1121,7 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
             if (asBase) {
                 assertApproxEqAbs(
                     eventLpAmount,
-                    hyperdrive.convertToShares(contribution_) -
+                    hyperdrive_.convertToShares(contribution_) -
                         2 *
                         minimumShareReserves,
                     tolerance
