@@ -161,6 +161,15 @@ export const CHAINLINK_AGGREGATOR_CBETH_ETH_PROXY_BASE =
 export const MOONWELL_ETH_ADDRESS_BASE =
     "0xa0E430870c4604CcfC7B38Ca7845B1FF653D0ff1" as Address;
 
+export const NARS_ADDRESS_BASE =
+    "0x5e40f26E89213660514c51Fb61b2d357DBf63C85" as Address;
+
+export const SNARS_ADDRESS_BASE =
+    "0xC1F4C75e8925A67BE4F35D6b1c044B5ea8849a58" as Address;
+
+export const STK_WELL_ADDRESS_BASE =
+    "0xe66E3A37C3274Ac24FE8590f7D84A2427194DC17" as Address;
+
 export const USDC_ADDRESS_BASE =
     "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" as Address;
 
@@ -169,9 +178,6 @@ export const WETH_ADDRESS_BASE =
 
 export const WELL_ADDRESS_BASE =
     "0xA88594D404727625A9437C3f886C7643872296AE" as Address;
-
-export const STK_WELL_ADDRESS_BASE =
-    "0xe66E3A37C3274Ac24FE8590f7D84A2427194DC17" as Address;
 
 // ╭─────────────────────────────────────────────────────────╮
 // │ Base Whales                                             │
