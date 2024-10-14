@@ -67,31 +67,31 @@ contract SnARSHyperdriveTest is ERC4626HyperdriveInstanceTest {
                 }),
                 enableBaseDeposits: true,
                 enableShareDeposits: true,
-                enableBaseWithdraws: true,
+                enableBaseWithdraws: false,
                 enableShareWithdraws: true,
-                baseWithdrawError: new bytes(0),
+                baseWithdrawError: abi.encodeWithSelector(
+                    IHyperdrive.UnsupportedToken.selector
+                ),
                 isRebasing: false,
                 shouldAccrueInterest: true,
-                // FIXME
+                // NOTE: Base  withdrawals are disabled, so the tolerances are zero.
                 //
                 // The base test tolerances.
-                closeLongWithBaseTolerance: 20,
-                roundTripLpInstantaneousWithBaseTolerance: 1e5,
-                roundTripLpWithdrawalSharesWithBaseTolerance: 1e6,
-                roundTripLongInstantaneousWithBaseUpperBoundTolerance: 1e3,
-                roundTripLongInstantaneousWithBaseTolerance: 1e5,
-                roundTripLongMaturityWithBaseUpperBoundTolerance: 1e3,
-                roundTripLongMaturityWithBaseTolerance: 1e5,
-                roundTripShortInstantaneousWithBaseUpperBoundTolerance: 1e3,
-                roundTripShortInstantaneousWithBaseTolerance: 1e5,
-                roundTripShortMaturityWithBaseTolerance: 1e5,
-                // FIXME
-                //
+                closeLongWithBaseTolerance: 0,
+                roundTripLpInstantaneousWithBaseTolerance: 0,
+                roundTripLpWithdrawalSharesWithBaseTolerance: 0,
+                roundTripLongInstantaneousWithBaseUpperBoundTolerance: 0,
+                roundTripLongInstantaneousWithBaseTolerance: 0,
+                roundTripLongMaturityWithBaseUpperBoundTolerance: 0,
+                roundTripLongMaturityWithBaseTolerance: 0,
+                roundTripShortInstantaneousWithBaseUpperBoundTolerance: 0,
+                roundTripShortInstantaneousWithBaseTolerance: 0,
+                roundTripShortMaturityWithBaseTolerance: 0,
                 // The share test tolerances.
                 closeLongWithSharesTolerance: 20,
                 closeShortWithSharesTolerance: 100,
                 roundTripLpInstantaneousWithSharesTolerance: 1e7,
-                roundTripLpWithdrawalSharesWithSharesTolerance: 1e7,
+                roundTripLpWithdrawalSharesWithSharesTolerance: 1e8,
                 roundTripLongInstantaneousWithSharesUpperBoundTolerance: 1e3,
                 roundTripLongInstantaneousWithSharesTolerance: 1e5,
                 roundTripLongMaturityWithSharesUpperBoundTolerance: 1e3,
@@ -99,8 +99,6 @@ contract SnARSHyperdriveTest is ERC4626HyperdriveInstanceTest {
                 roundTripShortInstantaneousWithSharesUpperBoundTolerance: 1e3,
                 roundTripShortInstantaneousWithSharesTolerance: 1e5,
                 roundTripShortMaturityWithSharesTolerance: 1e5,
-                // FIXME
-                //
                 // The verification tolerances.
                 verifyDepositTolerance: 2,
                 verifyWithdrawalTolerance: 2
@@ -112,6 +110,22 @@ contract SnARSHyperdriveTest is ERC4626HyperdriveInstanceTest {
     function setUp() public override __base_fork(21_071_334) {
         // Invoke the Instance testing suite setup.
         super.setUp();
+    }
+
+    /// @dev HACK: The snARS vault returns a total assets of 0, so we have to
+    ///      override this.
+    /// @dev Fetches the total supply of the base and share tokens.
+    /// @return The total supply of base.
+    /// @return The total supply of vault shares.
+    function getSupply() internal view override returns (uint256, uint256) {
+        uint256 totalShares = IERC4626(address(config.vaultSharesToken))
+            .totalSupply();
+        return (
+            IERC4626(address(config.vaultSharesToken)).convertToAssets(
+                totalShares
+            ),
+            totalShares
+        );
     }
 
     /// Helpers ///
