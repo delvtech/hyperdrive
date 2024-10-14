@@ -1453,41 +1453,6 @@
             "address": "0xFcdaF9A4A731C24ed2E1BFd6FA918d9CF7F50137",
             "timestamp": "2024-09-23T17:24:41.079Z"
         },
-        "ElementDAO ERC4626 Hyperdrive Deployer Coordinator_ERC4626HyperdriveCoreDeployer": {
-            "contract": "ERC4626HyperdriveCoreDeployer",
-            "address": "0xb1c456824cb526a0b57f6cea309785752ec015d7",
-            "timestamp": "2024-10-09T20:36:51.355Z"
-        },
-        "ElementDAO ERC4626 Hyperdrive Deployer Coordinator_ERC4626Target0Deployer": {
-            "contract": "ERC4626Target0Deployer",
-            "address": "0xd171c68eaa3fbd25c1fa34c1a5e63e193df39aa6",
-            "timestamp": "2024-10-09T20:36:58.302Z"
-        },
-        "ElementDAO ERC4626 Hyperdrive Deployer Coordinator_ERC4626Target1Deployer": {
-            "contract": "ERC4626Target1Deployer",
-            "address": "0xcc2282bf8002701fd31e56d3f6b2c744493ee27f",
-            "timestamp": "2024-10-09T20:37:03.173Z"
-        },
-        "ElementDAO ERC4626 Hyperdrive Deployer Coordinator_ERC4626Target2Deployer": {
-            "contract": "ERC4626Target2Deployer",
-            "address": "0xd917235d89a58af93302e9a998d62735740c8117",
-            "timestamp": "2024-10-09T20:37:06.975Z"
-        },
-        "ElementDAO ERC4626 Hyperdrive Deployer Coordinator_ERC4626Target3Deployer": {
-            "contract": "ERC4626Target3Deployer",
-            "address": "0x77644b188a5d1d58246a233761273c74b0f9d88d",
-            "timestamp": "2024-10-09T20:37:10.677Z"
-        },
-        "ElementDAO ERC4626 Hyperdrive Deployer Coordinator_ERC4626Target4Deployer": {
-            "contract": "ERC4626Target4Deployer",
-            "address": "0xbaa863b62c69993143b013fe7b8af278fd52f76b",
-            "timestamp": "2024-10-09T20:37:15.186Z"
-        },
-        "ElementDAO ERC4626 Hyperdrive Deployer Coordinator": {
-            "contract": "ERC4626HyperdriveDeployerCoordinator",
-            "address": "0x68ba944d89d7481f3a9d73dcb75b7e6c7db5562b",
-            "timestamp": "2024-10-09T20:37:24.510Z"
-        },
         "ElementDAO Moonwell StkWell Hyperdrive Deployer Coordinator_StkWellHyperdriveCoreDeployer": {
             "contract": "StkWellHyperdriveCoreDeployer",
             "address": "0x8d6d5d48f881bcccd6c09256724692b3a971b87b",
