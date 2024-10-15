@@ -7,33 +7,33 @@ import {
     toBytes32,
 } from "../../lib";
 import {
-    EURC_ADDRESS_BASE,
-    MOONWELL_EURC_ADDRESS_BASE,
+    MOONWELL_USDC_ADDRESS_BASE,
     SIX_MONTHS,
+    USDC_ADDRESS_BASE,
 } from "../../lib/constants";
 import { BASE_ERC4626_COORDINATOR_NAME } from "./erc4626-coordinator";
 import { BASE_FACTORY_NAME } from "./factory";
 
 // The name of the pool.
-export const BASE_MOONWELL_EURC_182DAY_NAME =
-    "ElementDAO 182 Day Moonwell EURC Hyperdrive";
+export const BASE_MOONWELL_USDC_182DAY_NAME =
+    "ElementDAO 182 Day Moonwell USDC Hyperdrive";
 
-// EURC only has 6 decimals.
+// USDC only has 6 decimals.
 const CONTRIBUTION = 100_000_000n;
 
-export const BASE_MOONWELL_EURC_182DAY: HyperdriveInstanceConfig<"ERC4626"> = {
-    name: BASE_MOONWELL_EURC_182DAY_NAME,
+export const BASE_MOONWELL_USDC_182DAY: HyperdriveInstanceConfig<"ERC4626"> = {
+    name: BASE_MOONWELL_USDC_182DAY_NAME,
     prefix: "ERC4626",
     coordinatorAddress: async (hre) =>
         hre.hyperdriveDeploy.deployments.byName(BASE_ERC4626_COORDINATOR_NAME)
             .address,
-    deploymentId: keccak256(toBytes(BASE_MOONWELL_EURC_182DAY_NAME)),
+    deploymentId: keccak256(toBytes(BASE_MOONWELL_USDC_182DAY_NAME)),
     salt: toBytes32("0x69420"),
     extraData: "0x",
     contribution: CONTRIBUTION,
-    // The moonwell EURC rate is currently at 19.4%, but we have a cap on our
+    // The moonwell EURC rate is currently at 12%, but we have a cap on our
     // fixed rate of 10%. This is the link to the vaults page: https://moonwell.fi/vaults
-    fixedAPR: parseEther("0.1"),
+    fixedAPR: parseEther("0.12"),
     timestretchAPR: parseEther("0.075"),
     options: async (hre) => ({
         extraData: "0x",
@@ -44,7 +44,7 @@ export const BASE_MOONWELL_EURC_182DAY: HyperdriveInstanceConfig<"ERC4626"> = {
     prepare: async (hre) => {
         let baseToken = await hre.viem.getContractAt(
             "contracts/src/interfaces/IERC20.sol:IERC20",
-            EURC_ADDRESS_BASE,
+            USDC_ADDRESS_BASE,
         );
         let tx = await baseToken.write.approve([
             hre.hyperdriveDeploy.deployments.byName(
@@ -61,8 +61,8 @@ export const BASE_MOONWELL_EURC_182DAY: HyperdriveInstanceConfig<"ERC4626"> = {
             hre.hyperdriveDeploy.deployments.byName(BASE_FACTORY_NAME).address,
         );
         return {
-            baseToken: EURC_ADDRESS_BASE,
-            vaultSharesToken: MOONWELL_EURC_ADDRESS_BASE,
+            baseToken: USDC_ADDRESS_BASE,
+            vaultSharesToken: MOONWELL_USDC_ADDRESS_BASE,
             circuitBreakerDelta: parseEther("0.075"),
             minimumShareReserves: parseEther("0.001"),
             minimumTransactionAmount: parseEther("0.001"),
