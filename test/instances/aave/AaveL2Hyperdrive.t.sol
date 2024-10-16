@@ -80,7 +80,9 @@ contract AaveL2HyperdriveTest is InstanceTest {
                 enableShareWithdraws: true,
                 baseWithdrawError: new bytes(0),
                 isRebasing: true,
+                shouldAccrueInterest: true,
                 // The base test tolerances.
+                closeLongWithBaseTolerance: 20,
                 roundTripLpInstantaneousWithBaseTolerance: 1e5,
                 roundTripLpWithdrawalSharesWithBaseTolerance: 1e5,
                 roundTripLongInstantaneousWithBaseUpperBoundTolerance: 1e3,
@@ -101,7 +103,10 @@ contract AaveL2HyperdriveTest is InstanceTest {
                 roundTripLongMaturityWithSharesTolerance: 1e5,
                 roundTripShortInstantaneousWithSharesUpperBoundTolerance: 1e3,
                 roundTripShortInstantaneousWithSharesTolerance: 1e5,
-                roundTripShortMaturityWithSharesTolerance: 1e5
+                roundTripShortMaturityWithSharesTolerance: 1e5,
+                // The verification tolerances.
+                verifyDepositTolerance: 2,
+                verifyWithdrawalTolerance: 2
             })
         )
     {}
@@ -168,196 +173,6 @@ contract AaveL2HyperdriveTest is InstanceTest {
             WETH.balanceOf(account),
             convertToShares(AWETH.balanceOf(account))
         );
-    }
-
-    /// @dev Verifies that deposit accounting is correct when opening positions.
-    function verifyDeposit(
-        address trader,
-        uint256 amountPaid,
-        bool asBase,
-        uint256 totalBaseBefore,
-        uint256, // unused
-        AccountBalances memory traderBalancesBefore,
-        AccountBalances memory hyperdriveBalancesBefore
-    ) internal view override {
-        if (asBase) {
-            // Ensure that the total supply increased by the base paid.
-            assertApproxEqAbs(
-                AWETH.totalSupply(),
-                totalBaseBefore + amountPaid,
-                1
-            );
-            assertApproxEqAbs(
-                AWETH.scaledTotalSupply(),
-                convertToShares(totalBaseBefore + amountPaid),
-                1
-            );
-
-            // Ensure that the ETH balances didn't change.
-            assertEq(
-                address(hyperdrive).balance,
-                hyperdriveBalancesBefore.ETHBalance
-            );
-            assertEq(bob.balance, traderBalancesBefore.ETHBalance);
-
-            // Ensure that the Hyperdrive instance's base balance doesn't change
-            // and that the trader's base balance decreased by the amount paid.
-            assertEq(
-                WETH.balanceOf(address(hyperdrive)),
-                hyperdriveBalancesBefore.baseBalance
-            );
-            assertEq(
-                WETH.balanceOf(trader),
-                traderBalancesBefore.baseBalance - amountPaid
-            );
-
-            // Ensure that the shares balances were updated correctly.
-            assertApproxEqAbs(
-                convertToShares(AWETH.balanceOf(address(hyperdrive))),
-                hyperdriveBalancesBefore.sharesBalance +
-                    convertToShares(amountPaid),
-                2
-            );
-            assertEq(
-                convertToShares(AWETH.balanceOf(trader)),
-                traderBalancesBefore.sharesBalance
-            );
-        } else {
-            // Ensure that the total supply and scaled total supply stay the same.
-            assertEq(AWETH.totalSupply(), totalBaseBefore);
-            assertApproxEqAbs(
-                AWETH.scaledTotalSupply(),
-                convertToShares(totalBaseBefore),
-                1
-            );
-
-            // Ensure that the ETH balances didn't change.
-            assertEq(
-                address(hyperdrive).balance,
-                hyperdriveBalancesBefore.ETHBalance
-            );
-            assertEq(bob.balance, traderBalancesBefore.ETHBalance);
-
-            // Ensure that the base balances didn't change.
-            assertEq(
-                WETH.balanceOf(address(hyperdrive)),
-                hyperdriveBalancesBefore.baseBalance
-            );
-            assertEq(WETH.balanceOf(trader), traderBalancesBefore.baseBalance);
-
-            // Ensure that the shares balances were updated correctly.
-            assertApproxEqAbs(
-                convertToShares(AWETH.balanceOf(address(hyperdrive))),
-                hyperdriveBalancesBefore.sharesBalance +
-                    convertToShares(amountPaid),
-                2
-            );
-            assertApproxEqAbs(
-                convertToShares(AWETH.balanceOf(trader)),
-                traderBalancesBefore.sharesBalance -
-                    convertToShares(amountPaid),
-                2
-            );
-        }
-    }
-
-    /// @dev Verifies that withdrawal accounting is correct when closing positions.
-    function verifyWithdrawal(
-        address trader,
-        uint256 baseProceeds,
-        bool asBase,
-        uint256 totalBaseBefore,
-        uint256, // unused
-        AccountBalances memory traderBalancesBefore,
-        AccountBalances memory hyperdriveBalancesBefore
-    ) internal view override {
-        if (asBase) {
-            // Ensure that the total supply decreased by the base proceeds.
-            assertApproxEqAbs(
-                AWETH.totalSupply(),
-                totalBaseBefore - baseProceeds,
-                1
-            );
-            assertApproxEqAbs(
-                AWETH.scaledTotalSupply(),
-                convertToShares(totalBaseBefore - baseProceeds),
-                1
-            );
-
-            // Ensure that the ETH balances didn't change.
-            assertEq(
-                address(hyperdrive).balance,
-                hyperdriveBalancesBefore.ETHBalance
-            );
-            assertEq(bob.balance, traderBalancesBefore.ETHBalance);
-
-            // Ensure that the base balances Hyperdrive base balance doesn't
-            // change and that the trader's base balance increased by the base
-            // proceeds.
-            assertApproxEqAbs(
-                WETH.balanceOf(address(hyperdrive)),
-                hyperdriveBalancesBefore.baseBalance,
-                1
-            );
-            assertEq(
-                WETH.balanceOf(trader),
-                traderBalancesBefore.baseBalance + baseProceeds
-            );
-
-            // Ensure that the shares balances were updated correctly.
-            assertApproxEqAbs(
-                convertToShares(AWETH.balanceOf(address(hyperdrive))),
-                hyperdriveBalancesBefore.sharesBalance -
-                    convertToShares(baseProceeds),
-                2
-            );
-            assertApproxEqAbs(
-                convertToShares(AWETH.balanceOf(trader)),
-                traderBalancesBefore.sharesBalance,
-                1
-            );
-        } else {
-            // Ensure that the total supply and scaled total supply stay the same.
-            assertEq(AWETH.totalSupply(), totalBaseBefore);
-            assertApproxEqAbs(
-                AWETH.scaledTotalSupply(),
-                convertToShares(totalBaseBefore),
-                1
-            );
-
-            // Ensure that the ETH balances didn't change.
-            assertEq(
-                address(hyperdrive).balance,
-                hyperdriveBalancesBefore.ETHBalance
-            );
-            assertEq(bob.balance, traderBalancesBefore.ETHBalance);
-
-            // Ensure that the base balances didn't change.
-            assertApproxEqAbs(
-                WETH.balanceOf(address(hyperdrive)),
-                hyperdriveBalancesBefore.baseBalance,
-                1
-            );
-            assertApproxEqAbs(
-                WETH.balanceOf(trader),
-                traderBalancesBefore.baseBalance,
-                1
-            );
-
-            // Ensure that the shares balances were updated correctly.
-            assertApproxEqAbs(
-                convertToShares(AWETH.balanceOf(address(hyperdrive))),
-                hyperdriveBalancesBefore.sharesBalance -
-                    convertToShares(baseProceeds),
-                2
-            );
-            assertApproxEqAbs(
-                convertToShares(AWETH.balanceOf(trader)),
-                traderBalancesBefore.sharesBalance +
-                    convertToShares(baseProceeds),
-                2
-            );
-        }
     }
 
     /// Getters ///
