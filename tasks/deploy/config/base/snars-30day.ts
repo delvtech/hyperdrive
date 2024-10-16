@@ -19,7 +19,7 @@ export const BASE_SNARS_30DAY_NAME =
     "ElementDAO 30 Day Num Finance snARS Hyperdrive";
 
 // The initial contribution of the pool.
-const CONTRIBUTION = parseEther("100");
+const CONTRIBUTION = parseEther("91000");
 
 export const BASE_SNARS_30DAY: HyperdriveInstanceConfig<"ERC4626"> = {
     name: BASE_SNARS_30DAY_NAME,
