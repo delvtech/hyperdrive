@@ -621,7 +621,9 @@ contract EtchingUtils is Test {
         address implementationAddress, // Not the proxy, but the implementation address.
         address addressesProvider // The PoolAddressesProvider address used by the pool.
     ) internal {
-        MockL2Pool template = new MockL2Pool(IPoolAddressesProvider(addressesProvider));
+        MockL2Pool template = new MockL2Pool(
+            IPoolAddressesProvider(addressesProvider)
+        );
         vm.etch(implementationAddress, address(template).code);
     }
 }

@@ -6,13 +6,15 @@ import { Pool } from "aave/protocol/pool/Pool.sol";
 import { IPoolAddressesProvider } from "aave/interfaces/IPoolAddressesProvider.sol";
 
 contract MockL2Pool is L2Pool {
-  constructor(IPoolAddressesProvider addressesProvider) Pool(addressesProvider) {}
+    constructor(
+        IPoolAddressesProvider addressesProvider
+    ) Pool(addressesProvider) {}
 
-  function initialize(IPoolAddressesProvider provider) public override {
-    // does notthing
-  }
+    function initialize(IPoolAddressesProvider provider) public override {
+        // does notthing
+    }
 
-  function getRevision() internal pure override returns (uint256) {
-    return 0;
-  }
+    function getRevision() internal pure override returns (uint256) {
+        return 0;
+    }
 }

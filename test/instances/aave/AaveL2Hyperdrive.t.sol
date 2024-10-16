@@ -244,7 +244,9 @@ contract AaveL2HyperdriveTest is InstanceTest {
             timeDelta
         );
         bytes32 reserveDataLocation = keccak256(abi.encode(address(WETH), 52));
-        DataTypes.ReserveDataLegacy memory data = POOL.getReserveData(address(WETH));
+        DataTypes.ReserveDataLegacy memory data = POOL.getReserveData(
+            address(WETH)
+        );
         vm.store(
             address(POOL),
             bytes32(uint256(reserveDataLocation) + 1),
