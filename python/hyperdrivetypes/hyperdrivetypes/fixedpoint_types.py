@@ -5,7 +5,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from fixedpointmath import FixedPoint
-from hyperdrivetypes.types.IHyperdriveTypes import (
+from pypechain.core import BaseEventArgs
+
+from .types.IHyperdrive import (
     AddLiquidityEvent,
     Checkpoint,
     CloseLongEvent,
@@ -20,7 +22,6 @@ from hyperdrivetypes.types.IHyperdriveTypes import (
     RedeemWithdrawalSharesEvent,
     RemoveLiquidityEvent,
 )
-from pypechain.core import BaseEventArgs
 
 # TODO: These dataclasses are similar to pypechain except for
 #  - snake_case attributes instead of camelCase

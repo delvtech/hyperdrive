@@ -18,4 +18,3 @@ from .fixedpoint_types import (
     RedeemWithdrawalSharesEventFP,
     RemoveLiquidityEventFP,
 )
-from .types import *
