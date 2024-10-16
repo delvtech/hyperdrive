@@ -33,7 +33,7 @@ export const BASE_MOONWELL_USDC_182DAY: HyperdriveInstanceConfig<"ERC4626"> = {
     contribution: CONTRIBUTION,
     // The moonwell EURC rate is currently at 12%, but we have a cap on our
     // fixed rate of 10%. This is the link to the vaults page: https://moonwell.fi/vaults
-    fixedAPR: parseEther("0.12"),
+    fixedAPR: parseEther("0.1"),
     timestretchAPR: parseEther("0.075"),
     options: async (hre) => ({
         extraData: "0x",
