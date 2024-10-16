@@ -3,7 +3,6 @@ pragma solidity ^0.8.20;
 
 import { IMorpho } from "morpho-blue/src/interfaces/IMorpho.sol";
 import { Test } from "forge-std/Test.sol";
-import { L2Pool } from "aave/protocol/pool/L2Pool.sol";
 import { IPoolAddressesProvider } from "aave/interfaces/IPoolAddressesProvider.sol";
 import { ERC4626Hyperdrive } from "../../contracts/src/instances/erc4626/ERC4626Hyperdrive.sol";
 import { ERC4626Target0 } from "../../contracts/src/instances/erc4626/ERC4626Target0.sol";
@@ -51,6 +50,7 @@ import { ERC20Mintable } from "../../contracts/test/ERC20Mintable.sol";
 import { EtchingVault } from "../../contracts/test/EtchingVault.sol";
 import { MockERC4626 } from "../../contracts/test/MockERC4626.sol";
 import { MockEzEthPool } from "../../contracts/test/MockEzEthPool.sol";
+import { MockL2Pool } from "../../contracts/test/MockL2Pool.sol";
 import { MockLido } from "../../contracts/test/MockLido.sol";
 import { MockRocketPool } from "../../contracts/test/MockRocketPool.sol";
 import { Lib } from "./Lib.sol";
@@ -621,7 +621,7 @@ contract EtchingUtils is Test {
         address implementationAddress, // Not the proxy, but the implementation address.
         address addressesProvider // The PoolAddressesProvider address used by the pool.
     ) internal {
-        L2Pool template = new L2Pool(IPoolAddressesProvider(addressesProvider));
+        MockL2Pool template = new MockL2Pool(IPoolAddressesProvider(addressesProvider));
         vm.etch(implementationAddress, address(template).code);
     }
 }

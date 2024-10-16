@@ -216,7 +216,7 @@ abstract contract AaveL2Base is HyperdriveBase {
         address asset,
         uint256 amount
     ) internal view returns (bytes32) {
-        DataTypes.ReserveData memory data = _vault.getReserveData(asset);
+        DataTypes.ReserveDataLegacy memory data = _vault.getReserveData(asset);
         uint16 assetId = data.id;
         uint128 shortenedAmount = amount == type(uint256).max
             ? type(uint128).max
