@@ -216,6 +216,8 @@ export const WSTETH_WHALE_GNOSIS =
 // │ Durations                                               │
 // ╰─────────────────────────────────────────────────────────╯
 
+export const ONE_MONTH = "30 days";
+
 export const THREE_MONTHS = "91 days";
 
 export const SIX_MONTHS = "182 days";
