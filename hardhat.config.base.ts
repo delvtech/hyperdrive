@@ -13,7 +13,7 @@ import {
     BASE_FACTORY,
     BASE_MOONWELL_ETH_182DAY,
     BASE_MORPHO_BLUE_COORDINATOR,
-    BASE_SNARS_182DAY,
+    BASE_SNARS_30DAY,
     BASE_STK_WELL_182DAY,
     BASE_STK_WELL_COORDINATOR,
 } from "./tasks/deploy/config/base";
@@ -41,7 +41,7 @@ const config: HardhatUserConfig = {
                     BASE_MORPHO_BLUE_CBETH_USDC_182DAY,
                     BASE_MOONWELL_ETH_182DAY,
                     BASE_STK_WELL_182DAY,
-                    BASE_SNARS_182DAY,
+                    BASE_SNARS_30DAY,
                 ],
                 checkpointRewarders: [],
                 checkpointSubrewarders: [],

@@ -8,26 +8,26 @@ import {
 } from "../../lib";
 import {
     NARS_ADDRESS_BASE,
-    SIX_MONTHS,
+    ONE_MONTH,
     SNARS_ADDRESS_BASE,
 } from "../../lib/constants";
 import { BASE_ERC4626_COORDINATOR_NAME } from "./erc4626-coordinator";
 import { BASE_FACTORY_NAME } from "./factory";
 
 // The name of the pool.
-export const BASE_SNARS_182DAY_NAME =
-    "ElementDAO 182 Day Num Finance snARS Hyperdrive";
+export const BASE_SNARS_30DAY_NAME =
+    "ElementDAO 30 Day Num Finance snARS Hyperdrive";
 
 // The initial contribution of the pool.
 const CONTRIBUTION = parseEther("100");
 
-export const BASE_SNARS_182DAY: HyperdriveInstanceConfig<"ERC4626"> = {
-    name: BASE_SNARS_182DAY_NAME,
+export const BASE_SNARS_30DAY: HyperdriveInstanceConfig<"ERC4626"> = {
+    name: BASE_SNARS_30DAY_NAME,
     prefix: "ERC4626",
     coordinatorAddress: async (hre) =>
         hre.hyperdriveDeploy.deployments.byName(BASE_ERC4626_COORDINATOR_NAME)
             .address,
-    deploymentId: keccak256(toBytes(BASE_SNARS_182DAY_NAME)),
+    deploymentId: keccak256(toBytes(BASE_SNARS_30DAY_NAME)),
     salt: toBytes32("0x69420"),
     extraData: "0x",
     contribution: CONTRIBUTION,
@@ -64,7 +64,7 @@ export const BASE_SNARS_182DAY: HyperdriveInstanceConfig<"ERC4626"> = {
             circuitBreakerDelta: parseEther("0.075"),
             minimumShareReserves: parseEther("0.001"),
             minimumTransactionAmount: parseEther("0.001"),
-            positionDuration: parseDuration(SIX_MONTHS),
+            positionDuration: parseDuration(ONE_MONTH),
             checkpointDuration: parseDuration("1 day"),
             timeStretch: 0n,
             governance: await factoryContract.read.governance(),
@@ -78,7 +78,7 @@ export const BASE_SNARS_182DAY: HyperdriveInstanceConfig<"ERC4626"> = {
             )),
             fees: {
                 curve: parseEther("0.01"),
-                flat: normalizeFee(parseEther("0.0005"), SIX_MONTHS),
+                flat: normalizeFee(parseEther("0.0005"), ONE_MONTH),
                 governanceLP: parseEther("0.15"),
                 governanceZombie: parseEther("0.03"),
             },
