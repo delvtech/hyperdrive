@@ -9,18 +9,13 @@ import { EzETHTarget1Deployer } from "../../../contracts/src/deployers/ezeth/EzE
 import { EzETHTarget2Deployer } from "../../../contracts/src/deployers/ezeth/EzETHTarget2Deployer.sol";
 import { EzETHTarget3Deployer } from "../../../contracts/src/deployers/ezeth/EzETHTarget3Deployer.sol";
 import { EzETHTarget4Deployer } from "../../../contracts/src/deployers/ezeth/EzETHTarget4Deployer.sol";
-import { HyperdriveFactory } from "../../../contracts/src/factory/HyperdriveFactory.sol";
 import { IERC20 } from "../../../contracts/src/interfaces/IERC20.sol";
 import { IHyperdrive } from "../../../contracts/src/interfaces/IHyperdrive.sol";
 import { IEzETHHyperdriveRead } from "../../../contracts/src/interfaces/IEzETHHyperdriveRead.sol";
 import { IRestakeManager } from "../../../contracts/src/interfaces/IRenzo.sol";
 import { IRenzoOracle, IDepositQueue } from "../../../contracts/src/interfaces/IRenzo.sol";
-import { AssetId } from "../../../contracts/src/libraries/AssetId.sol";
 import { ETH } from "../../../contracts/src/libraries/Constants.sol";
 import { FixedPointMath, ONE } from "../../../contracts/src/libraries/FixedPointMath.sol";
-import { HyperdriveMath } from "../../../contracts/src/libraries/HyperdriveMath.sol";
-import { ERC20ForwarderFactory } from "../../../contracts/src/token/ERC20ForwarderFactory.sol";
-import { ERC20Mintable } from "../../../contracts/test/ERC20Mintable.sol";
 import { InstanceTest } from "../../utils/InstanceTest.sol";
 import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
 import { Lib } from "../../utils/Lib.sol";

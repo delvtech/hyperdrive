@@ -1,54 +1,64 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.22;
 
-import { IPool } from "aave/interfaces/IPool.sol";
+import { IL2Pool } from "contracts/src/interfaces/IAave.sol";
 import { DataTypes } from "aave/protocol/libraries/types/DataTypes.sol";
 import { stdStorage, StdStorage } from "forge-std/Test.sol";
-import { AaveHyperdriveCoreDeployer } from "../../../contracts/src/deployers/aave/AaveHyperdriveCoreDeployer.sol";
-import { AaveHyperdriveDeployerCoordinator } from "../../../contracts/src/deployers/aave/AaveHyperdriveDeployerCoordinator.sol";
-import { AaveTarget0Deployer } from "../../../contracts/src/deployers/aave/AaveTarget0Deployer.sol";
-import { AaveTarget1Deployer } from "../../../contracts/src/deployers/aave/AaveTarget1Deployer.sol";
-import { AaveTarget2Deployer } from "../../../contracts/src/deployers/aave/AaveTarget2Deployer.sol";
-import { AaveTarget3Deployer } from "../../../contracts/src/deployers/aave/AaveTarget3Deployer.sol";
-import { AaveTarget4Deployer } from "../../../contracts/src/deployers/aave/AaveTarget4Deployer.sol";
-import { IAToken } from "../../../contracts/src/interfaces/IAToken.sol";
-import { IAaveHyperdrive } from "../../../contracts/src/interfaces/IAaveHyperdrive.sol";
-import { IERC20 } from "../../../contracts/src/interfaces/IERC20.sol";
-import { IHyperdrive } from "../../../contracts/src/interfaces/IHyperdrive.sol";
-import { FixedPointMath } from "../../../contracts/src/libraries/FixedPointMath.sol";
-import { InstanceTest } from "../../utils/InstanceTest.sol";
-import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
-import { Lib } from "../../utils/Lib.sol";
+import { IAaveL2Hyperdrive } from "contracts/src/interfaces/IAaveL2Hyperdrive.sol";
+import { AaveL2Conversions } from "contracts/src/instances/aave-l2/AaveL2Conversions.sol";
+import { AaveL2HyperdriveCoreDeployer } from "contracts/src/deployers/aave-l2/AaveL2HyperdriveCoreDeployer.sol";
+import { AaveL2HyperdriveDeployerCoordinator } from "contracts/src/deployers/aave-l2/AaveL2HyperdriveDeployerCoordinator.sol";
+import { AaveL2Target0Deployer } from "contracts/src/deployers/aave-l2/AaveL2Target0Deployer.sol";
+import { AaveL2Target1Deployer } from "contracts/src/deployers/aave-l2/AaveL2Target1Deployer.sol";
+import { AaveL2Target2Deployer } from "contracts/src/deployers/aave-l2/AaveL2Target2Deployer.sol";
+import { AaveL2Target3Deployer } from "contracts/src/deployers/aave-l2/AaveL2Target3Deployer.sol";
+import { AaveL2Target4Deployer } from "contracts/src/deployers/aave-l2/AaveL2Target4Deployer.sol";
+import { IAToken } from "contracts/src/interfaces/IAToken.sol";
+import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
+import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
+import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
+import { InstanceTest } from "test/utils/InstanceTest.sol";
+import { HyperdriveUtils } from "test/utils/HyperdriveUtils.sol";
+import { Lib } from "test/utils/Lib.sol";
 
-contract AaveHyperdriveTest is InstanceTest {
+contract AaveL2HyperdriveTest is InstanceTest {
     using FixedPointMath for uint256;
     using Lib for *;
     using stdStorage for StdStorage;
 
-    // The mainnet Aave V3 pool.
-    IPool internal constant POOL =
-        IPool(0x87870Bca3F3fD6335C3F4ce8392D69350B4fA4E2);
+    // The Arbitrum AaveL2 V3 pool.
+    IL2Pool internal constant POOL =
+        IL2Pool(0x794a61358D6845594F94dc1DB02A252b5b4814aD);
 
     // The WETH token.
     IERC20 internal constant WETH =
-        IERC20(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
+        IERC20(0x82aF49447D8a07e3bd95BD0d56f35241523fBab1);
 
     // The aWETH AToken.
     IAToken internal constant AWETH =
-        IAToken(0x4d5F47FA6A74757f35C14fD3a6Ef8E3C9BC514E8);
+        IAToken(0xe50fA9b3c56FfB159cB0FCA61F5c9D750e8128c8);
 
     // Whale accounts.
-    address internal WETH_WHALE = 0xF04a5cC80B1E94C69B48f5ee68a08CD2F09A7c3E;
-    address internal AWETH_WHALE = 0x4353e2df4E3444e97e20b2bdA165BDd9A23913Ab;
+    address internal WETH_WHALE = 0x70d95587d40A2caf56bd97485aB3Eec10Bee6336;
+    address internal AWETH_WHALE_1 = 0x6286b9f080D27f860F6b4bb0226F8EF06CC9F2Fc;
+    address internal AWETH_WHALE_2 = 0xB7Fb2B774Eb5E2DaD9C060fb367AcBdc7fA7099B;
+    address internal AWETH_WHALE_3 = 0x8AeCc5526F92A46718f8E68516D22038D8670E0D;
+    address internal AWETH_WHALE_4 = 0x1de5366615BCEB1BDb7274536Bf3fc9f06Aa9c2C;
+
     address[] internal baseTokenWhaleAccounts = [WETH_WHALE];
-    address[] internal vaultSharesTokenWhaleAccounts = [AWETH_WHALE];
+    address[] internal vaultSharesTokenWhaleAccounts = [
+        AWETH_WHALE_1,
+        AWETH_WHALE_2,
+        AWETH_WHALE_3,
+        AWETH_WHALE_4
+    ];
 
     /// @dev Instantiates the instance testing suite with the configuration.
     constructor()
         InstanceTest(
             InstanceTestConfig({
                 name: "Hyperdrive",
-                kind: "AaveHyperdrive",
+                kind: "AaveL2Hyperdrive",
                 decimals: 18,
                 baseTokenWhaleAccounts: baseTokenWhaleAccounts,
                 vaultSharesTokenWhaleAccounts: vaultSharesTokenWhaleAccounts,
@@ -102,7 +112,7 @@ contract AaveHyperdriveTest is InstanceTest {
     {}
 
     /// @dev Forge function that is invoked to setup the testing environment.
-    function setUp() public override __mainnet_fork(20_276_503) {
+    function setUp() public override __arbitrum_fork(248_038_178) {
         // Invoke the instance testing suite setup.
         super.setUp();
     }
@@ -119,25 +129,17 @@ contract AaveHyperdriveTest is InstanceTest {
     function convertToShares(
         uint256 baseAmount
     ) internal view override returns (uint256) {
-        return
-            baseAmount.mulDivDown(
-                1e27,
-                POOL.getReserveNormalizedIncome(address(WETH))
-            );
+        return AaveL2Conversions.convertToShares(WETH, POOL, baseAmount);
     }
 
     /// @dev Converts share amount to the equivalent amount in base.
     function convertToBase(
         uint256 shareAmount
     ) internal view override returns (uint256) {
-        return
-            shareAmount.mulDivDown(
-                POOL.getReserveNormalizedIncome(address(WETH)),
-                1e27
-            );
+        return AaveL2Conversions.convertToBase(WETH, POOL, shareAmount);
     }
 
-    /// @dev Deploys the Aave deployer coordinator contract.
+    /// @dev Deploys the AaveL2 deployer coordinator contract.
     /// @param _factory The address of the Hyperdrive factory.
     function deployCoordinator(
         address _factory
@@ -145,15 +147,15 @@ contract AaveHyperdriveTest is InstanceTest {
         vm.startPrank(alice);
         return
             address(
-                new AaveHyperdriveDeployerCoordinator(
+                new AaveL2HyperdriveDeployerCoordinator(
                     string.concat(config.name, "DeployerCoordinator"),
                     _factory,
-                    address(new AaveHyperdriveCoreDeployer()),
-                    address(new AaveTarget0Deployer()),
-                    address(new AaveTarget1Deployer()),
-                    address(new AaveTarget2Deployer()),
-                    address(new AaveTarget3Deployer()),
-                    address(new AaveTarget4Deployer())
+                    address(new AaveL2HyperdriveCoreDeployer()),
+                    address(new AaveL2Target0Deployer()),
+                    address(new AaveL2Target1Deployer()),
+                    address(new AaveL2Target2Deployer()),
+                    address(new AaveL2Target3Deployer()),
+                    address(new AaveL2Target4Deployer())
                 )
             );
     }
@@ -177,7 +179,7 @@ contract AaveHyperdriveTest is InstanceTest {
 
     function test_getters() external view {
         assertEq(
-            address(IAaveHyperdrive(address(hyperdrive)).vault()),
+            address(IAaveL2Hyperdrive(address(hyperdrive)).vault()),
             address(POOL)
         );
         assertEq(
@@ -236,16 +238,11 @@ contract AaveHyperdriveTest is InstanceTest {
         // variable rate plus one. We also need to increase the
         // `lastUpdatedTimestamp` to avoid accruing interest when deposits or
         // withdrawals are processed.
-        uint256 normalizedTime = timeDelta.divDown(365 days);
-        reserveNormalizedIncome = variableRate >= 0
-            ? reserveNormalizedIncome +
-                reserveNormalizedIncome.mulDown(uint256(variableRate)).mulDown(
-                    normalizedTime
-                )
-            : reserveNormalizedIncome -
-                reserveNormalizedIncome.mulDown(uint256(-variableRate)).mulDown(
-                    normalizedTime
-                );
+        (uint256 totalAmount, ) = HyperdriveUtils.calculateInterest(
+            reserveNormalizedIncome,
+            variableRate,
+            timeDelta
+        );
         bytes32 reserveDataLocation = keccak256(abi.encode(address(WETH), 52));
         DataTypes.ReserveDataLegacy memory data = POOL.getReserveData(
             address(WETH)
@@ -255,7 +252,7 @@ contract AaveHyperdriveTest is InstanceTest {
             bytes32(uint256(reserveDataLocation) + 1),
             bytes32(
                 (uint256(data.currentLiquidityRate) << 128) |
-                    uint256(reserveNormalizedIncome)
+                    uint256(totalAmount)
             )
         );
         vm.store(

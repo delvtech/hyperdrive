@@ -9,15 +9,18 @@
 [submodule "lib/solmate"]
 	path = lib/solmate
 	url = https://github.com/transmissions11/solmate
+[submodule "lib/aave"]
+	path = lib/aave-v3-origin
+	url = https://github.com/aave-dao/aave-v3-origin
 [submodule "lib/ExcessivelySafeCall"]
 	path = lib/ExcessivelySafeCall
 	url = https://github.com/nomad-xyz/ExcessivelySafeCall
-[submodule "lib/aave-v3-core"]
-	path = lib/aave-v3-core
-	url = https://github.com/aave/aave-v3-core
 [submodule "lib/morpho-blue"]
 	path = lib/morpho-blue
 	url = https://github.com/morpho-org/morpho-blue
 [submodule "lib/createx"]
 	path = lib/createx
 	url = https://github.com/pcaversaccio/createx
+[submodule "lib/aave-v3-origin"]
+	path = lib/aave-v3-origin
+	url = https://github.com/aave-dao/aave-v3-origin
