@@ -1518,36 +1518,6 @@
             "address": "0xc0dc10957777ba5aaeec5d1df351a5bea64f0fb3",
             "timestamp": "2024-10-16T21:29:34.910Z"
         },
-        "ElementDAO 30 Day Num Finance snARS Hyperdrive_ERC4626Target0": {
-            "contract": "ERC4626Target0",
-            "address": "0xAb00332b1FeC48D2518775e98090d450705e621C",
-            "timestamp": "2024-10-16T21:30:16.645Z"
-        },
-        "ElementDAO 30 Day Num Finance snARS Hyperdrive_ERC4626Target1": {
-            "contract": "ERC4626Target1",
-            "address": "0x4F8c205E826fCEd493e4779295E20588557512fb",
-            "timestamp": "2024-10-16T21:30:00.307Z"
-        },
-        "ElementDAO 30 Day Num Finance snARS Hyperdrive_ERC4626Target2": {
-            "contract": "ERC4626Target2",
-            "address": "0x384B4cB3243874B8cc9D6D6300598E5D939a61F5",
-            "timestamp": "2024-10-16T21:30:04.283Z"
-        },
-        "ElementDAO 30 Day Num Finance snARS Hyperdrive_ERC4626Target3": {
-            "contract": "ERC4626Target3",
-            "address": "0xf894a11E1B2FC9D006870410A1e9Dbc579580aC2",
-            "timestamp": "2024-10-16T21:30:08.667Z"
-        },
-        "ElementDAO 30 Day Num Finance snARS Hyperdrive_ERC4626Target4": {
-            "contract": "ERC4626Target4",
-            "address": "0xd7718A7c3c6582A47A7A03113549aaDB431D40E8",
-            "timestamp": "2024-10-16T21:30:12.574Z"
-        },
-        "ElementDAO 30 Day Num Finance snARS Hyperdrive": {
-            "contract": "ERC4626Hyperdrive",
-            "address": "0xCAa21b8f3A499094216E3fd6224F43557923890a",
-            "timestamp": "2024-10-16T21:30:16.430Z"
-        },
         "ElementDAO 182 Day Moonwell EURC Hyperdrive_ERC4626Target0": {
             "contract": "ERC4626Target0",
             "address": "0xE893578686440f3d61Bbc893F05771c3D00d7315",
