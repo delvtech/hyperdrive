@@ -32,7 +32,7 @@ export const BASE_SNARS_30DAY: HyperdriveInstanceConfig<"ERC4626"> = {
     extraData: "0x",
     contribution: CONTRIBUTION,
     fixedAPR: parseEther("0.1"),
-    timestretchAPR: parseEther("0.2"),
+    timestretchAPR: parseEther("0.15"),
     options: async (hre) => ({
         extraData: "0x",
         asBase: true,
