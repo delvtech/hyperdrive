@@ -19,7 +19,7 @@ export const BASE_SNARS_30DAY_NAME =
     "ElementDAO 30 Day Num Finance snARS Hyperdrive";
 
 // The initial contribution of the pool.
-const CONTRIBUTION = parseEther("100");
+const CONTRIBUTION = parseEther("91000");
 
 export const BASE_SNARS_30DAY: HyperdriveInstanceConfig<"ERC4626"> = {
     name: BASE_SNARS_30DAY_NAME,
@@ -27,12 +27,12 @@ export const BASE_SNARS_30DAY: HyperdriveInstanceConfig<"ERC4626"> = {
     coordinatorAddress: async (hre) =>
         hre.hyperdriveDeploy.deployments.byName(BASE_ERC4626_COORDINATOR_NAME)
             .address,
-    deploymentId: keccak256(toBytes(BASE_SNARS_30DAY_NAME)),
-    salt: toBytes32("0x69420"),
+    deploymentId: keccak256(toBytes(BASE_SNARS_30DAY_NAME + "1")),
+    salt: toBytes32("0x69421"),
     extraData: "0x",
     contribution: CONTRIBUTION,
     fixedAPR: parseEther("0.1"),
-    timestretchAPR: parseEther("0.1"),
+    timestretchAPR: parseEther("0.15"),
     options: async (hre) => ({
         extraData: "0x",
         asBase: true,
