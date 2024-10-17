@@ -251,6 +251,9 @@ task(
                 ];
             } else if (extras) {
                 targetArgs = [poolConfig, factoryAddress, ...extras];
+            } else {
+                console.log("got here");
+                targetArgs = [poolConfig, factoryAddress];
             }
 
             // verify the targets
