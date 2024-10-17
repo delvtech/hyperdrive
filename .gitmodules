@@ -24,3 +24,6 @@
 [submodule "lib/aave-v3-origin"]
 	path = lib/aave-v3-origin
 	url = https://github.com/aave-dao/aave-v3-origin
+[submodule "lib/contracts"]
+	path = lib/contracts
+	url = https://github.com/aerodrome-finance/contracts
