@@ -27,8 +27,8 @@ export const BASE_MOONWELL_EURC_182DAY: HyperdriveInstanceConfig<"ERC4626"> = {
     coordinatorAddress: async (hre) =>
         hre.hyperdriveDeploy.deployments.byName(BASE_ERC4626_COORDINATOR_NAME)
             .address,
-    deploymentId: keccak256(toBytes(BASE_MOONWELL_EURC_182DAY_NAME)),
-    salt: toBytes32("0x69420"),
+    deploymentId: keccak256(toBytes(BASE_MOONWELL_EURC_182DAY_NAME + "1")),
+    salt: toBytes32("0x69421"),
     extraData: "0x",
     contribution: CONTRIBUTION,
     // The moonwell EURC rate is currently at 19.4%, but we have a cap on our
@@ -65,7 +65,7 @@ export const BASE_MOONWELL_EURC_182DAY: HyperdriveInstanceConfig<"ERC4626"> = {
             vaultSharesToken: MOONWELL_EURC_ADDRESS_BASE,
             circuitBreakerDelta: parseEther("0.075"),
             minimumShareReserves: parseEther("0.001"),
-            minimumTransactionAmount: parseEther("0.001"),
+            minimumTransactionAmount: 1_000_000n,
             positionDuration: parseDuration(SIX_MONTHS),
             checkpointDuration: parseDuration("1 day"),
             timeStretch: 0n,
