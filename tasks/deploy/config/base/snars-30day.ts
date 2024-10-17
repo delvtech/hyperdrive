@@ -27,12 +27,12 @@ export const BASE_SNARS_30DAY: HyperdriveInstanceConfig<"ERC4626"> = {
     coordinatorAddress: async (hre) =>
         hre.hyperdriveDeploy.deployments.byName(BASE_ERC4626_COORDINATOR_NAME)
             .address,
-    deploymentId: keccak256(toBytes(BASE_SNARS_30DAY_NAME)),
-    salt: toBytes32("0x69420"),
+    deploymentId: keccak256(toBytes(BASE_SNARS_30DAY_NAME + "1")),
+    salt: toBytes32("0x69421"),
     extraData: "0x",
     contribution: CONTRIBUTION,
     fixedAPR: parseEther("0.1"),
-    timestretchAPR: parseEther("0.1"),
+    timestretchAPR: parseEther("0.2"),
     options: async (hre) => ({
         extraData: "0x",
         asBase: true,
