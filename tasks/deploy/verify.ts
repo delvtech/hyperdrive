@@ -325,6 +325,8 @@ task(
                 pathName = "ezeth-linea";
             } else if (kind == "RsETHLineaHyperdrive") {
                 pathName = "rseth-linea";
+            } else if (kind == "StkWellHyperdrive") {
+                pathName = "stk-well";
             } else {
                 pathName = instanceConfig.prefix.toLowerCase();
             }
