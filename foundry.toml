@@ -15,6 +15,7 @@ cache_path = 'forge-cache'
 # Import statement remappings
 remappings = [
   'aave/=lib/aave-v3-origin/src/core/contracts',
+  'aerodrome/=lib/aerodrome/contracts',
   'forge-std/=lib/forge-std/src',
   'morpho-blue/=lib/morpho-blue',
   'nomad/=lib/ExcessivelySafeCall/src',
