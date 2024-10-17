@@ -11,7 +11,7 @@ contract MockL2Pool is L2Pool {
     ) Pool(addressesProvider) {}
 
     function initialize(IPoolAddressesProvider provider) public override {
-        // does notthing
+        // does nothing
     }
 
     function getRevision() internal pure override returns (uint256) {
