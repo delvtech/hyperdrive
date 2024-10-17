@@ -15,8 +15,8 @@ import { BASE_STK_WELL_COORDINATOR_NAME } from "./stk-well-coordinator";
 export const BASE_STK_WELL_182DAY_NAME =
     "ElementDAO 182 Day Moonwell StkWell Hyperdrive";
 
-// WELL is currently worth ~$0.03, so this is a contribution of around $80.
-const CONTRIBUTION = parseEther("2700");
+// WELL is currently worth ~$0.05, so this is a contribution of around $80.
+const CONTRIBUTION = parseEther("1500");
 
 export const BASE_STK_WELL_182DAY: HyperdriveInstanceConfig<"StkWell"> = {
     name: BASE_STK_WELL_182DAY_NAME,
@@ -24,8 +24,8 @@ export const BASE_STK_WELL_182DAY: HyperdriveInstanceConfig<"StkWell"> = {
     coordinatorAddress: async (hre) =>
         hre.hyperdriveDeploy.deployments.byName(BASE_STK_WELL_COORDINATOR_NAME)
             .address,
-    deploymentId: keccak256(toHex(BASE_STK_WELL_182DAY_NAME)),
-    salt: toBytes32("0x42080085"),
+    deploymentId: keccak256(toHex(BASE_STK_WELL_182DAY_NAME + "1")),
+    salt: toBytes32("0x42080086"),
     extraData: "0x",
     contribution: CONTRIBUTION,
     // NOTE: The latest variable rate on Moonwell's Staked Well market is
