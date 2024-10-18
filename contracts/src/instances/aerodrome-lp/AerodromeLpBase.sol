@@ -51,7 +51,6 @@ abstract contract AerodromeLpBase is HyperdriveBase {
 
     /// @dev Process a withdrawal in base and send the proceeds to the
     ///      destination.
-
     /// @param _shareAmount There is no vault, so this it the base token amount
     ///                     to withdraw.
     /// @param _destination The destination of the withdrawal.
@@ -103,7 +102,7 @@ abstract contract AerodromeLpBase is HyperdriveBase {
         override
         returns (uint256 shareAmount)
     {
-        return _vaultSharesToken.balanceOf(address(this));
+        return _baseToken.balanceOf(address(this));
     }
 
     /// @dev We override the message value check since this integration is

@@ -10,6 +10,7 @@ import { AERODROME_LP_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND } from "../../librari
 import { ONE } from "../../libraries/FixedPointMath.sol";
 import { HyperdriveDeployerCoordinator } from "../HyperdriveDeployerCoordinator.sol";
 
+
 /// @author DELV
 /// @title AerodromeLpHyperdriveDeployerCoordinator
 /// @notice The deployer coordinator for the AerodromeLpHyperdrive
@@ -140,13 +141,13 @@ contract AerodromeLpHyperdriveDeployerCoordinator is
         // has been tested to prevent arithmetic overflows in the
         // `_updateLiquidity` function when the share reserves are as high as
         // 200 million.
-        if (_deployConfig.minimumShareReserves != 1e15) {
+        if (_deployConfig.minimumShareReserves != 1e10) {
             revert IHyperdriveDeployerCoordinator.InvalidMinimumShareReserves();
         }
 
         // Ensure that the minimum transaction amount are equal to 1e15. This
         // value has been tested to prevent precision issues.
-        if (_deployConfig.minimumTransactionAmount != 1e15) {
+        if (_deployConfig.minimumTransactionAmount != 1e10) {
             revert IHyperdriveDeployerCoordinator
                 .InvalidMinimumTransactionAmount();
         }

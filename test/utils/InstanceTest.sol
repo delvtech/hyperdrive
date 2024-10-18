@@ -16,6 +16,8 @@ import { HyperdriveTest } from "./HyperdriveTest.sol";
 import { HyperdriveUtils } from "./HyperdriveUtils.sol";
 import { Lib } from "./Lib.sol";
 
+import { console2 as console } from "forge-std/console2.sol";
+
 /// @author DELV
 /// @title InstanceTest
 /// @notice The base contract for the instance testing suite.
@@ -601,6 +603,10 @@ abstract contract InstanceTest is HyperdriveTest {
                 uint256 traderBaseAfter,
                 uint256 traderSharesAfter
             ) = getTokenBalances(address(trader));
+            console.log('hyperdriveBaseAfter', hyperdriveBaseAfter);
+            console.log('hyperdriveSharesAfter', hyperdriveSharesAfter);
+            console.log('traderBaseAfter', traderBaseAfter);
+            console.log('traderSharesAfter', traderSharesAfter);
             assertEq(hyperdriveBaseAfter, hyperdriveBalancesBefore.baseBalance);
             assertEq(
                 traderBaseAfter,
@@ -1553,12 +1559,18 @@ abstract contract InstanceTest is HyperdriveTest {
     ///      base deposits are not supported.
     /// @param basePaid Amount in terms of base to open a long.
     function test_open_long_with_base(uint256 basePaid) external {
+        console.log('test_open_long_with_base');
+        console.log('basePaid', basePaid);
         // Get balance information before opening a long.
         (
             uint256 totalBaseSupplyBefore,
             uint256 totalShareSupplyBefore
         ) = getSupply();
+        console.log('totalBaseSupplyBefore', totalBaseSupplyBefore);
+        console.log('totalShareSupplyBefore', totalShareSupplyBefore);
         AccountBalances memory bobBalancesBefore = getAccountBalances(bob);
+        uint256 bobBalanceBefore = bobBalancesBefore.baseBalance;
+        console.log('bobBalanceBefore', bobBalanceBefore);
         AccountBalances memory hyperdriveBalanceBefore = getAccountBalances(
             address(hyperdrive)
         );
