@@ -1,3 +1,4 @@
+export * from "./aerodrome-lp-coordinator";
 export * from "./cbeth-182day";
 export * from "./chainlink-coordinator";
 export * from "./erc4626-coordinator";
