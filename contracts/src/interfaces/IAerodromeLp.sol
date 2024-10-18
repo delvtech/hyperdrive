@@ -1,0 +1,16 @@
+// SPDX-License-Identifier: Apache-2.0
+pragma solidity 0.8.22;
+
+import { IERC4626 } from "./IERC4626.sol";
+
+// ****************************************************************************
+// FIXME: Fill out the interface as needed.  ERC4626 extended as an example.
+
+/// @author DELV
+/// @title IAerodromeLp
+/// @notice The interface file for AerodromeLp
+/// @custom:disclaimer The language used in this code is for coding convenience
+///                    only, and is not intended to, and does not, have any
+///                    particular legal or regulatory significance.
+abstract contract IAerodromeLp is IERC4626 {}
+// ****************************************************************************
