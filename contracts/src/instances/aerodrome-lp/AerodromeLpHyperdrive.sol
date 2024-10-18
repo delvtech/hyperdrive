@@ -89,13 +89,11 @@ contract AerodromeLpHyperdrive is Hyperdrive, AerodromeLpBase {
             _target4
         )
     {
-        // ****************************************************************
-        // FIXME: Implement this for new instances. ERC4626 example provided.
 
         // Approve the base token with 1 wei. This ensures that all of the
         // subsequent approvals will be writing to a dirty storage slot.
         ERC20(address(_config.baseToken)).forceApprove(
-            address(_config.vaultSharesToken),
+            address(this),
             1
         );
     }
