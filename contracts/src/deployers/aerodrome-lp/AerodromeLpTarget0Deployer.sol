@@ -2,7 +2,6 @@
 pragma solidity 0.8.22;
 
 import { AerodromeLpTarget0 } from "../../instances/aerodrome-lp/AerodromeLpTarget0.sol";
-import { IAerodromeLp } from "../../interfaces/IAerodromeLp.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IHyperdriveAdminController } from "../../interfaces/IHyperdriveAdminController.sol";
 import { IHyperdriveTargetDeployer } from "../../interfaces/IHyperdriveTargetDeployer.sol";

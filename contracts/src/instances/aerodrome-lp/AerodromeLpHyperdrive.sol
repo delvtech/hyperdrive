@@ -4,7 +4,6 @@ pragma solidity 0.8.22;
 import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
 import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { Hyperdrive } from "../../external/Hyperdrive.sol";
-import { IERC20 } from "../../interfaces/IERC20.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IHyperdriveAdminController } from "../../interfaces/IHyperdriveAdminController.sol";
 import { AerodromeLpBase } from "./AerodromeLpBase.sol";
@@ -89,14 +88,8 @@ contract AerodromeLpHyperdrive is Hyperdrive, AerodromeLpBase {
             _target4
         )
     {
-        // ****************************************************************
-        // FIXME: Implement this for new instances. ERC4626 example provided.
-
         // Approve the base token with 1 wei. This ensures that all of the
         // subsequent approvals will be writing to a dirty storage slot.
-        ERC20(address(_config.baseToken)).forceApprove(
-            address(_config.vaultSharesToken),
-            1
-        );
+        ERC20(address(_config.baseToken)).forceApprove(address(this), 1);
     }
 }

@@ -31,6 +31,9 @@ string constant HYPERDRIVE_REGISTRY_KIND = "HyperdriveRegistry";
 /// @dev The kind of the AaveHyperdrive deployer coordinator.
 string constant AAVE_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND = "AaveHyperdriveDeployerCoordinator";
 
+/// @dev The kind of the AaveHyperdrive deployer coordinator.
+string constant AERODROME_LP_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND = "AerodromeLpHyperdriveDeployerCoordinator";
+
 /// @dev The kind of the ChainlinkHyperdrive deployer coordinator.
 string constant CHAINLINK_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND = "ChainlinkHyperdriveDeployerCoordinator";
 
@@ -75,6 +78,9 @@ string constant STK_WELL_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND = "StkWellHyperdri
 
 /// @dev The kind of AaveHyperdrive.
 string constant AAVE_HYPERDRIVE_KIND = "AaveHyperdrive";
+
+/// @dev The kind of AaveHyperdrive.
+string constant AERODROME_LP_HYPERDRIVE_KIND = "AerodromeLpHyperdrive";
 
 /// @dev The kind of ChainlinkHyperdrive.
 string constant CHAINLINK_HYPERDRIVE_KIND = "ChainlinkHyperdrive";

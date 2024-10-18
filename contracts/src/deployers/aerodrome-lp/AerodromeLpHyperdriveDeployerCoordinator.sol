@@ -4,9 +4,7 @@ pragma solidity 0.8.22;
 import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
 import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { AerodromeLpConversions } from "../../instances/aerodrome-lp/AerodromeLpConversions.sol";
-import { IAerodromeLp } from "../../interfaces/IAerodromeLp.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
-import { IAerodromeLpHyperdrive } from "../../interfaces/IAerodromeLpHyperdrive.sol";
 import { IHyperdriveDeployerCoordinator } from "../../interfaces/IHyperdriveDeployerCoordinator.sol";
 import { AERODROME_LP_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND } from "../../libraries/Constants.sol";
 import { ONE } from "../../libraries/FixedPointMath.sol";
@@ -19,7 +17,9 @@ import { HyperdriveDeployerCoordinator } from "../HyperdriveDeployerCoordinator.
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-contract AerodromeLpHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
+contract AerodromeLpHyperdriveDeployerCoordinator is
+    HyperdriveDeployerCoordinator
+{
     using SafeERC20 for ERC20;
 
     /// @notice The deployer coordinator's kind.
@@ -72,7 +72,6 @@ contract AerodromeLpHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinat
         address _lp,
         uint256 _contribution,
         IHyperdrive.Options memory _options
-
     ) internal override returns (uint256 value) {
         // If base is the deposit asset, the initialization will be paid in the
         // base token.
@@ -85,13 +84,8 @@ contract AerodromeLpHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinat
             token = _hyperdrive.vaultSharesToken();
         }
 
-        // ****************************************************************
-        // FIXME: Implement this for new instances. ERC20 example provided.
-        // Take custody of the contribution and approve Hyperdrive to pull the
-        // tokens.
         ERC20(token).safeTransferFrom(_lp, address(this), _contribution);
         ERC20(token).forceApprove(address(_hyperdrive), _contribution);
-        // ****************************************************************
 
         return value;
     }
@@ -99,9 +93,7 @@ contract AerodromeLpHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinat
     /// @notice Convert an amount of vault shares to an amount of base.
     /// @param _shareAmount The vault shares amount.
     /// @return The base amount.
-    function convertToBase(
-        uint256 _shareAmount
-    ) public view returns (uint256) {
+    function convertToBase(uint256 _shareAmount) public pure returns (uint256) {
         return AerodromeLpConversions.convertToBase(_shareAmount);
     }
 
@@ -110,10 +102,9 @@ contract AerodromeLpHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinat
     /// @return The vault shares amount.
     function convertToShares(
         uint256 _baseAmount
-    ) public view returns (uint256) {
+    ) public pure returns (uint256) {
         return AerodromeLpConversions.convertToShares(_baseAmount);
     }
-
 
     /// @dev We override the message value check since this integration is
     ///      not payable.
@@ -123,9 +114,6 @@ contract AerodromeLpHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinat
         }
     }
 
-
-    // FIXME: Update the extra data comment if the extra data isn't empty.
-    //
     /// @notice Checks the pool configuration to ensure that it is valid.
     /// @param _deployConfig The deploy configuration of the Hyperdrive pool.
     /// @param _extraData The empty extra data.
@@ -136,18 +124,17 @@ contract AerodromeLpHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinat
         // Perform the default checks.
         super._checkPoolConfig(_deployConfig, _extraData);
 
-        // ****************************************************************
-        // FIXME: Implement this for new instances.
         // Ensure that the vault shares token address is properly configured.
+        // Since we don't have a vault for the lp tokens, the address should
+        // be zero.
         if (address(_deployConfig.vaultSharesToken) != address(0)) {
             revert IHyperdriveDeployerCoordinator.InvalidVaultSharesToken();
         }
 
         // Ensure that the base token address is properly configured.
-        if (address(_deployConfig.baseToken) != address(0)) {
+        if (address(_deployConfig.baseToken) == address(0)) {
             revert IHyperdriveDeployerCoordinator.InvalidBaseToken();
         }
-        // *****************************************************************
 
         // Ensure that the minimum share reserves are equal to 1e15. This value
         // has been tested to prevent arithmetic overflows in the
@@ -171,9 +158,6 @@ contract AerodromeLpHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinat
         IHyperdrive.PoolDeployConfig memory, // unused _deployConfig
         bytes memory // unused _extraData
     ) internal pure override returns (uint256) {
-        // ****************************************************************
-        // FIXME:  Implement this for new instances.
         return convertToBase(ONE);
-        // ****************************************************************
     }
 }
