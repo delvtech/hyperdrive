@@ -21,6 +21,6 @@ contract:
   # to accept Ether, and deposit into the vault to obtain vault shares.
   payable: false
 
-  # If the contract can accept base to convert to valut shares on behalf of the
+  # If the contract can accept base to convert to vault shares on behalf of the
   # user.
   as_base_allowed: true
