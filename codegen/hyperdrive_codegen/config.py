@@ -16,6 +16,7 @@ class Name(BaseModel):
 
 
 class Contract(BaseModel):
+    """Holds the configuration for the contract."""
 
     payable: bool
     as_base_allowed: bool
