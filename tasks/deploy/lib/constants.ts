@@ -158,8 +158,26 @@ export const CBETH_ADDRESS_BASE =
 export const CHAINLINK_AGGREGATOR_CBETH_ETH_PROXY_BASE =
     "0x868a501e68F3D1E89CfC0D22F6b22E8dabce5F04" as Address;
 
+export const EURC_ADDRESS_BASE =
+    "0x60a3E35Cc302bFA44Cb288Bc5a4F316Fdb1adb42" as Address;
+
 export const MOONWELL_ETH_ADDRESS_BASE =
     "0xa0E430870c4604CcfC7B38Ca7845B1FF653D0ff1" as Address;
+
+export const MOONWELL_EURC_ADDRESS_BASE =
+    "0xf24608E0CCb972b0b0f4A6446a0BBf58c701a026" as Address;
+
+export const MOONWELL_USDC_ADDRESS_BASE =
+    "0xc1256Ae5FF1cf2719D4937adb3bbCCab2E00A2Ca" as Address;
+
+export const NARS_ADDRESS_BASE =
+    "0x5e40f26E89213660514c51Fb61b2d357DBf63C85" as Address;
+
+export const SNARS_ADDRESS_BASE =
+    "0xC1F4C75e8925A67BE4F35D6b1c044B5ea8849a58" as Address;
+
+export const STK_WELL_ADDRESS_BASE =
+    "0xe66E3A37C3274Ac24FE8590f7D84A2427194DC17" as Address;
 
 export const USDC_ADDRESS_BASE =
     "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" as Address;
@@ -169,9 +187,6 @@ export const WETH_ADDRESS_BASE =
 
 export const WELL_ADDRESS_BASE =
     "0xA88594D404727625A9437C3f886C7643872296AE" as Address;
-
-export const STK_WELL_ADDRESS_BASE =
-    "0xe66E3A37C3274Ac24FE8590f7D84A2427194DC17" as Address;
 
 // ╭─────────────────────────────────────────────────────────╮
 // │ Base Whales                                             │
@@ -209,6 +224,8 @@ export const WSTETH_WHALE_GNOSIS =
 // ╭─────────────────────────────────────────────────────────╮
 // │ Durations                                               │
 // ╰─────────────────────────────────────────────────────────╯
+
+export const ONE_MONTH = "30 days";
 
 export const THREE_MONTHS = "91 days";
 
