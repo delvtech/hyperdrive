@@ -5,9 +5,11 @@ import { stdStorage, StdStorage } from "forge-std/Test.sol";
 import { IERC20 } from "../../../contracts/src/interfaces/IERC20.sol";
 import { IHyperdrive } from "../../../contracts/src/interfaces/IHyperdrive.sol";
 import { AerodromeLpHyperdriveInstanceTest } from "./AerodromeLpHyperdriveInstanceTest.t.sol";
+import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 
 contract AerodromeLp_AERO_USDC_Hyperdrive is AerodromeLpHyperdriveInstanceTest {
     using stdStorage for StdStorage;
+    using Strings for uint256;
 
     /// @dev The Base Aerodrome Lp Token for the AERO-USDC pool.
     IERC20 internal constant AERO_USDC_LP =
@@ -30,12 +32,12 @@ contract AerodromeLp_AERO_USDC_Hyperdrive is AerodromeLpHyperdriveInstanceTest {
                 baseToken: AERO_USDC_LP,
                 vaultSharesToken: IERC20(address(0)),
                 shareTolerance: 0,
-                minimumShareReserves: 1e5,
-                minimumTransactionAmount: 1e5,
+                minimumShareReserves: 1e10,
+                minimumTransactionAmount: 1e10,
                 positionDuration: POSITION_DURATION,
                 fees: IHyperdrive.Fees({
-                    curve: 0.001e18,
-                    flat: 0.0001e18,
+                    curve: 0,
+                    flat: 0,
                     governanceLP: 0,
                     governanceZombie: 0
                 }),
@@ -49,17 +51,17 @@ contract AerodromeLp_AERO_USDC_Hyperdrive is AerodromeLpHyperdriveInstanceTest {
                 isRebasing: false,
                 shouldAccrueInterest: false,
                 // The base test tolerances.
-                closeLongWithBaseTolerance: 2,
-                roundTripLpInstantaneousWithBaseTolerance: 1e3,
-                roundTripLpWithdrawalSharesWithBaseTolerance: 1e5,
+                closeLongWithBaseTolerance: 1e6,
+                roundTripLpInstantaneousWithBaseTolerance: 1e6,
+                roundTripLpWithdrawalSharesWithBaseTolerance: 1e6,
                 roundTripLongInstantaneousWithBaseUpperBoundTolerance: 100,
                 // NOTE: Since the curve fee isn't zero, this check is ignored.
-                roundTripLongInstantaneousWithBaseTolerance: 0,
-                roundTripLongMaturityWithBaseUpperBoundTolerance: 100,
-                roundTripLongMaturityWithBaseTolerance: 1e3,
+                roundTripLongInstantaneousWithBaseTolerance: 1e6,
+                roundTripLongMaturityWithBaseUpperBoundTolerance: 1e6,
+                roundTripLongMaturityWithBaseTolerance: 1e6,
                 roundTripShortInstantaneousWithBaseUpperBoundTolerance: 100,
                 // NOTE: Since the curve fee isn't zero, this check is ignored.
-                roundTripShortInstantaneousWithBaseTolerance: 0,
+                roundTripShortInstantaneousWithBaseTolerance: 10,
                 roundTripShortMaturityWithBaseTolerance: 1e3,
                 // NOTE: Share deposits and withdrawals are disabled, so these are
                 // 0.

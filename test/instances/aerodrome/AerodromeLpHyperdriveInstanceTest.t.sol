@@ -18,6 +18,7 @@ import { InstanceTest } from "../../utils/InstanceTest.sol";
 import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
 import { Lib } from "../../utils/Lib.sol";
 
+
 contract AerodromeLpHyperdriveInstanceTest is InstanceTest {
     using FixedPointMath for uint256;
     using HyperdriveUtils for uint256;
@@ -84,7 +85,8 @@ contract AerodromeLpHyperdriveInstanceTest is InstanceTest {
     function getSupply() internal view override returns (uint256, uint256) {
         return (
             config.baseToken.balanceOf(address(hyperdrive)),
-            0);
+            config.baseToken.balanceOf(address(hyperdrive))
+        );
     }
 
     /// @dev Fetches the token balance information of an account.
@@ -96,7 +98,7 @@ contract AerodromeLpHyperdriveInstanceTest is InstanceTest {
     ) internal view override returns (uint256, uint256) {
         return (
             config.baseToken.balanceOf(account),
-            0
+            config.baseToken.balanceOf(account)
         );
     }
 
