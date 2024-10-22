@@ -1577,6 +1577,101 @@
             "contract": "ERC4626Hyperdrive",
             "address": "0x1243C06146ACa2D4Aaf8F9860F6D8d59d636d46C",
             "timestamp": "2024-10-17T22:44:58.410Z"
+        },
+        "ElementDAO ERC4626 Hyperdrive Deployer Coordinator_ERC4626HyperdriveCoreDeployer": {
+            "contract": "ERC4626HyperdriveCoreDeployer",
+            "address": "0x7dd0143eb6344808058912434d59df7e6b750b45",
+            "timestamp": "2024-10-22T00:16:14.719Z"
+        },
+        "ElementDAO ERC4626 Hyperdrive Deployer Coordinator_ERC4626Target0Deployer": {
+            "contract": "ERC4626Target0Deployer",
+            "address": "0xa35411b03078ef2edc254d1a2f0497d77c5b3e1d",
+            "timestamp": "2024-10-22T00:16:19.357Z"
+        },
+        "ElementDAO ERC4626 Hyperdrive Deployer Coordinator_ERC4626Target1Deployer": {
+            "contract": "ERC4626Target1Deployer",
+            "address": "0x30f48d0cace859fa633031035bf2395bbbfe030a",
+            "timestamp": "2024-10-22T00:16:27.301Z"
+        },
+        "ElementDAO ERC4626 Hyperdrive Deployer Coordinator_ERC4626Target2Deployer": {
+            "contract": "ERC4626Target2Deployer",
+            "address": "0x0a97d6e87661c9158e1dc4fde66e98ea96fccde0",
+            "timestamp": "2024-10-22T00:16:32.101Z"
+        },
+        "ElementDAO ERC4626 Hyperdrive Deployer Coordinator_ERC4626Target3Deployer": {
+            "contract": "ERC4626Target3Deployer",
+            "address": "0x144f74f2b663ab5030fb5e6f24bada13441aa4b3",
+            "timestamp": "2024-10-22T00:16:36.644Z"
+        },
+        "ElementDAO ERC4626 Hyperdrive Deployer Coordinator_ERC4626Target4Deployer": {
+            "contract": "ERC4626Target4Deployer",
+            "address": "0xb3f2380f7f9f78112ab152c486d27222bff4673c",
+            "timestamp": "2024-10-22T00:16:41.210Z"
+        },
+        "ElementDAO ERC4626 Hyperdrive Deployer Coordinator": {
+            "contract": "ERC4626HyperdriveDeployerCoordinator",
+            "address": "0xfa8a5165219c5bd7992038202bf504110de61efd",
+            "timestamp": "2024-10-22T00:16:44.039Z"
+        },
+        "ElementDAO 182 Day Moonwell EURC Hyperdrive_ERC4626Target0": {
+            "contract": "ERC4626Target0",
+            "address": "0x207deD1eEDE260Fd40760e8A230B51aE27B44dD3",
+            "timestamp": "2024-10-22T00:17:29.891Z"
+        },
+        "ElementDAO 182 Day Moonwell EURC Hyperdrive_ERC4626Target1": {
+            "contract": "ERC4626Target1",
+            "address": "0x34542Df0D0dB6524A7eBbb504d4a607b802Fad70",
+            "timestamp": "2024-10-22T00:17:07.906Z"
+        },
+        "ElementDAO 182 Day Moonwell EURC Hyperdrive_ERC4626Target2": {
+            "contract": "ERC4626Target2",
+            "address": "0x66264C6707E8d7eAb8f7a5E0bb522423c4E8A6a0",
+            "timestamp": "2024-10-22T00:17:12.562Z"
+        },
+        "ElementDAO 182 Day Moonwell EURC Hyperdrive_ERC4626Target3": {
+            "contract": "ERC4626Target3",
+            "address": "0xfd10C9d2695Dc78AB96fF75828E6beA438969518",
+            "timestamp": "2024-10-22T00:17:20.512Z"
+        },
+        "ElementDAO 182 Day Moonwell EURC Hyperdrive_ERC4626Target4": {
+            "contract": "ERC4626Target4",
+            "address": "0x0827943d58aB22dbE79A1FE2AB158480cb4F0D9A",
+            "timestamp": "2024-10-22T00:17:25.158Z"
+        },
+        "ElementDAO 182 Day Moonwell EURC Hyperdrive": {
+            "contract": "ERC4626Hyperdrive",
+            "address": "0xdd8E1B14A04cbdD98dfcAF3F0Db84A80Bfb8FC25",
+            "timestamp": "2024-10-22T00:17:29.739Z"
+        },
+        "ElementDAO 182 Day Moonwell USDC Hyperdrive_ERC4626Target0": {
+            "contract": "ERC4626Target0",
+            "address": "0x5580845D3F597A9A309a4448924c270ea0f4c736",
+            "timestamp": "2024-10-22T00:18:26.594Z"
+        },
+        "ElementDAO 182 Day Moonwell USDC Hyperdrive_ERC4626Target1": {
+            "contract": "ERC4626Target1",
+            "address": "0x5Db16781a29549d708c4c34bF2771C1b34415c21",
+            "timestamp": "2024-10-22T00:17:53.152Z"
+        },
+        "ElementDAO 182 Day Moonwell USDC Hyperdrive_ERC4626Target2": {
+            "contract": "ERC4626Target2",
+            "address": "0x257411570Bc419B1B13AEcb5Fe83eba6e2903CeA",
+            "timestamp": "2024-10-22T00:18:01.120Z"
+        },
+        "ElementDAO 182 Day Moonwell USDC Hyperdrive_ERC4626Target3": {
+            "contract": "ERC4626Target3",
+            "address": "0x56D2430eE396d3f4811781B146D66361206BA3Dc",
+            "timestamp": "2024-10-22T00:18:15.715Z"
+        },
+        "ElementDAO 182 Day Moonwell USDC Hyperdrive_ERC4626Target4": {
+            "contract": "ERC4626Target4",
+            "address": "0x0a4d43365229F46250fdBaAece73B6bce28e925F",
+            "timestamp": "2024-10-22T00:18:23.639Z"
+        },
+        "ElementDAO 182 Day Moonwell USDC Hyperdrive": {
+            "contract": "ERC4626Hyperdrive",
+            "address": "0xD9b66D9a819B36ECEfC26B043eF3B422d5A6123a",
+            "timestamp": "2024-10-22T00:18:26.463Z"
         }
     }
 }
