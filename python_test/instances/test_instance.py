@@ -1,16 +1,18 @@
 import os
 from typing import NamedTuple
 
-import pytest
 from agent0 import LocalChain, LocalHyperdrive
-from agent0.core.hyperdrive.interactive.local_hyperdrive_agent import \
-    LocalHyperdriveAgent
-from agent0.ethpy.base import ETH_CONTRACT_ADDRESS, smart_contract_transact
-from agent0.ethpy.base.receipts import get_transaction_logs
+from agent0.core.hyperdrive.interactive.local_hyperdrive_agent import LocalHyperdriveAgent
+from agent0.ethpy.base import ETH_CONTRACT_ADDRESS
 from fixedpointmath import FixedPoint
-from hyperdrivetypes import (ERC20ForwarderFactoryContract,
-                             HyperdriveFactoryContract, HyperdriveFactoryTypes,
-                             IERC20Contract, IHyperdriveTypes, LPMathContract)
+from hyperdrivetypes.types import (
+    ERC20ForwarderFactoryContract,
+    HyperdriveFactory,
+    HyperdriveFactoryContract,
+    IERC20Contract,
+    IHyperdrive,
+    LPMathContract,
+)
 from web3 import Web3
 from web3.constants import ADDRESS_ZERO
 from web3.contract import Contract
@@ -19,8 +21,9 @@ DEFAULT_DEPLOYMENT_ID = bytes(28) + bytes.fromhex("deadbeef")
 DEFAULT_DEPLOYMENT_SALT = bytes(28) + bytes.fromhex("deadbabe")
 
 
-class TestInstance():
+class TestInstance:
     """This is the base pytest class that defines test variables and what tests to run."""
+
     # Test instance configuration
 
     class InstanceConfig(NamedTuple):
@@ -36,25 +39,24 @@ class TestInstance():
         vault_shares_token: str
         minimum_share_reserves: FixedPoint
         minimum_transaction_amount: FixedPoint
-        fees: IHyperdriveTypes.Fees
+        fees: IHyperdrive.Fees
         enable_base_deposits: bool
         enable_share_deposits: bool
-        enable_base_withdraws:bool
+        enable_base_withdraws: bool
         enable_share_withdraws: bool
         # TODO figure out this error
         # base_withdraw_error = IHyperdriveTypes.UnsupportedTokenError.selector,
         is_rebasing: bool
 
         # TODO add test tolerances
-    
+
     def __init__(self, test_config: InstanceConfig):
         self.test_config = self.get_test_config()
         self.is_base_eth = self.test_config.base_token == ETH_CONTRACT_ADDRESS
-    
-    
+
     def create_user(self, name: str):
         return self.chain.init_agent(name=name, eth=FixedPoint(100))
-    
+
     def fund_accounts(
         self,
         base_token_contract: IERC20Contract,
@@ -63,11 +65,16 @@ class TestInstance():
     ) -> None:
         source_balance = base_token_contract.functions.balanceOf(whale_account).call()
         for agent in agents:
-            agent.fund_from_whale(base_token_contract, whale_account, amount=source_balance/len(agents), fund_whale_with_eth=True,)
-    
+            agent.fund_from_whale(
+                base_token_contract,
+                whale_account,
+                amount=source_balance / len(agents),
+                fund_whale_with_eth=True,
+            )
+
     def cleanup(self):
         self.chain.cleanup()
-    
+
     def setup(self):
         # TODO this function is setting lots of member variables.
         # We may want to clean this up and pass variables around,
@@ -94,41 +101,27 @@ class TestInstance():
         self.sweep_collector = self.create_user("sweep_collector")
 
         self.base_token = IERC20Contract.factory(self.web3)(Web3.to_checksum_address(self.test_config.base_token))
-        self.vault_shares_token = IERC20Contract.factory(self.web3)(Web3.to_checksum_address(self.test_config.vault_shares_token))
+        self.vault_shares_token = IERC20Contract.factory(self.web3)(
+            Web3.to_checksum_address(self.test_config.vault_shares_token)
+        )
 
         # Fund alice and bob from whales
         for base_whale in self.test_config.base_token_whale_accounts:
-            self.fund_accounts(
-                self.base_token, 
-                base_whale,
-                [self.alice, self.bob]
-            )
+            self.fund_accounts(self.base_token, base_whale, [self.alice, self.bob])
         for vault_shares_whale in self.test_config.vault_shares_token_whale_accounts:
-            self.fund_accounts(
-                self.vault_shares_token,
-                vault_shares_whale,
-                [self.alice, self.bob]
-            )
+            self.fund_accounts(self.vault_shares_token, vault_shares_whale, [self.alice, self.bob])
 
-        
         self.deploy_factory()
-        
+
         # Deployer coordinators need the LPMath contract to link against,
         # we deploy it here
         lp_math = LPMathContract.deploy(self.web3, self.alice.account)
 
-
-        self.deployer_coordinator: Contract = self.deploy_coordinator(factory, lp_math)
-        txn_func = self.factory.functions.addDeployerCoordinator(self.deployer_coordinator.address)
-        # TODO make it easier to send transactions via pypechain
-        txn_receipt = smart_contract_transact(
-            self.web3,
-            self.factory,
+        self.deployer_coordinator: Contract = self.deploy_coordinator(self.factory, lp_math)
+        _ = self.factory.functions.addDeployerCoordinator(self.deployer_coordinator.address).sign_transact_and_wait(
             self.alice.account,
-            txn_func.fn_name,
-            *txn_func.args,
+            validate_transaction=True,
         )
-        assert txn_receipt["status"] == 1
 
         # Contribution amount is based on specific test config params
         contribution: FixedPoint
@@ -138,8 +131,8 @@ class TestInstance():
         # vault shares balance and 1000 vault shares in units of vault shares.
         if self.test_config.enable_share_deposits and not self.test_config.is_rebasing:
             contribution = min(
-                FixedPoint(scaled_value=self.vault_shares_token.functions.balanceOf(self.alice.address).call())/10, 
-                FixedPoint(1_000)
+                FixedPoint(scaled_value=self.vault_shares_token.functions.balanceOf(self.alice.address).call()) / 10,
+                FixedPoint(1_000),
             )
         # If share deposits are enabled and the vault shares token is a
         # rebasing token, the contribution is the minimum of a tenth of Alice's
@@ -147,7 +140,8 @@ class TestInstance():
         elif self.test_config.enable_share_deposits:
             contribution = self.convert_to_shares(
                 min(
-                    FixedPoint(scaled_value=self.vault_shares_token.functions.balanceOf(self.alice.address).call())/10, 
+                    FixedPoint(scaled_value=self.vault_shares_token.functions.balanceOf(self.alice.address).call())
+                    / 10,
                     FixedPoint(1_000),
                 )
             )
@@ -156,7 +150,7 @@ class TestInstance():
         # vault shares balance and 1000 vault shares in units of base.
         elif self.is_base_eth:
             contribution = min(
-                FixedPoint(scaled_value=self.base_token.functions.balanceOf(self.alice.address).call())/10, 
+                FixedPoint(scaled_value=self.base_token.functions.balanceOf(self.alice.address).call()) / 10,
                 FixedPoint(1_000),
             )
         # If share deposits are disabled and the base token is ETH, the
@@ -167,12 +161,12 @@ class TestInstance():
                 self.alice.get_eth(),
                 FixedPoint(1_000),
             )
-        
-        hyperdrive_address= self.deploy_hyperdrive(
-            deployment_id = DEFAULT_DEPLOYMENT_ID,
-            deployment_salt = DEFAULT_DEPLOYMENT_SALT,
-            contribution = contribution,
-            as_base = not self.test_config.enable_share_deposits
+
+        hyperdrive_address = self.deploy_hyperdrive(
+            deployment_id=DEFAULT_DEPLOYMENT_ID,
+            deployment_salt=DEFAULT_DEPLOYMENT_SALT,
+            contribution=contribution,
+            as_base=not self.test_config.enable_share_deposits,
         )
 
         # Create a hyperdrive object with this address to interact with rest of agent0
@@ -181,10 +175,6 @@ class TestInstance():
         # No need to approve, interactions with `hyperdrive_pool` will automatically max approve
 
         # TODO add test to ensure lp amounts are correct
-
-
-
-
 
     def deploy_factory(self):
         forwarder_factory = ERC20ForwarderFactoryContract.deploy(
@@ -197,7 +187,7 @@ class TestInstance():
             self.web3,
             account=self.deployer.account,
             constructor_args=HyperdriveFactoryContract.ConstructorArgs(
-                factoryConfig=HyperdriveFactoryTypes.FactoryConfig(
+                factoryConfig=HyperdriveFactory.FactoryConfig(
                     governance=self.alice.address,
                     deployerCoordinatorManager=self.celine.address,
                     hyperdriveGovernance=self.bob.address,
@@ -216,13 +206,13 @@ class TestInstance():
                     maxFixedAPR=FixedPoint("0.5").scaled_value,
                     minTimeStretchAPR=FixedPoint("0.005").scaled_value,
                     maxTimeStretchAPR=FixedPoint("0.5").scaled_value,
-                    minFees=IHyperdriveTypes.Fees(
+                    minFees=IHyperdrive.Fees(
                         curve=0,
                         flat=0,
                         governanceLP=0,
                         governanceZombie=0,
                     ),
-                    maxFees=IHyperdriveTypes.Fees(
+                    maxFees=IHyperdrive.Fees(
                         curve=FixedPoint(1).scaled_value,
                         flat=FixedPoint(1).scaled_value,
                         governanceLP=FixedPoint(1).scaled_value,
@@ -236,7 +226,7 @@ class TestInstance():
         )
 
         # Update pool configuration
-        self.pool_deploy_config = IHyperdriveTypes.PoolDeployConfig(
+        self.pool_deploy_config = IHyperdrive.PoolDeployConfig(
             baseToken=self.test_config.base_token,
             vaultSharesToken=self.test_config.vault_shares_token,
             linkerFactory=self.factory.functions.linkerFactory().call(),
@@ -254,36 +244,32 @@ class TestInstance():
             fees=self.test_config.fees,
         )
 
-    def deploy_hyperdrive(self, deployment_id: bytes, deployment_salt: bytes, contribution: FixedPoint, as_base:bool,) -> str:
+    def deploy_hyperdrive(
+        self,
+        deployment_id: bytes,
+        deployment_salt: bytes,
+        contribution: FixedPoint,
+        as_base: bool,
+    ) -> str:
         for i in range(self.deployer_coordinator.functions.getNumberOfTargets().call()):
-            # TODO make it easier to send transactions via pypechain
-            txn_func = self.factory.functions.deployTarget(
-                deploymentId=deployment_id,
-                deployerCoordinator=self.deployer_coordinator.address,
-                config=self.pool_deploy_config,
-                extraData=self.get_extra_data(),
-                fixedAPR=self.test_config.initial_fixed_rate.scaled_value,
-                timeStretchAPR=self.test_config.initial_fixed_rate.scaled_value,
-                targetIndex=i,
-                salt=deployment_salt,
-            )
+            _ = self.factory.functions.deployTarget(
+                _deploymentId=deployment_id,
+                _deployerCoordinator=self.deployer_coordinator.address,
+                _config=self.pool_deploy_config,
+                _extraData=self.get_extra_data(),
+                _fixedAPR=self.test_config.initial_fixed_rate.scaled_value,
+                _timeStretchAPR=self.test_config.initial_fixed_rate.scaled_value,
+                _targetIndex=i,
+                _salt=deployment_salt,
+            ).sign_transact_and_wait(self.alice.account, validate_transaction=True)
 
-            txn_receipt = smart_contract_transact(
-                self.web3,
-                self.factory,
-                self.alice.account,
-                txn_func.fn_name,
-                *txn_func.args,
-            )
-            assert txn_receipt["status"] == 1
-
+        approve_fn = None
         # If base is being used and the base token isn't ETH, we set an
         # approval on the deployer coordinator with the contribution in base.
         if as_base and not self.is_base_eth:
-            # TODO make it easier to send transactions via pypechain
             token = self.base_token
             approve_fn = token.functions.approve(self.deployer_coordinator.address, contribution.scaled_value)
-        
+
         # If vault shares is being used and the vault shares token isn't a
         # rebasing token, we set an approval on the deployer coordinator
         # with the contribution in vault shares.
@@ -296,19 +282,12 @@ class TestInstance():
         elif not as_base:
             token = self.vault_shares_token
             approve_fn = token.functions.approve(
-                self.deployer_coordinator.address,
-                self.convert_to_base(contribution).scaled_value
+                self.deployer_coordinator.address, self.convert_to_base(contribution).scaled_value
             )
-        
 
-        txn_receipt = smart_contract_transact(
-            self.web3,
-            token,
-            self.alice.account,
-            approve_fn.fn_name,
-            *txn_func.args,
-        )
-        assert txn_receipt["status"] == 1
+        assert approve_fn is not None
+
+        approve_fn.sign_transact_and_wait(self.alice.account, validate_transaction=True)
 
         # TODO catch expected reverts with unsupportedtoken error if depositing
         # not supported.
@@ -316,48 +295,31 @@ class TestInstance():
         # TODO test alice eth balance
 
         # Deploy hyperdrive
-        txn_func = self.factory.functions.deployAndInitialize(
-            deploymentId=deployment_id,
-            deployerCoordinator=self.deployer_coordinator.address,
-            name=self.test_config.name,
-            config=self.pool_deploy_config,
-            extraData=self.get_extra_data(),
-            contribution=contribution.scaled_value,
-            fixedAPR=self.test_config.initial_fixed_rate.scaled_value,
-            timeStretchAPR=self.test_config.initial_fixed_rate.scaled_value,
-            options=IHyperdriveTypes.Options(
-                destination=self.alice.address, 
-                asBase=as_base, 
-                extraData=bytes()
-            ),
-            salt=deployment_salt,
-        )
-        txn_receipt = smart_contract_transact(
-            self.web3,
-            self.factory,
-            self.alice.account,
-            txn_func.fn_name,
-            *txn_func.args,
-        )
-        assert txn_receipt["status"] == 1
+        txn_receipt = self.factory.functions.deployAndInitialize(
+            _deploymentId=deployment_id,
+            _deployerCoordinator=self.deployer_coordinator.address,
+            __name=self.test_config.name,
+            _config=self.pool_deploy_config,
+            _extraData=self.get_extra_data(),
+            _contribution=contribution.scaled_value,
+            _fixedAPR=self.test_config.initial_fixed_rate.scaled_value,
+            _timeStretchAPR=self.test_config.initial_fixed_rate.scaled_value,
+            _options=IHyperdrive.Options(destination=self.alice.address, asBase=as_base, extraData=bytes()),
+            _salt=deployment_salt,
+        ).sign_transact_and_wait(self.alice.account, validate_transaction=True)
 
-        logs = get_transaction_logs(self.factory, txn_receipt)
-        hyperdrive_address: str | None = None
-        for log in logs:
-            if log["event"] == "Deployed":
-                hyperdrive_address = log["args"]["hyperdrive"]
-        if hyperdrive_address is None:
-            raise AssertionError("Generating hyperdrive contract didn't return address")
-        
+        events = list(self.factory.events.Deployed().process_receipt_typed(txn_receipt))
+        assert len(events) == 1
+        hyperdrive_address = events[0].args.hyperdrive
         return hyperdrive_address
-    
+
     #### Abstract functions
     def deploy_coordinator(self, factory: HyperdriveFactoryContract, lp_math_contract: LPMathContract) -> Contract:
         raise NotImplementedError
-    
+
     def get_extra_data(self) -> bytes:
         raise NotImplementedError
-    
+
     def convert_to_shares(self, base_amount: FixedPoint) -> FixedPoint:
         raise NotImplementedError
 
@@ -366,9 +328,3 @@ class TestInstance():
 
     def get_test_config(self) -> InstanceConfig:
         raise NotImplementedError
-
-
-
-            
-
-        

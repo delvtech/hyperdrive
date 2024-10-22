@@ -1,6 +1,6 @@
 import pytest
 from fixedpointmath import FixedPoint
-from hyperdrivetypes import IHyperdriveTypes, IMorphoBlueHyperdriveTypes
+from hyperdrivetypes.types import IHyperdrive, IMorphoBlueHyperdrive
 from web3 import Web3
 from web3.constants import ADDRESS_ZERO
 
@@ -23,35 +23,40 @@ class TestMorphoUsdeDaiHyperdrive(TestMorphoHyperdrive):
     @pytest.fixture
     def get_test_config(self) -> TestMorphoHyperdrive.InstanceConfig:
         return TestMorphoHyperdrive.InstanceConfig(
-            name = "Morpho Blue USDe DAI Hyperdrive",
-            kind = "MorhpoBlueHyperdrive",
+            name="Morpho Blue USDe DAI Hyperdrive",
+            kind="MorhpoBlueHyperdrive",
             # TODO support different decimals
-            decimals = 18,
-            base_token_whale_accounts = [LOAN_TOKEN_WHALE],
-            vault_shares_token_whale_accounts = [],
-            base_token = LOAN_TOKEN,
-            vault_shares_token = ADDRESS_ZERO,
-            minimum_share_reserves = FixedPoint(scaled_value=int(1e15)),
-            minimum_transaction_amount = FixedPoint(scaled_value=int(1e15)),
-            position_duration = 365 * 24 * 3600,  # 365 days
-            fees = IHyperdriveTypes.Fees(
+            decimals=18,
+            base_token_whale_accounts=[LOAN_TOKEN_WHALE],
+            vault_shares_token_whale_accounts=[],
+            base_token=LOAN_TOKEN,
+            vault_shares_token=ADDRESS_ZERO,
+            minimum_share_reserves=FixedPoint(scaled_value=int(1e15)),
+            minimum_transaction_amount=FixedPoint(scaled_value=int(1e15)),
+            position_duration=365 * 24 * 3600,  # 365 days
+            fees=IHyperdrive.Fees(
                 curve=0,
                 flat=0,
                 governanceLP=0,
                 governanceZombie=0,
             ),
-            enable_base_deposits = True,
-            enable_share_deposits = False,
-            enable_base_withdraws = True,
-            enable_share_withdraws = False,
+            enable_base_deposits=True,
+            enable_share_deposits=False,
+            enable_base_withdraws=True,
+            enable_share_withdraws=False,
             # TODO figure out this error
             # base_withdraw_error = IHyperdriveTypes.UnsupportedTokenError.selector,
-            is_rebasing = False,
-            initial_fixed_rate = FixedPoint("0.05"),
-
+            is_rebasing=False,
+            initial_fixed_rate=FixedPoint("0.05"),
             # TODO add in tolerances
             # shares_tolerance = FixedPoint(scaled_value=int(1e15)),
         )
-    
-    def get_morpho_params(self) -> IMorphoBlueHyperdriveTypes.MorphoBlueParams:
-        return IMorphoBlueHyperdriveTypes.MorphoBlueParams(MORPHO, COLLATERAL_TOKEN, ORACLE, IRM, LLTV,)
+
+    def get_morpho_params(self) -> IMorphoBlueHyperdrive.MorphoBlueParams:
+        return IMorphoBlueHyperdrive.MorphoBlueParams(
+            MORPHO,
+            COLLATERAL_TOKEN,
+            ORACLE,
+            IRM,
+            LLTV,
+        )
