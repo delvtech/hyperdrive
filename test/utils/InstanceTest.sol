@@ -75,9 +75,8 @@ abstract contract InstanceTest is HyperdriveTest {
         ///      token. If it is, we have to handle balances and approvals
         ///      differently.
         bool isRebasing;
-        /// @dev Indicates whether or not we should accrue interest. Most yield
-        ///      sources accrue interest, but in special cases, Hyperdrive may
-        ///      integrate with yield sources that don't accrue interest.
+        /// @dev Indicates if hypderive simply holds the base ERC20 without
+        ///      depositing into a vault.
         bool shouldAccrueInterest;
         /// @dev The equality tolerance in wei for the close long with shares
         ///      test.
@@ -399,7 +398,6 @@ abstract contract InstanceTest is HyperdriveTest {
             vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
         }
 
-        // Record Alice's ETH balance before the deployment call.
         uint256 aliceBalanceBefore = address(alice).balance;
 
         // Deploy and initialize the market. If the base token is ETH we pass
@@ -601,6 +599,7 @@ abstract contract InstanceTest is HyperdriveTest {
                 uint256 traderBaseAfter,
                 uint256 traderSharesAfter
             ) = getTokenBalances(address(trader));
+
             assertEq(hyperdriveBaseAfter, hyperdriveBalancesBefore.baseBalance);
             assertEq(
                 traderBaseAfter,
@@ -614,6 +613,7 @@ abstract contract InstanceTest is HyperdriveTest {
                     hyperdrive.convertToShares(amountPaid),
                 config.verifyDepositTolerance
             );
+
             assertEq(traderSharesAfter, traderBalancesBefore.sharesBalance);
         }
         // If we're depositing with vault shares, verify that the vault shares
