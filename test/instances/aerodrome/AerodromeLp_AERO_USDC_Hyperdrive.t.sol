@@ -5,6 +5,7 @@ import { stdStorage, StdStorage } from "forge-std/Test.sol";
 import { IERC20 } from "../../../contracts/src/interfaces/IERC20.sol";
 import { IHyperdrive } from "../../../contracts/src/interfaces/IHyperdrive.sol";
 import { AerodromeLpHyperdriveInstanceTest } from "./AerodromeLpHyperdriveInstanceTest.t.sol";
+import { IGauge } from "aerodrome/interfaces/IGauge.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
 
 contract AerodromeLp_AERO_USDC_Hyperdrive is AerodromeLpHyperdriveInstanceTest {
@@ -14,6 +15,10 @@ contract AerodromeLp_AERO_USDC_Hyperdrive is AerodromeLpHyperdriveInstanceTest {
     /// @dev The Base Aerodrome Lp Token for the AERO-USDC pool.
     IERC20 internal constant AERO_USDC_LP =
         IERC20(0x6cDcb1C4A4D1C3C6d054b27AC5B77e89eAFb971d);
+
+    /// @dev The Aerodrome Gauge contract for the AERO-USDC pool.
+    IGauge internal constant AERO_USDC_GAUGE =
+        IGauge(0x4F09bAb2f0E15e2A078A227FE1537665F55b8360);
 
     /// @dev Whale accounts.
     address internal BASE_TOKEN_WHALE =
@@ -51,18 +56,18 @@ contract AerodromeLp_AERO_USDC_Hyperdrive is AerodromeLpHyperdriveInstanceTest {
                 isRebasing: false,
                 shouldAccrueInterest: false,
                 // The base test tolerances.
-                closeLongWithBaseTolerance: 1e6,
-                roundTripLpInstantaneousWithBaseTolerance: 1e6,
-                roundTripLpWithdrawalSharesWithBaseTolerance: 1e6,
+                closeLongWithBaseTolerance: 0,
+                roundTripLpInstantaneousWithBaseTolerance: 0,
+                roundTripLpWithdrawalSharesWithBaseTolerance: 0,
                 roundTripLongInstantaneousWithBaseUpperBoundTolerance: 100,
                 // NOTE: Since the curve fee isn't zero, this check is ignored.
-                roundTripLongInstantaneousWithBaseTolerance: 1e6,
-                roundTripLongMaturityWithBaseUpperBoundTolerance: 1e6,
-                roundTripLongMaturityWithBaseTolerance: 1e6,
+                roundTripLongInstantaneousWithBaseTolerance: 10,
+                roundTripLongMaturityWithBaseUpperBoundTolerance: 0,
+                roundTripLongMaturityWithBaseTolerance: 0,
                 roundTripShortInstantaneousWithBaseUpperBoundTolerance: 100,
                 // NOTE: Since the curve fee isn't zero, this check is ignored.
                 roundTripShortInstantaneousWithBaseTolerance: 10,
-                roundTripShortMaturityWithBaseTolerance: 1e3,
+                roundTripShortMaturityWithBaseTolerance: 0,
                 // NOTE: Share deposits and withdrawals are disabled, so these are
                 // 0.
                 //
@@ -81,7 +86,8 @@ contract AerodromeLp_AERO_USDC_Hyperdrive is AerodromeLpHyperdriveInstanceTest {
                 // The verification tolerances.
                 verifyDepositTolerance: 2,
                 verifyWithdrawalTolerance: 3
-            })
+            }),
+            AERO_USDC_GAUGE
         )
     {}
 

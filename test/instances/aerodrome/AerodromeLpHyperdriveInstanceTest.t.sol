@@ -2,6 +2,7 @@
 pragma solidity 0.8.22;
 
 import { stdStorage, StdStorage } from "forge-std/Test.sol";
+import { IGauge } from "aerodrome/interfaces/IGauge.sol";
 import { AerodromeLpHyperdriveCoreDeployer } from "../../../contracts/src/deployers/aerodrome-lp/AerodromeLpHyperdriveCoreDeployer.sol";
 import { AerodromeLpHyperdriveDeployerCoordinator } from "../../../contracts/src/deployers/aerodrome-lp/AerodromeLpHyperdriveDeployerCoordinator.sol";
 import { AerodromeLpTarget0Deployer } from "../../../contracts/src/deployers/aerodrome-lp/AerodromeLpTarget0Deployer.sol";
@@ -18,7 +19,6 @@ import { InstanceTest } from "../../utils/InstanceTest.sol";
 import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
 import { Lib } from "../../utils/Lib.sol";
 
-
 contract AerodromeLpHyperdriveInstanceTest is InstanceTest {
     using FixedPointMath for uint256;
     using HyperdriveUtils for uint256;
@@ -26,9 +26,17 @@ contract AerodromeLpHyperdriveInstanceTest is InstanceTest {
     using Lib for *;
     using stdStorage for StdStorage;
 
+    /// @dev The Aerodrome Gauage contract.
+    IGauge internal immutable gauge;
+
     /// @notice Instantiates the instance testing suite with the configuration.
     /// @param _config The instance test configuration.
-    constructor(InstanceTestConfig memory _config) InstanceTest(_config) {}
+    constructor(
+        InstanceTestConfig memory _config,
+        IGauge _gauge
+    ) InstanceTest(_config) {
+        gauge = _gauge;
+    }
 
     /// Overrides ///
 
@@ -69,12 +77,12 @@ contract AerodromeLpHyperdriveInstanceTest is InstanceTest {
                 new AerodromeLpHyperdriveDeployerCoordinator(
                     string.concat(config.name, "DeployerCoordinator"),
                     _factory,
-                    address(new AerodromeLpHyperdriveCoreDeployer()),
-                    address(new AerodromeLpTarget0Deployer()),
-                    address(new AerodromeLpTarget1Deployer()),
-                    address(new AerodromeLpTarget2Deployer()),
-                    address(new AerodromeLpTarget3Deployer()),
-                    address(new AerodromeLpTarget4Deployer())
+                    address(new AerodromeLpHyperdriveCoreDeployer(gauge)),
+                    address(new AerodromeLpTarget0Deployer(gauge)),
+                    address(new AerodromeLpTarget1Deployer(gauge)),
+                    address(new AerodromeLpTarget2Deployer(gauge)),
+                    address(new AerodromeLpTarget3Deployer(gauge)),
+                    address(new AerodromeLpTarget4Deployer(gauge))
                 )
             );
     }
@@ -84,8 +92,10 @@ contract AerodromeLpHyperdriveInstanceTest is InstanceTest {
     /// @return The total supply of vault shares.
     function getSupply() internal view override returns (uint256, uint256) {
         return (
-            config.baseToken.balanceOf(address(hyperdrive)),
-            config.baseToken.balanceOf(address(hyperdrive))
+            config.baseToken.balanceOf(address(gauge)),
+            config.baseToken.balanceOf(address(gauge))
+            // gauge.totalSupply()
+            // config.baseToken.balanceOf(address(hyperdrive))
         );
     }
 
@@ -98,7 +108,7 @@ contract AerodromeLpHyperdriveInstanceTest is InstanceTest {
     ) internal view override returns (uint256, uint256) {
         return (
             config.baseToken.balanceOf(account),
-            config.baseToken.balanceOf(account)
+            gauge.balanceOf(address(account))
         );
     }
 
