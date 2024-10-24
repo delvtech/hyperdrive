@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.22;
 
+import { IGauge } from "aerodrome/interfaces/IGauge.sol";
 import { HyperdriveTarget0 } from "../../external/HyperdriveTarget0.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IHyperdriveAdminController } from "../../interfaces/IHyperdriveAdminController.sol";
@@ -20,10 +21,12 @@ contract AerodromeLpTarget0 is HyperdriveTarget0, AerodromeLpBase {
     /// @param _config The configuration of the Hyperdrive pool.
     /// @param __adminController The admin controller that will specify the
     ///        admin parameters for this instance.
+    /// @param _gauge The Aerodrome Gauage contract.
     constructor(
         IHyperdrive.PoolConfig memory _config,
-        IHyperdriveAdminController __adminController
-    ) HyperdriveTarget0(_config, __adminController) {}
+        IHyperdriveAdminController __adminController,
+        IGauge _gauge
+    ) HyperdriveTarget0(_config, __adminController) AerodromeLpBase(_gauge) {}
 
     /// @notice Returns the instance's kind.
     /// @return The instance's kind.

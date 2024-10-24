@@ -10,7 +10,6 @@ import { AERODROME_LP_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND } from "../../librari
 import { ONE } from "../../libraries/FixedPointMath.sol";
 import { HyperdriveDeployerCoordinator } from "../HyperdriveDeployerCoordinator.sol";
 
-
 /// @author DELV
 /// @title AerodromeLpHyperdriveDeployerCoordinator
 /// @notice The deployer coordinator for the AerodromeLpHyperdrive
@@ -74,21 +73,18 @@ contract AerodromeLpHyperdriveDeployerCoordinator is
         uint256 _contribution,
         IHyperdrive.Options memory _options
     ) internal override returns (uint256 value) {
-        // If base is the deposit asset, the initialization will be paid in the
-        // base token.
-        address token;
-        if (_options.asBase) {
-            token = _hyperdrive.baseToken();
-        }
-        // Otherwise, the initialization will be paid in vault shares.
-        else {
-            token = _hyperdrive.vaultSharesToken();
+        // Depositing with shares is not supported.
+        if (!_options.asBase) {
+            revert IHyperdrive.UnsupportedToken();
         }
 
-        ERC20(token).safeTransferFrom(_lp, address(this), _contribution);
-        ERC20(token).forceApprove(address(_hyperdrive), _contribution);
+        // Transfer base from the LP and approve the Hyperdrive pool.
+        ERC20 baseToken = ERC20(_hyperdrive.baseToken());
+        baseToken.safeTransferFrom(_lp, address(this), _contribution);
+        baseToken.forceApprove(address(_hyperdrive), _contribution);
 
-        return value;
+        // This yield source isn't payable, so we should always send 0 value.
+        return 0;
     }
 
     /// @notice Convert an amount of vault shares to an amount of base.
