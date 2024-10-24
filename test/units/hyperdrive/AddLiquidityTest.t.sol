@@ -392,11 +392,12 @@ contract AddLiquidityTest is HyperdriveTest {
 
         // Ensure that all of the capital except for the minimum share reserves
         // and the zero address's LP present value was removed from the system.
-        assertEq(
+        assertApproxEqAbs(
             baseToken.balanceOf(address(hyperdrive)),
             (ONE + hyperdrive.lpSharePrice()).mulDown(
                 hyperdrive.getPoolConfig().minimumShareReserves
-            )
+            ),
+            1
         );
     }
 
@@ -502,11 +503,12 @@ contract AddLiquidityTest is HyperdriveTest {
 
         // Ensure that all of the capital except for the minimum share reserves
         // and the zero address's LP present value was removed from the system.
-        assertEq(
+        assertApproxEqAbs(
             baseToken.balanceOf(address(hyperdrive)),
             (ONE + hyperdrive.lpSharePrice()).mulDown(
                 hyperdrive.getPoolConfig().minimumShareReserves
-            )
+            ),
+            1
         );
     }
 

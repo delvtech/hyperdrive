@@ -2673,6 +2673,20 @@ abstract contract InstanceTest is HyperdriveTest {
         );
         (uint256 maturityTime, uint256 basePaid) = openShort(bob, _shortAmount);
 
+        // Ensure that the pool has more shares than expected. This verifies
+        // that the pool is solvent.
+        assertGe(
+            hyperdrive.totalShares(),
+            hyperdrive.getPoolInfo().shareReserves +
+                (hyperdrive.getPoolInfo().shortsOutstanding +
+                    hyperdrive.getPoolInfo().shortsOutstanding.mulDown(
+                        hyperdrive.getPoolConfig().fees.flat
+                    )).divDown(hyperdrive.getPoolInfo().vaultSharePrice) +
+                hyperdrive.getUncollectedGovernanceFees() +
+                hyperdrive.getPoolInfo().withdrawalSharesProceeds +
+                hyperdrive.getPoolInfo().zombieShareReserves
+        );
+
         // Get some balance information before the withdrawal.
         (
             uint256 totalSupplyAssetsBefore,

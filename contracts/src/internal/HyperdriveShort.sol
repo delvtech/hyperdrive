@@ -99,6 +99,17 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
                 block.timestamp,
                 spotPrice
             );
+
+            // Adjust the base deposit to ensure that we are overestimating the
+            // amount of base that needs to be deposited to provide the required
+            // amount of vault shares for the pool to remain solvent.
+            //
+            // NOTE: We round up and add 1 wei to the base deposit to ensure
+            // that the deposit in shares is greater than or equal to the amount
+            // required to maintain solvency.
+            baseDeposit =
+                _convertToBase(baseDeposit.divUp(vaultSharePrice)) +
+                1;
         }
 
         // Take custody of the trader's deposit and ensure that the trader

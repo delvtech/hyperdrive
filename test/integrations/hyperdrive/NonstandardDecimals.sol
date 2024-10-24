@@ -54,7 +54,7 @@ contract NonstandardDecimalsTest is HyperdriveTest {
         (, uint256 shortBasePaid) = openShort(celine, bondAmount);
 
         // Ensure that the long and short fixed interest are equal.
-        assertApproxEqAbs(bondAmount - longBasePaid, shortBasePaid, 3);
+        assertApproxEqAbs(bondAmount - longBasePaid, shortBasePaid, 4);
     }
 
     function test_nonstandard_decimals_longs_outstanding() external {
