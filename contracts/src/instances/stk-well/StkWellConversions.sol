@@ -15,7 +15,7 @@ library StkWellConversions {
     /// @return The base amount.
     function convertToBase(
         uint256 _shareAmount
-    ) external pure returns (uint256) {
+    ) internal pure returns (uint256) {
         return _shareAmount;
     }
 
@@ -26,7 +26,7 @@ library StkWellConversions {
     /// @return The vault shares amount.
     function convertToShares(
         uint256 _baseAmount
-    ) external pure returns (uint256) {
+    ) internal pure returns (uint256) {
         return _baseAmount;
     }
 }

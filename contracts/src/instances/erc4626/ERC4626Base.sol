@@ -79,6 +79,9 @@ abstract contract ERC4626Base is HyperdriveBase {
         address _destination,
         bytes calldata // unused
     ) internal override returns (uint256 amountWithdrawn) {
+        // Get the destination's base balance before the withdrawal.
+        uint256 baseBalanceBefore = _baseToken.balanceOf(_destination);
+
         // Redeem from the yield source and transfer the
         // resulting base to the destination address.
         amountWithdrawn = IERC4626(address(_vaultSharesToken)).redeem(
@@ -86,6 +89,14 @@ abstract contract ERC4626Base is HyperdriveBase {
             _destination,
             address(this)
         );
+
+        // Ensure that the base was actually received by the destination address.
+        if (
+            _baseToken.balanceOf(_destination) !=
+            baseBalanceBefore + amountWithdrawn
+        ) {
+            revert IHyperdrive.UnsupportedToken();
+        }
 
         return amountWithdrawn;
     }

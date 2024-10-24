@@ -114,3 +114,29 @@ jobs:
 
       - name: test
         run: FOUNDRY_FUZZ_RUNS=1000 make test-sol-zombie
+
+  test-instances:
+    name: solidity test core
+    runs-on: ubuntu-latest-16core
+    needs: detect-changes
+    if: needs.detect-changes.outputs.changed == 'true'
+    env:
+      MAINNET_RPC_URL: ${{ secrets.MAINNET_RPC_URL }}
+      SEPOLIA_RPC_URL: ${{ secrets.SEPOLIA_RPC_URL }}
+      BASE_RPC_URL: ${{ secrets.BASE_RPC_URL }}
+      GNOSIS_CHAIN_RPC_URL: ${{ secrets.GNOSIS_CHAIN_RPC_URL }}
+      LINEA_RPC_URL: ${{ secrets.LINEA_RPC_URL }}
+      ARBITRUM_RPC_URL: ${{ secrets.ARBITRUM_RPC_URL }}
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: install foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: test
+        run: FOUNDRY_FUZZ_RUNS=10000 make test-sol-instances
