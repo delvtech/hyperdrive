@@ -16,8 +16,6 @@ import { HyperdriveTest } from "./HyperdriveTest.sol";
 import { HyperdriveUtils } from "./HyperdriveUtils.sol";
 import { Lib } from "./Lib.sol";
 
-import { console2 as console } from "forge-std/console2.sol";
-
 /// @author DELV
 /// @title InstanceTest
 /// @notice The base contract for the instance testing suite.
@@ -77,9 +75,8 @@ abstract contract InstanceTest is HyperdriveTest {
         ///      token. If it is, we have to handle balances and approvals
         ///      differently.
         bool isRebasing;
-        /// @dev Indicates whether or not we should accrue interest. Most yield
-        ///      sources accrue interest, but in special cases, Hyperdrive may
-        ///      integrate with yield sources that don't accrue interest.
+        /// @dev Indicates if hypderive simply holds the base ERC20 without
+        ///      depositing into a vault.
         bool shouldAccrueInterest;
         /// @dev The equality tolerance in wei for the close long with shares
         ///      test.
@@ -401,7 +398,6 @@ abstract contract InstanceTest is HyperdriveTest {
             vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
         }
 
-        // Record Alice's ETH balance before the deployment call.
         uint256 aliceBalanceBefore = address(alice).balance;
 
         // Deploy and initialize the market. If the base token is ETH we pass
@@ -603,10 +599,7 @@ abstract contract InstanceTest is HyperdriveTest {
                 uint256 traderBaseAfter,
                 uint256 traderSharesAfter
             ) = getTokenBalances(address(trader));
-            console.log('hyperdriveBaseAfter', hyperdriveBaseAfter);
-            console.log('hyperdriveSharesAfter', hyperdriveSharesAfter);
-            console.log('traderBaseAfter', traderBaseAfter);
-            console.log('traderSharesAfter', traderSharesAfter);
+
             assertEq(hyperdriveBaseAfter, hyperdriveBalancesBefore.baseBalance);
             assertEq(
                 traderBaseAfter,
@@ -620,6 +613,7 @@ abstract contract InstanceTest is HyperdriveTest {
                     hyperdrive.convertToShares(amountPaid),
                 config.verifyDepositTolerance
             );
+
             assertEq(traderSharesAfter, traderBalancesBefore.sharesBalance);
         }
         // If we're depositing with vault shares, verify that the vault shares
@@ -1559,18 +1553,12 @@ abstract contract InstanceTest is HyperdriveTest {
     ///      base deposits are not supported.
     /// @param basePaid Amount in terms of base to open a long.
     function test_open_long_with_base(uint256 basePaid) external {
-        console.log('test_open_long_with_base');
-        console.log('basePaid', basePaid);
         // Get balance information before opening a long.
         (
             uint256 totalBaseSupplyBefore,
             uint256 totalShareSupplyBefore
         ) = getSupply();
-        console.log('totalBaseSupplyBefore', totalBaseSupplyBefore);
-        console.log('totalShareSupplyBefore', totalShareSupplyBefore);
         AccountBalances memory bobBalancesBefore = getAccountBalances(bob);
-        uint256 bobBalanceBefore = bobBalancesBefore.baseBalance;
-        console.log('bobBalanceBefore', bobBalanceBefore);
         AccountBalances memory hyperdriveBalanceBefore = getAccountBalances(
             address(hyperdrive)
         );
