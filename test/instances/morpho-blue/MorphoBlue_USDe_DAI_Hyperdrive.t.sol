@@ -69,7 +69,7 @@ contract MorphoBlue_USDe_DAI_HyperdriveTest is
                 roundTripLongMaturityWithBaseUpperBoundTolerance: 1e3,
                 roundTripLongMaturityWithBaseTolerance: 1e5,
                 roundTripShortInstantaneousWithBaseUpperBoundTolerance: 1e3,
-                roundTripShortInstantaneousWithBaseTolerance: 1e5,
+                roundTripShortInstantaneousWithBaseTolerance: 1e7,
                 roundTripShortMaturityWithBaseTolerance: 1e10,
                 // NOTE: Share deposits and withdrawals are disabled, so these are
                 // 0.
