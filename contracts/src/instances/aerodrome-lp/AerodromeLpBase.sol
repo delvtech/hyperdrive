@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.22;
 
+import { IGauge } from "aerodrome/interfaces/IGauge.sol";
 import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
 import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
@@ -20,6 +21,15 @@ abstract contract AerodromeLpBase is HyperdriveBase {
     using SafeERC20 for ERC20;
 
     /// Yield Source ///
+    /// @dev The Aerodrome Gauage contract. This is where the base token will be
+    ///      deposited.
+    IGauge internal immutable _gauge;
+
+    /// @notice Instantiates the AerodomeLpHyperdrive base contract.
+    /// @param __gauge The Aerodrome Gauage contract.
+    constructor(IGauge __gauge) {
+        _gauge = __gauge;
+    }
 
     /// @dev Accepts a deposit from the user in base.
     /// @param _baseAmount The base amount to deposit.
@@ -36,6 +46,14 @@ abstract contract AerodromeLpBase is HyperdriveBase {
             address(this),
             _baseAmount
         );
+        // NOTE: We increase the required approval amount by 1 wei so that
+        // the vault ends with an approval of 1 wei. This makes future
+        // approvals cheaper by keeping the storage slot warm.
+        ERC20(address(_baseToken)).forceApprove(
+            address(_gauge),
+            _baseAmount + 1
+        );
+        _gauge.deposit(_baseAmount);
 
         // There is no vault to deposit into, so we just return the base amount.
         return (_baseAmount, 0);
@@ -51,8 +69,8 @@ abstract contract AerodromeLpBase is HyperdriveBase {
 
     /// @dev Process a withdrawal in base and send the proceeds to the
     ///      destination.
-    /// @param _shareAmount There is no vault, so this it the base token amount
-    ///                     to withdraw.
+    /// @param _shareAmount There is no share tokens, so this is the base token
+    ///                     amount to withdraw.
     /// @param _destination The destination of the withdrawal.
     /// @return amountWithdrawn The amount of base withdrawn.
     function _withdrawWithBase(
@@ -60,9 +78,11 @@ abstract contract AerodromeLpBase is HyperdriveBase {
         address _destination,
         bytes calldata // unused
     ) internal override returns (uint256 amountWithdrawn) {
-        // resulting base to the destination address.
-        ERC20(address(_baseToken)).safeTransfer(_destination, _shareAmount);
+        // Withdraw the base tokens from the gauage contract.
+        _gauge.withdraw(_shareAmount);
 
+        // Transfer base tokens to the destination address.
+        ERC20(address(_baseToken)).safeTransfer(_destination, _shareAmount);
         return _shareAmount;
     }
 
@@ -102,7 +122,7 @@ abstract contract AerodromeLpBase is HyperdriveBase {
         override
         returns (uint256 shareAmount)
     {
-        return _baseToken.balanceOf(address(this));
+        return _gauge.balanceOf(address(this));
     }
 
     /// @dev We override the message value check since this integration is

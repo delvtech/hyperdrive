@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.22;
 
+import { IGauge } from "aerodrome/interfaces/IGauge.sol";
 import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
 import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { Hyperdrive } from "../../external/Hyperdrive.sol";
@@ -67,6 +68,7 @@ contract AerodromeLpHyperdrive is Hyperdrive, AerodromeLpBase {
     /// @param _target2 The target2 address.
     /// @param _target3 The target3 address.
     /// @param _target4 The target4 address.
+    /// @param _gauge The Aerodrome Gauage contract.
     constructor(
         string memory __name,
         IHyperdrive.PoolConfig memory _config,
@@ -75,7 +77,8 @@ contract AerodromeLpHyperdrive is Hyperdrive, AerodromeLpBase {
         address _target1,
         address _target2,
         address _target3,
-        address _target4
+        address _target4,
+        IGauge _gauge
     )
         Hyperdrive(
             __name,
@@ -87,9 +90,15 @@ contract AerodromeLpHyperdrive is Hyperdrive, AerodromeLpBase {
             _target3,
             _target4
         )
+        AerodromeLpBase(_gauge)
     {
         // Approve the base token with 1 wei. This ensures that all of the
         // subsequent approvals will be writing to a dirty storage slot.
         ERC20(address(_config.baseToken)).forceApprove(address(this), 1);
+    }
+
+    /// @dev Claim the rewards accrued on the gauge to this contract.
+    function getReward() external {
+        _gauge.getReward(address(this));
     }
 }

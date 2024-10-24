@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.22;
 
+import { IGauge } from "aerodrome/interfaces/IGauge.sol";
 import { AerodromeLpTarget3 } from "../../instances/aerodrome-lp/AerodromeLpTarget3.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IHyperdriveAdminController } from "../../interfaces/IHyperdriveAdminController.sol";
@@ -13,6 +14,16 @@ import { IHyperdriveTargetDeployer } from "../../interfaces/IHyperdriveTargetDep
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract AerodromeLpTarget3Deployer is IHyperdriveTargetDeployer {
+    /// @dev The Aerodrome Gauage contract. This is where the base token will be
+    ///      deposited.
+    IGauge internal immutable gauge;
+
+    /// @notice Instantiates the AerodomeLpHyperdrive base contract.
+    /// @param _gauge The Aerodrome Gauage contract.
+    constructor(IGauge _gauge) {
+        gauge = _gauge;
+    }
+
     /// @notice Deploys a target3 instance with the given parameters.
     /// @param _config The configuration of the Hyperdrive pool.
     /// @param _adminController The admin controller that will specify the
@@ -31,7 +42,7 @@ contract AerodromeLpTarget3Deployer is IHyperdriveTargetDeployer {
                 // front-running of deployments.
                 new AerodromeLpTarget3{
                     salt: keccak256(abi.encode(msg.sender, _salt))
-                }(_config, _adminController)
+                }(_config, _adminController, gauge)
             );
     }
 }
