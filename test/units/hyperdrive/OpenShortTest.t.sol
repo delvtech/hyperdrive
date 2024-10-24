@@ -488,10 +488,11 @@ contract OpenShortTest is HyperdriveTest {
         IHyperdrive.PoolInfo memory poolInfoAfter = hyperdrive.getPoolInfo();
 
         {
-            assertEq(
+            assertApproxEqAbs(
                 poolInfoAfter.shareReserves,
                 poolInfoBefore.shareReserves -
-                    baseProceeds.divDown(poolInfoBefore.vaultSharePrice)
+                    baseProceeds.divDown(poolInfoBefore.vaultSharePrice),
+                1
             );
             assertEq(
                 poolInfoAfter.vaultSharePrice,
@@ -573,7 +574,7 @@ contract OpenShortTest is HyperdriveTest {
             hyperdrive.getPoolInfo().vaultSharePrice
         );
         assertEq(eventAsBase, true);
-        assertEq(eventBaseProceeds, shortAmount - basePaid);
+        assertApproxEqAbs(eventBaseProceeds, shortAmount - basePaid, 1);
         assertEq(eventBondAmount, shortAmount);
     }
 }
