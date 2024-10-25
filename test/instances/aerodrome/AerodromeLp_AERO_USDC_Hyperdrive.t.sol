@@ -37,8 +37,8 @@ contract AerodromeLp_AERO_USDC_Hyperdrive is AerodromeLpHyperdriveInstanceTest {
                 baseToken: AERO_USDC_LP,
                 vaultSharesToken: IERC20(address(0)),
                 shareTolerance: 0,
-                minimumShareReserves: 1e10,
-                minimumTransactionAmount: 1e10,
+                minimumShareReserves: 1e6,
+                minimumTransactionAmount: 1e6,
                 positionDuration: POSITION_DURATION,
                 fees: IHyperdrive.Fees({
                     curve: 0,
