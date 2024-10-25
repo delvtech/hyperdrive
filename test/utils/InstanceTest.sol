@@ -75,7 +75,7 @@ abstract contract InstanceTest is HyperdriveTest {
         ///      token. If it is, we have to handle balances and approvals
         ///      differently.
         bool isRebasing;
-        /// @dev Indicates if hypderive simply holds the base ERC20 without
+        /// @dev Indicates if hyperdrive simply holds the base ERC20 without
         ///      depositing into a vault.
         bool shouldAccrueInterest;
         /// @dev The equality tolerance in wei for the close long with shares
