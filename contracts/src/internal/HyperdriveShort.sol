@@ -1,10 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.22;
 
-// FIXME
-import { console2 as console } from "forge-std/console2.sol";
-import { Lib } from "test/utils/Lib.sol";
-
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveEvents } from "../interfaces/IHyperdriveEvents.sol";
 import { AssetId } from "../libraries/AssetId.sol";
@@ -22,9 +18,6 @@ import { HyperdriveLP } from "./HyperdriveLP.sol";
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
-    // FIXME
-    using Lib for *;
-
     using FixedPointMath for uint256;
     using FixedPointMath for int256;
     using SafeCast for uint256;
@@ -49,25 +42,17 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
         uint256 _minVaultSharePrice,
         IHyperdrive.Options calldata _options
     ) internal nonReentrant isNotPaused returns (uint256, uint256) {
-        // FIXME
-        console.log("openShort: 1");
-
         // Check that the message value is valid.
         _checkMessageValue();
 
         // Check that the provided options are valid.
         _checkOptions(_options);
-        // FIXME
-        console.log("openShort: 2");
 
         // Ensure that the bond amount is greater than or equal to the minimum
         // transaction amount.
         if (_bondAmount < _minimumTransactionAmount) {
             revert IHyperdrive.MinimumTransactionAmount();
         }
-
-        // FIXME
-        console.log("openShort: 3");
         // Perform a checkpoint and compute the amount of interest the short
         // would have received if they opened at the beginning of the checkpoint.
         // Since the short will receive interest from the beginning of the
@@ -140,7 +125,6 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
             vaultSharePrice,
             _options
         );
-        console.log("deposit = %s", deposit.toString(6));
         if (_maxDeposit < deposit) {
             revert IHyperdrive.OutputLimit();
         }

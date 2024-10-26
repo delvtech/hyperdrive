@@ -4,6 +4,7 @@ pragma solidity 0.8.22;
 import { console2 as console } from "forge-std/console2.sol";
 import { IMorpho } from "morpho-blue/src/interfaces/IMorpho.sol";
 import { IMorphoFlashLoanCallback } from "morpho-blue/src/interfaces/IMorphoCallbacks.sol";
+import { MorphoBlueConversions } from "../../../contracts/src/instances/morpho-blue/MorphoBlueConversions.sol";
 import { MorphoBlueHyperdrive } from "../../../contracts/src/instances/morpho-blue/MorphoBlueHyperdrive.sol";
 import { MorphoBlueTarget0 } from "../../../contracts/src/instances/morpho-blue/MorphoBlueTarget0.sol";
 import { MorphoBlueTarget1 } from "../../../contracts/src/instances/morpho-blue/MorphoBlueTarget1.sol";
@@ -13,7 +14,8 @@ import { MorphoBlueTarget4 } from "../../../contracts/src/instances/morpho-blue/
 import { IERC20 } from "../../../contracts/src/interfaces/IERC20.sol";
 import { IHyperdrive } from "../../../contracts/src/interfaces/IHyperdrive.sol";
 import { IMorphoBlueHyperdrive } from "../../../contracts/src/interfaces/IMorphoBlueHyperdrive.sol";
-import { FixedPointMath } from "../../../contracts/src/libraries/FixedPointMath.sol";
+import { AssetId } from "../../../contracts/src/libraries/AssetId.sol";
+import { FixedPointMath, ONE } from "../../../contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "../../../contracts/src/libraries/HyperdriveMath.sol";
 import { EtchingUtils } from "../../utils/EtchingUtils.sol";
 import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
@@ -91,6 +93,8 @@ contract HyperdriveOTC is IMorphoFlashLoanCallback {
         );
     }
 
+    // FIXME: Rewrite this function and clean it up.
+    //
     // FIXME: Document this.
     //
     /// @notice Callback called when a flash loan occurs.
@@ -98,8 +102,8 @@ contract HyperdriveOTC is IMorphoFlashLoanCallback {
     /// @param assets The amount of assets that was flash loaned.
     /// @param data Arbitrary data passed to the `flashLoan` function.
     function onMorphoFlashLoan(uint256 assets, bytes calldata data) external {
-        // FIXME: Comment this.
-        console.log("onMorphoFlashLoan: 1");
+        // Decode the execution parameters. This encodes the information
+        // required to execute the LP, long, and short operations.
         (
             IHyperdrive hyperdrive,
             address long,
@@ -122,12 +126,11 @@ contract HyperdriveOTC is IMorphoFlashLoanCallback {
                     IHyperdrive.Options
                 )
             );
-        console.log("onMorphoFlashLoan: 2");
 
         // FIXME: Ensure that the add liquidity options forward the funds to
         // this contract.
         //
-        // FIXME: Support more options.
+        // FIXME: Handle rebasing tokens.
         //
         // Add liquidity to the pool.
         IERC20 addLiquidityToken;
@@ -136,9 +139,7 @@ contract HyperdriveOTC is IMorphoFlashLoanCallback {
         } else {
             addLiquidityToken = IERC20(hyperdrive.vaultSharesToken());
         }
-        console.log("onMorphoFlashLoan: 3");
         // FIXME: forceApprove
-        console.log("lpAmount = %s", lpAmount.toString(6));
         addLiquidityToken.approve(address(hyperdrive), lpAmount + 1);
         uint256 lpShares = hyperdrive.addLiquidity(
             lpAmount,
@@ -147,41 +148,21 @@ contract HyperdriveOTC is IMorphoFlashLoanCallback {
             type(uint256).max,
             addLiquidityOptions
         );
-        console.log(
-            "effective share reserves = %s",
-            HyperdriveMath
-                .calculateEffectiveShareReserves(
-                    hyperdrive.getPoolInfo().shareReserves,
-                    hyperdrive.getPoolInfo().shareAdjustment
-                )
-                .toString(6)
-        );
-        console.log("lp shares = %s", lpShares.toString(6));
-        console.log("onMorphoFlashLoan: 4");
 
         // FIXME: Refund the short.
+        //
+        // FIXME: Handle rebasing tokens.
         //
         // Open the short and send it to the short trader.
         IERC20 shortAsset;
         if (shortTrade.options.asBase) {
             shortAsset = IERC20(hyperdrive.baseToken());
         } else {
-            // FIXME
-            revert("unimplemented");
+            shortAsset = IERC20(hyperdrive.vaultSharesToken());
         }
-        console.log("onMorphoFlashLoan: 5");
         shortAsset.transferFrom(short, address(this), shortTrade.slippageGuard);
         shortAsset.approve(address(hyperdrive), shortTrade.slippageGuard + 1);
-        console.log("onMorphoFlashLoan: 6");
-        console.log(
-            "maxShort = %s",
-            hyperdrive.calculateMaxShort().toString(6)
-        );
-        console.log(
-            "slippage guards = %s",
-            shortTrade.slippageGuard.toString(6)
-        );
-        (uint256 maturityTime, uint256 shortPaid) = hyperdrive.openShort(
+        (, uint256 shortPaid) = hyperdrive.openShort(
             shortTrade.amount,
             shortTrade.slippageGuard,
             shortTrade.minVaultSharePrice,
@@ -191,41 +172,46 @@ contract HyperdriveOTC is IMorphoFlashLoanCallback {
             // FIXME: Use safe transfer.
             shortAsset.transfer(short, shortTrade.slippageGuard - shortPaid);
         }
-        console.log("onMorphoFlashLoan: 7");
 
+        // FIXME: Handle rebasing tokens.
+        //
         // Open the long and send it to the long trader.
         IERC20 longAsset;
         if (longTrade.options.asBase) {
             longAsset = IERC20(hyperdrive.baseToken());
         } else {
-            // FIXME
-            revert("unimplemented");
+            longAsset = IERC20(hyperdrive.vaultSharesToken());
         }
-        longAsset.transferFrom(short, address(this), longTrade.amount);
+        longAsset.transferFrom(long, address(this), longTrade.amount);
         longAsset.approve(address(hyperdrive), longTrade.amount + 1);
-        console.log("onMorphoFlashLoan: 8");
+        (, uint256 longAmount) = hyperdrive.openLong(
+            longTrade.amount,
+            longTrade.slippageGuard,
+            longTrade.minVaultSharePrice,
+            longTrade.options
+        );
 
         // FIXME: Handle the case where we can only add liquidity with base and
         // remove with shares. We'll probably need a zap for this case.
         //
         // Remove liquidity. This will repay the flash loan. We revert if there
         // are any withdrawal shares.
-        (uint256 proceeds, uint256 withdrawalShares) = hyperdrive
+        IHyperdrive hyperdrive_ = hyperdrive; // avoid stack-too-deep
+        (uint256 proceeds, uint256 withdrawalShares) = hyperdrive_
             .removeLiquidity(lpShares, 0, removeLiquidityOptions);
         require(withdrawalShares == 0, "Invalid withdrawal shares");
-        console.log("onMorphoFlashLoan: 9");
 
-        // FIXME: Send any excess proceeds back to the sender.
-        //
-        // // FIXME: We'll need to make sure this is in the same basis.
-        // //
-        // // FIXME: We could send this to the short.
-        // //
-        // // Send the profits to the long.
-        // if (proceeds > lpAmount) {
-        //     // FIXME: SafeTransfer
-        //     baseToken.transfer(msg.sender, proceeds - lpAmount);
-        // }
+        // FIXME: Send any excess proceeds back to the long.
+
+        // Approve Morpho Blue to take back the assets that were provided.
+        IERC20 loanToken;
+        if (addLiquidityOptions.asBase) {
+            loanToken = IERC20(hyperdrive_.baseToken());
+        } else {
+            loanToken = IERC20(hyperdrive_.vaultSharesToken());
+        }
+        // FIXME: forceApprove
+        loanToken.approve(address(MORPHO), lpAmount);
     }
 }
 
@@ -250,30 +236,12 @@ contract JITLiquidityTest is HyperdriveTest, EtchingUtils {
     address internal constant HEDGER =
         0x4B16c5dE96EB2117bBE5fd171E4d203624B014aa;
 
-    // NOTE: In prod, we'd want to use the wBTC/USDC or cbBTC/USDC market, but
-    //       this is a good stand-in.
-    //
-    /// @dev The Morpho Blue cbETH/USDC pool on Base.
-    // IHyperdrive internal constant hyperdrive =
-    //     IHyperdrive(0xFcdaF9A4A731C24ed2E1BFd6FA918d9CF7F50137);
-
     /// @dev Sets up the test harness on a base fork.
     function setUp() public override __mainnet_fork(21_046_731) {
         // Run the higher-level setup logic.
         super.setUp();
 
         // Deploy a Morpho Blue cbBTC/USDC pool and etch it.
-        IHyperdrive.PoolConfig memory config = testConfig(
-            0.04e18,
-            POSITION_DURATION
-        );
-        config.baseToken = IERC20(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48);
-        config.vaultSharesToken = IERC20(address(0));
-        config.fees.curve = 0.01e18;
-        config.fees.flat = 0.0005e18;
-        config.fees.governanceLP = 0.15e18;
-        config.minimumShareReserves = 1e6;
-        config.minimumTransactionAmount = 1e6;
         IMorphoBlueHyperdrive.MorphoBlueParams
             memory params = IMorphoBlueHyperdrive.MorphoBlueParams({
                 morpho: MORPHO,
@@ -284,6 +252,23 @@ contract JITLiquidityTest is HyperdriveTest, EtchingUtils {
                 irm: address(0x870aC11D48B15DB9a138Cf899d20F13F79Ba00BC),
                 lltv: 860000000000000000
             });
+        IHyperdrive.PoolConfig memory config = testConfig(0.04e18, 182 days);
+        config.baseToken = IERC20(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48);
+        config.vaultSharesToken = IERC20(address(0));
+        config.fees.curve = 0.01e18;
+        config.fees.flat = 0.0005e18;
+        config.fees.governanceLP = 0.15e18;
+        config.minimumShareReserves = 1e6;
+        config.minimumTransactionAmount = 1e6;
+        config.initialVaultSharePrice = MorphoBlueConversions.convertToBase(
+            MORPHO,
+            config.baseToken,
+            params.collateralToken,
+            params.oracle,
+            params.irm,
+            params.lltv,
+            ONE
+        );
         hyperdrive = IHyperdrive(
             address(
                 new MorphoBlueHyperdrive(
@@ -333,7 +318,6 @@ contract JITLiquidityTest is HyperdriveTest, EtchingUtils {
         // Initialize the Hyperdrive pool.
         vm.stopPrank();
         vm.startPrank(INITIALIZER);
-        console.log("setUp: 1");
         hyperdrive.initialize(
             100e6,
             0.0361e18,
@@ -342,11 +326,6 @@ contract JITLiquidityTest is HyperdriveTest, EtchingUtils {
                 destination: INITIALIZER,
                 extraData: ""
             })
-        );
-        console.log("setUp: 2");
-        console.log(
-            "spot rate = %s",
-            hyperdrive.calculateSpotAPR().toString(18)
         );
     }
 
@@ -459,10 +438,7 @@ contract JITLiquidityTest is HyperdriveTest, EtchingUtils {
     /// @dev This test demonstrates that JIT liquidity can be provided using
     ///      free Morpho flash loans and includes some relevant statistics.
     function test_jit_liquidity_flash_loan() external {
-        // FIXME: Instead of looking at returndata, I'll need to get what
-        // happened from state changes or events.
-        //
-        // FIXME: Set up a call for JIT Liquidity through the OTC contract.
+        // Deploy the OTC contract and have the whales approve.
         HyperdriveOTC otc = new HyperdriveOTC();
         vm.stopPrank();
         vm.startPrank(LP);
@@ -470,12 +446,38 @@ contract JITLiquidityTest is HyperdriveTest, EtchingUtils {
         vm.stopPrank();
         vm.startPrank(HEDGER);
         IERC20(hyperdrive.baseToken()).approve(address(otc), type(uint256).max);
+
+        // Get some information before the trade.
+        uint256 lpBaseBalanceBefore = IERC20(hyperdrive.baseToken()).balanceOf(
+            LP
+        );
+        uint256 lpLongBalanceBefore = hyperdrive.balanceOf(
+            AssetId.encodeAssetId(
+                AssetId.AssetIdPrefix.Long,
+                hyperdrive.latestCheckpoint()
+            ),
+            LP
+        );
+        uint256 hedgerBaseBalanceBefore = IERC20(hyperdrive.baseToken())
+            .balanceOf(HEDGER);
+        uint256 hedgerShortBalanceBefore = hyperdrive.balanceOf(
+            AssetId.encodeAssetId(
+                AssetId.AssetIdPrefix.Short,
+                hyperdrive.latestCheckpoint()
+            ),
+            HEDGER
+        );
+
+        // FIXME: Clean up this function call. How should this be structured?
+        //
+        // Execute an OTC trade between two counterparties using flash loans.
         otc.executeOTC(
             hyperdrive,
             LP,
             HEDGER,
+            // long trade
             HyperdriveOTC.Trade({
-                amount: 4_924_947e6,
+                amount: 4_831_102e6,
                 slippageGuard: 4_999_999e6,
                 minVaultSharePrice: 0,
                 options: IHyperdrive.Options({
@@ -484,27 +486,84 @@ contract JITLiquidityTest is HyperdriveTest, EtchingUtils {
                     extraData: ""
                 })
             }),
+            // short trade
             HyperdriveOTC.Trade({
                 amount: 5_000_000e6,
-                slippageGuard: 80_000e6,
+                slippageGuard: 200_000e6,
                 minVaultSharePrice: 0,
                 options: IHyperdrive.Options({
                     asBase: true,
-                    destination: LP,
+                    destination: HEDGER,
                     extraData: ""
                 })
             }),
-            12_000_000e6,
+            // flash loan amount
+            19_000_000e6,
+            // add liquidity options
             IHyperdrive.Options({
                 asBase: true,
                 destination: address(otc),
                 extraData: ""
             }),
+            // remove liquidity options
             IHyperdrive.Options({
                 asBase: true,
                 destination: address(otc),
                 extraData: ""
             })
         );
+
+        // FIXME: Logs
+        {
+            uint256 shortPaid = hedgerBaseBalanceBefore -
+                IERC20(hyperdrive.baseToken()).balanceOf(HEDGER);
+            uint256 shortAmount = hyperdrive.balanceOf(
+                AssetId.encodeAssetId(
+                    AssetId.AssetIdPrefix.Short,
+                    hyperdrive.latestCheckpoint() +
+                        hyperdrive.getPoolConfig().positionDuration
+                ),
+                HEDGER
+            ) - hedgerShortBalanceBefore;
+            console.log("# Short");
+            console.log(
+                "fixed rate = %s%",
+                (HyperdriveUtils.calculateAPRFromRealizedPrice(
+                    shortAmount -
+                        (shortPaid -
+                            shortAmount.mulDown(
+                                hyperdrive.getPoolConfig().fees.flat
+                            )),
+                    shortAmount,
+                    hyperdrive.getPoolConfig().positionDuration.divDown(
+                        365 days
+                    )
+                ) * 100).toString(18)
+            );
+            console.log("");
+        }
+        {
+            uint256 longPaid = lpBaseBalanceBefore -
+                IERC20(hyperdrive.baseToken()).balanceOf(LP);
+            uint256 longAmount = hyperdrive.balanceOf(
+                AssetId.encodeAssetId(
+                    AssetId.AssetIdPrefix.Long,
+                    hyperdrive.latestCheckpoint() +
+                        hyperdrive.getPoolConfig().positionDuration
+                ),
+                LP
+            ) - lpLongBalanceBefore;
+            console.log("# Long");
+            console.log(
+                "fixed rate = %s%",
+                (HyperdriveUtils.calculateAPRFromRealizedPrice(
+                    longPaid,
+                    longAmount,
+                    hyperdrive.getPoolConfig().positionDuration.divDown(
+                        365 days
+                    )
+                ) * 100).toString(18)
+            );
+        }
     }
 }

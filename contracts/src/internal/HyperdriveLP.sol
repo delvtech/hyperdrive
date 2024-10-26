@@ -1,10 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.22;
 
-// FIXME
-import { console2 as console } from "forge-std/console2.sol";
-import { Lib } from "test/utils/Lib.sol";
-
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveEvents } from "../interfaces/IHyperdriveEvents.sol";
 import { AssetId } from "../libraries/AssetId.sol";
@@ -26,9 +22,6 @@ abstract contract HyperdriveLP is
     HyperdriveBase,
     HyperdriveMultiToken
 {
-    // FIXME
-    using Lib for *;
-
     using FixedPointMath for uint256;
     using FixedPointMath for int256;
     using LPMath for LPMath.PresentValueParams;
