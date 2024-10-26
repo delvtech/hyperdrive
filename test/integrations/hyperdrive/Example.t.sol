@@ -4,9 +4,17 @@ pragma solidity 0.8.22;
 import { console2 as console } from "forge-std/console2.sol";
 import { IMorpho } from "morpho-blue/src/interfaces/IMorpho.sol";
 import { IMorphoFlashLoanCallback } from "morpho-blue/src/interfaces/IMorphoCallbacks.sol";
-import { IERC20 } from "contracts/src/interfaces/IERC20.sol";
-import { IHyperdrive } from "contracts/src/interfaces/IHyperdrive.sol";
-import { FixedPointMath } from "contracts/src/libraries/FixedPointMath.sol";
+import { MorphoBlueHyperdrive } from "../../../contracts/src/instances/morpho-blue/MorphoBlueHyperdrive.sol";
+import { MorphoBlueTarget0 } from "../../../contracts/src/instances/morpho-blue/MorphoBlueTarget0.sol";
+import { MorphoBlueTarget1 } from "../../../contracts/src/instances/morpho-blue/MorphoBlueTarget1.sol";
+import { MorphoBlueTarget2 } from "../../../contracts/src/instances/morpho-blue/MorphoBlueTarget2.sol";
+import { MorphoBlueTarget3 } from "../../../contracts/src/instances/morpho-blue/MorphoBlueTarget3.sol";
+import { MorphoBlueTarget4 } from "../../../contracts/src/instances/morpho-blue/MorphoBlueTarget4.sol";
+import { IERC20 } from "../../../contracts/src/interfaces/IERC20.sol";
+import { IHyperdrive } from "../../../contracts/src/interfaces/IHyperdrive.sol";
+import { IMorphoBlueHyperdrive } from "../../../contracts/src/interfaces/IMorphoBlueHyperdrive.sol";
+import { FixedPointMath } from "../../../contracts/src/libraries/FixedPointMath.sol";
+import { HyperdriveMath } from "../../../contracts/src/libraries/HyperdriveMath.sol";
 import { EtchingUtils } from "../../utils/EtchingUtils.sol";
 import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
@@ -139,6 +147,15 @@ contract HyperdriveOTC is IMorphoFlashLoanCallback {
             type(uint256).max,
             addLiquidityOptions
         );
+        console.log(
+            "effective share reserves = %s",
+            HyperdriveMath
+                .calculateEffectiveShareReserves(
+                    hyperdrive.getPoolInfo().shareReserves,
+                    hyperdrive.getPoolInfo().shareAdjustment
+                )
+                .toString(6)
+        );
         console.log("lp shares = %s", lpShares.toString(6));
         console.log("onMorphoFlashLoan: 4");
 
@@ -214,44 +231,122 @@ contract HyperdriveOTC is IMorphoFlashLoanCallback {
 
 contract JITLiquidityTest is HyperdriveTest, EtchingUtils {
     using FixedPointMath for *;
+    using HyperdriveUtils for *;
     using Lib for *;
 
-    /// @dev This is the LP we'll use to provide JIT liquidity. This whale has
-    ///      over 260 million USDC on Base.
-    address internal constant LP = 0xF977814e90dA44bFA03b6295A0616a897441aceC;
+    /// @dev The address of the Morpho Blue pool.
+    IMorpho internal constant MORPHO =
+        IMorpho(0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb);
+
+    /// @dev This is the initializer of the JIT pool.
+    address internal constant INITIALIZER =
+        0x54edC2D90BBfE50526E333c7FfEaD3B0F22D39F0;
+
+    /// @dev This is the LP we'll use to provide JIT liquidity..
+    address internal constant LP = 0x37305B1cD40574E4C5Ce33f8e8306Be057fD7341;
 
     /// @dev This is the address that will buy the short to hedge their borrow
-    ///      position. This whale has 128 million USDC on Base.
+    ///      position.
     address internal constant HEDGER =
-        0x3304E22DDaa22bCdC5fCa2269b418046aE7b566A;
+        0x4B16c5dE96EB2117bBE5fd171E4d203624B014aa;
 
     // NOTE: In prod, we'd want to use the wBTC/USDC or cbBTC/USDC market, but
     //       this is a good stand-in.
     //
     /// @dev The Morpho Blue cbETH/USDC pool on Base.
-    IHyperdrive internal constant HYPERDRIVE =
-        IHyperdrive(0xFcdaF9A4A731C24ed2E1BFd6FA918d9CF7F50137);
+    // IHyperdrive internal constant hyperdrive =
+    //     IHyperdrive(0xFcdaF9A4A731C24ed2E1BFd6FA918d9CF7F50137);
 
     /// @dev Sets up the test harness on a base fork.
-    function setUp() public override __base_fork(21_545_771) {
+    function setUp() public override __mainnet_fork(21_046_731) {
         // Run the higher-level setup logic.
         super.setUp();
 
-        // Etch the Hyperdrive instance.
-        etchHyperdrive(address(HYPERDRIVE));
+        // Deploy a Morpho Blue cbBTC/USDC pool and etch it.
+        IHyperdrive.PoolConfig memory config = testConfig(
+            0.04e18,
+            POSITION_DURATION
+        );
+        config.baseToken = IERC20(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48);
+        config.vaultSharesToken = IERC20(address(0));
+        config.fees.curve = 0.01e18;
+        config.fees.flat = 0.0005e18;
+        config.fees.governanceLP = 0.15e18;
+        config.minimumShareReserves = 1e6;
+        config.minimumTransactionAmount = 1e6;
+        IMorphoBlueHyperdrive.MorphoBlueParams
+            memory params = IMorphoBlueHyperdrive.MorphoBlueParams({
+                morpho: MORPHO,
+                collateralToken: address(
+                    0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf
+                ),
+                oracle: address(0xA6D6950c9F177F1De7f7757FB33539e3Ec60182a),
+                irm: address(0x870aC11D48B15DB9a138Cf899d20F13F79Ba00BC),
+                lltv: 860000000000000000
+            });
+        hyperdrive = IHyperdrive(
+            address(
+                new MorphoBlueHyperdrive(
+                    "MorphoBlueHyperdrive",
+                    config,
+                    adminController,
+                    address(
+                        new MorphoBlueTarget0(config, adminController, params)
+                    ),
+                    address(
+                        new MorphoBlueTarget1(config, adminController, params)
+                    ),
+                    address(
+                        new MorphoBlueTarget2(config, adminController, params)
+                    ),
+                    address(
+                        new MorphoBlueTarget3(config, adminController, params)
+                    ),
+                    address(
+                        new MorphoBlueTarget4(config, adminController, params)
+                    ),
+                    params
+                )
+            )
+        );
 
         // Approve Hyperdrive with each of the whales.
         vm.stopPrank();
-        vm.startPrank(LP);
-        IERC20(HYPERDRIVE.baseToken()).approve(
-            address(HYPERDRIVE),
+        vm.startPrank(HEDGER);
+        IERC20(hyperdrive.baseToken()).approve(
+            address(hyperdrive),
             type(uint256).max
         );
         vm.stopPrank();
-        vm.startPrank(HEDGER);
-        IERC20(HYPERDRIVE.baseToken()).approve(
-            address(HYPERDRIVE),
+        vm.startPrank(INITIALIZER);
+        IERC20(hyperdrive.baseToken()).approve(
+            address(hyperdrive),
             type(uint256).max
+        );
+        vm.stopPrank();
+        vm.startPrank(LP);
+        IERC20(hyperdrive.baseToken()).approve(
+            address(hyperdrive),
+            type(uint256).max
+        );
+
+        // Initialize the Hyperdrive pool.
+        vm.stopPrank();
+        vm.startPrank(INITIALIZER);
+        console.log("setUp: 1");
+        hyperdrive.initialize(
+            100e6,
+            0.0361e18,
+            IHyperdrive.Options({
+                asBase: true,
+                destination: INITIALIZER,
+                extraData: ""
+            })
+        );
+        console.log("setUp: 2");
+        console.log(
+            "spot rate = %s",
+            hyperdrive.calculateSpotAPR().toString(18)
         );
     }
 
@@ -262,7 +357,7 @@ contract JITLiquidityTest is HyperdriveTest, EtchingUtils {
         vm.stopPrank();
         vm.startPrank(LP);
         uint256 contribution = 25_000_000e6;
-        uint256 lpShares = HYPERDRIVE.addLiquidity(
+        uint256 lpShares = hyperdrive.addLiquidity(
             contribution,
             0,
             0,
@@ -278,7 +373,7 @@ contract JITLiquidityTest is HyperdriveTest, EtchingUtils {
         vm.stopPrank();
         vm.startPrank(HEDGER);
         uint256 shortAmount = 5_000_000e6;
-        (uint256 maturityTime, uint256 shortPaid) = HYPERDRIVE.openShort(
+        (uint256 maturityTime, uint256 shortPaid) = hyperdrive.openShort(
             shortAmount,
             type(uint256).max,
             0,
@@ -294,7 +389,7 @@ contract JITLiquidityTest is HyperdriveTest, EtchingUtils {
         vm.startPrank(LP);
         uint256 longPaid = 4_924_947e6;
         uint256 longAmount;
-        (maturityTime, longAmount) = HYPERDRIVE.openLong(
+        (maturityTime, longAmount) = hyperdrive.openLong(
             longPaid,
             0,
             0,
@@ -308,7 +403,7 @@ contract JITLiquidityTest is HyperdriveTest, EtchingUtils {
         // The LP removes their liquidity.
         vm.stopPrank();
         vm.startPrank(LP);
-        (uint256 baseProceeds, uint256 withdrawalShares) = HYPERDRIVE
+        (uint256 baseProceeds, uint256 withdrawalShares) = hyperdrive
             .removeLiquidity(
                 lpShares,
                 0,
@@ -329,10 +424,10 @@ contract JITLiquidityTest is HyperdriveTest, EtchingUtils {
                 shortAmount -
                     (shortPaid -
                         shortAmount.mulDown(
-                            HYPERDRIVE.getPoolConfig().fees.flat
+                            hyperdrive.getPoolConfig().fees.flat
                         )),
                 shortAmount,
-                HYPERDRIVE.getPoolConfig().positionDuration.divDown(365 days)
+                hyperdrive.getPoolConfig().positionDuration.divDown(365 days)
             ) * 100).toString(18)
         );
         console.log("");
@@ -344,7 +439,7 @@ contract JITLiquidityTest is HyperdriveTest, EtchingUtils {
             (HyperdriveUtils.calculateAPRFromRealizedPrice(
                 longPaid,
                 longAmount,
-                HYPERDRIVE.getPoolConfig().positionDuration.divDown(365 days)
+                hyperdrive.getPoolConfig().positionDuration.divDown(365 days)
             ) * 100).toString(18)
         );
         console.log(
@@ -352,7 +447,7 @@ contract JITLiquidityTest is HyperdriveTest, EtchingUtils {
             (HyperdriveUtils.calculateAPRFromRealizedPrice(
                 longPaid - (baseProceeds - contribution),
                 longAmount,
-                HYPERDRIVE.getPoolConfig().positionDuration.divDown(365 days)
+                hyperdrive.getPoolConfig().positionDuration.divDown(365 days)
             ) * 100).toString(18)
         );
         console.log("");
@@ -371,12 +466,12 @@ contract JITLiquidityTest is HyperdriveTest, EtchingUtils {
         HyperdriveOTC otc = new HyperdriveOTC();
         vm.stopPrank();
         vm.startPrank(LP);
-        IERC20(HYPERDRIVE.baseToken()).approve(address(otc), type(uint256).max);
+        IERC20(hyperdrive.baseToken()).approve(address(otc), type(uint256).max);
         vm.stopPrank();
         vm.startPrank(HEDGER);
-        IERC20(HYPERDRIVE.baseToken()).approve(address(otc), type(uint256).max);
+        IERC20(hyperdrive.baseToken()).approve(address(otc), type(uint256).max);
         otc.executeOTC(
-            HYPERDRIVE,
+            hyperdrive,
             LP,
             HEDGER,
             HyperdriveOTC.Trade({
