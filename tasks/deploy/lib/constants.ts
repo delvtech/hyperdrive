@@ -194,6 +194,12 @@ export const WETH_ADDRESS_BASE =
 export const WELL_ADDRESS_BASE =
     "0xA88594D404727625A9437C3f886C7643872296AE" as Address;
 
+export const AERO_ADDRESS_BASE =
+    "0x940181a94A35A4569E4529A3CDfB74e38FD98631" as Address;
+
+export const MOONWELL_AERO_ADDRESS_BASE =
+    "0x73902f619CEB9B31FD8EFecf435CbDf89E369Ba6" as Address;
+
 // ╭─────────────────────────────────────────────────────────╮
 // │ Base Whales                                             │
 // ╰─────────────────────────────────────────────────────────╯

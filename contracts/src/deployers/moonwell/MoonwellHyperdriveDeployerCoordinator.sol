@@ -79,7 +79,7 @@ contract MoonwellHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator 
         // base token.
         address token;
         if (_options.asBase) {
-            token = _hyperdrive.baseToken();
+            revert IHyperdrive.UnsupportedToken();
         }
         // Otherwise, the initialization will be paid in vault shares.
         else {
@@ -116,9 +116,11 @@ contract MoonwellHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator 
     /// @param _baseAmount The base amount.
     /// @return The vault shares amount.
     function convertToShares(
+        IERC20 _baseToken,
+        IMoonwell _vault,
         uint256 _baseAmount
     ) public view returns (uint256) {
-        return MoonwellConversions.convertToShares(_baseToken, _vault, _shareAmount);
+        return MoonwellConversions.convertToShares(_baseToken, _vault, _baseAmount);
     }
 
     /// @dev We override the message value check since this integration is
@@ -139,17 +141,13 @@ contract MoonwellHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator 
         // Perform the default checks.
         super._checkPoolConfig(_deployConfig, _extraData);
 
-        // Ensure that the vault shares token address is properly configured.
+        // Ensure that the vault shares token is properly configured.
         if (address(_deployConfig.vaultSharesToken) == address(0)) {
             revert IHyperdriveDeployerCoordinator.InvalidVaultSharesToken();
         }
 
         // Ensure that the base token address is properly configured.
-        if (
-            address(_deployConfig.baseToken) != 
-            IMoonwell(address(_deployConfig.vaultSharesToken))
-                .underlying()
-        ) {
+        if (address(_deployConfig.baseToken) == address(0)) {
             revert IHyperdriveDeployerCoordinator.InvalidBaseToken();
         }
 
@@ -185,6 +183,7 @@ contract MoonwellHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator 
         IHyperdrive.PoolDeployConfig memory _deployConfig,
         bytes memory // unused _extraData
     ) internal view override returns (uint256) {
-        return convertToBase(_deployConfig.vaultSharesToken, ONE);
+        return ONE;
+        // return convertToBase(_deployConfig.vaultSharesToken, ONE);
     }
 }
