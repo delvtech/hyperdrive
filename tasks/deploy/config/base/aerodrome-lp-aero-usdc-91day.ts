@@ -7,7 +7,11 @@ import {
     parseDuration,
     toBytes32,
 } from "../../lib";
-import { AERO_USDC_LP_BASE, THREE_MONTHS } from "../../lib/constants";
+import {
+    AERO_USDC_GAUGE_ADDRESS_BASE,
+    AERO_USDC_LP_ADDRESS_BASE,
+    THREE_MONTHS,
+} from "../../lib/constants";
 import { BASE_AERODROME_LP_COORDINATOR_NAME } from "./aerodrome-lp-coordinator";
 import { BASE_FACTORY_NAME } from "./factory";
 
@@ -29,7 +33,7 @@ export const BASE_AERODROME_LP_AERO_USDC_91DAY: HyperdriveInstanceConfig<"Aerodr
             toBytes(BASE_AERODROME_LP_AERO_USDC_91DAY_NAME),
         ),
         salt: toBytes32("0x69420"),
-        extraData: "0x",
+        extraData: AERO_USDC_GAUGE_ADDRESS_BASE,
         contribution: CONTRIBUTION,
         fixedAPR: parseEther("0.08"),
         timestretchAPR: parseEther("0.075"),
@@ -42,7 +46,7 @@ export const BASE_AERODROME_LP_AERO_USDC_91DAY: HyperdriveInstanceConfig<"Aerodr
         prepare: async (hre: HardhatRuntimeEnvironment) => {
             let baseToken = await hre.viem.getContractAt(
                 "contracts/src/interfaces/IERC20.sol:IERC20",
-                AERO_USDC_LP_BASE,
+                AERO_USDC_LP_ADDRESS_BASE,
             );
             let tx = await baseToken.write.approve([
                 hre.hyperdriveDeploy.deployments.byName(
@@ -60,11 +64,11 @@ export const BASE_AERODROME_LP_AERO_USDC_91DAY: HyperdriveInstanceConfig<"Aerodr
                     .address,
             );
             return {
-                baseToken: AERO_USDC_LP_BASE,
+                baseToken: AERO_USDC_LP_ADDRESS_BASE,
                 vaultSharesToken: zeroAddress,
                 circuitBreakerDelta: parseEther("0.075"),
-                minimumShareReserves: parseEther(".01"),
-                minimumTransactionAmount: parseEther(".01"),
+                minimumShareReserves: 100_000_000n, //1e8
+                minimumTransactionAmount: 100_000_000n, //1e8
                 positionDuration: parseDuration(THREE_MONTHS),
                 checkpointDuration: parseDuration("1 day"),
                 timeStretch: 0n,

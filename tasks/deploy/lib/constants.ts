@@ -152,8 +152,11 @@ export const SEPOLIA_USDE_ADDRESS =
 // │ Base Addresses                                          │
 // ╰─────────────────────────────────────────────────────────╯
 
-export const AERO_USDC_LP_BASE =
+export const AERO_USDC_LP_ADDRESS_BASE =
     "0x6cDcb1C4A4D1C3C6d054b27AC5B77e89eAFb971d" as Address;
+
+export const AERO_USDC_GAUGE =
+    "0x4F09bAb2f0E15e2A078A227FE1537665F55b8360" as Address;
 
 export const CBETH_ADDRESS_BASE =
     "0x2Ae3F1Ec7F1F5012CFEab0185bfc7aa3cf0DEc22" as Address;
