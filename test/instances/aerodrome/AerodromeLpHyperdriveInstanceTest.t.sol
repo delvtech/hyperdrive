@@ -11,6 +11,7 @@ import { AerodromeLpTarget2Deployer } from "../../../contracts/src/deployers/aer
 import { AerodromeLpTarget3Deployer } from "../../../contracts/src/deployers/aerodrome-lp/AerodromeLpTarget3Deployer.sol";
 import { AerodromeLpTarget4Deployer } from "../../../contracts/src/deployers/aerodrome-lp/AerodromeLpTarget4Deployer.sol";
 import { AerodromeLpConversions } from "../../../contracts/src/instances/aerodrome-lp/AerodromeLpConversions.sol";
+import { AerodromeLpHyperdrive } from "../../../contracts/src/instances/aerodrome-lp/AerodromeLpHyperdrive.sol";
 import { IERC20 } from "../../../contracts/src/interfaces/IERC20.sol";
 import { IAerodromeLpHyperdrive } from "../../../contracts/src/interfaces/IAerodromeLpHyperdrive.sol";
 import { IHyperdrive } from "../../../contracts/src/interfaces/IHyperdrive.sol";
@@ -148,6 +149,34 @@ contract AerodromeLpHyperdriveInstanceTest is InstanceTest {
             hyperdriveSharesBefore + basePaid.divDown(vaultSharePrice),
             config.shareTolerance
         );
+    }
+
+    /// @dev A test that ensures that Hyperdrive is set up to claim the staking
+    ///      rewards.
+    function test__getReward() external {
+        // If the rewards token is the zero address, this is a points vault, and
+        // we skip this test.
+        IERC20 rewardsToken = IERC20(gauge.rewardToken());
+
+        // Advance time to accrue rewards.
+        advanceTime(POSITION_DURATION, 0);
+
+        // Ensure that Hyperdrive has earned staking rewards.
+        uint256 earned = gauge.earned(address(hyperdrive));
+        assertGt(earned, 0);
+
+        // Claim the staking rewards and ensure that Hyperdrive actually
+        // received them.
+        AerodromeLpHyperdrive(address(hyperdrive)).getReward();
+        assertEq(rewardsToken.balanceOf(address(hyperdrive)), earned);
+
+        // Ensure that the staking rewards can be claimed by the sweep collector.
+        address sweepCollector = hyperdrive.getPoolConfig().sweepCollector;
+        vm.stopPrank();
+        vm.startPrank(sweepCollector);
+        hyperdrive.sweep(rewardsToken);
+        assertEq(rewardsToken.balanceOf(sweepCollector), earned);
+        assertEq(rewardsToken.balanceOf(address(hyperdrive)), 0);
     }
 
     /// Helpers ///
