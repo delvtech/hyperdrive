@@ -2,7 +2,6 @@
 pragma solidity 0.8.22;
 
 import { MoonwellTarget1 } from "../../instances/moonwell/MoonwellTarget1.sol";
-import { IMoonwell } from "../../interfaces/IMoonwell.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IHyperdriveAdminController } from "../../interfaces/IHyperdriveAdminController.sol";
 import { IHyperdriveTargetDeployer } from "../../interfaces/IHyperdriveTargetDeployer.sol";

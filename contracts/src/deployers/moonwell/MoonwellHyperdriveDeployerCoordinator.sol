@@ -4,11 +4,9 @@ pragma solidity 0.8.22;
 import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
 import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { MoonwellConversions } from "../../instances/moonwell/MoonwellConversions.sol";
-import { IMoonwell } from "../../interfaces/IMoonwell.sol";
 import { IERC20 } from "../../interfaces/IERC20.sol";
-import { IMoonwell } from "../../interfaces/IMoonwell.sol";
+import { IMToken } from "../../interfaces/IMoonwell.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
-// import { IMoonwellHyperdrive } from "../../interfaces/IMoonwellHyperdrive.sol";
 import { IHyperdriveDeployerCoordinator } from "../../interfaces/IHyperdriveDeployerCoordinator.sol";
 import { MOONWELL_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND } from "../../libraries/Constants.sol";
 import { ONE } from "../../libraries/FixedPointMath.sol";
@@ -74,12 +72,12 @@ contract MoonwellHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator 
         address _lp,
         uint256 _contribution,
         IHyperdrive.Options memory _options
-    ) internal override returns (uint256 value) {
+    ) internal override returns (uint256) {
         // If base is the deposit asset, the initialization will be paid in the
         // base token.
         address token;
         if (_options.asBase) {
-            revert IHyperdrive.UnsupportedToken();
+            token = _hyperdrive.baseToken();
         }
         // Otherwise, the initialization will be paid in vault shares.
         else {
@@ -94,33 +92,37 @@ contract MoonwellHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator 
         ERC20(token).forceApprove(address(_hyperdrive), _contribution);
         // ****************************************************************
 
-        return value;
+        return 0;
     }
 
     /// @notice Convert an amount of vault shares to an amount of base.
-    /// @param _baseToken The base token.
-    /// @param _vault The Moonwell vault.
+    /// @param _vaultSharesToken The vault shares token.
     /// @param _shareAmount The vault shares amount.
     /// @return The base amount.
-    function convertToBase(
-        IERC20 _baseToken,
-        IMoonwell _vault,
+    function _convertToBase(
+        IERC20 _vaultSharesToken,
         uint256 _shareAmount
     ) public view returns (uint256) {
-        return MoonwellConversions.convertToBase(_baseToken, _vault, _shareAmount);
+        return
+            MoonwellConversions.convertToBase(
+                IMToken(address(_vaultSharesToken)),
+                _shareAmount
+            );
     }
 
-    /// @notice Convert an amount of base to an amount of vault shares.
-    /// @param _baseToken The base token.
-    /// @param _vault The Moonwell vault.
+    /// @notice Convert an amount of vault shares to an amount of base.
+    /// @param _vaultSharesToken The vault shares token.
     /// @param _baseAmount The base amount.
     /// @return The vault shares amount.
-    function convertToShares(
-        IERC20 _baseToken,
-        IMoonwell _vault,
+    function _convertToShares(
+        IERC20 _vaultSharesToken,
         uint256 _baseAmount
     ) public view returns (uint256) {
-        return MoonwellConversions.convertToShares(_baseToken, _vault, _baseAmount);
+        return
+            MoonwellConversions.convertToShares(
+                IMToken(address(_vaultSharesToken)),
+                _baseAmount
+            );
     }
 
     /// @dev We override the message value check since this integration is
@@ -147,7 +149,10 @@ contract MoonwellHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator 
         }
 
         // Ensure that the base token address is properly configured.
-        if (address(_deployConfig.baseToken) == address(0)) {
+        if (
+            address(_deployConfig.baseToken) !=
+            IMToken(address(_deployConfig.vaultSharesToken)).underlying()
+        ) {
             revert IHyperdriveDeployerCoordinator.InvalidBaseToken();
         }
 
@@ -183,7 +188,7 @@ contract MoonwellHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator 
         IHyperdrive.PoolDeployConfig memory _deployConfig,
         bytes memory // unused _extraData
     ) internal view override returns (uint256) {
-        return ONE;
-        // return convertToBase(_deployConfig.vaultSharesToken, ONE);
+        // return ONE;
+        return _convertToBase(_deployConfig.vaultSharesToken, ONE);
     }
 }

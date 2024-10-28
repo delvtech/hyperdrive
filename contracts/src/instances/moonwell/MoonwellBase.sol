@@ -4,10 +4,10 @@ pragma solidity 0.8.22;
 import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
 import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { IERC4626 } from "../../interfaces/IERC4626.sol";
-import { IMoonwell } from "../../interfaces/IMoonwell.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { HyperdriveBase } from "../../internal/HyperdriveBase.sol";
-import { IMoonwell } from "../../interfaces/IMoonwell.sol";
+import { IMToken } from "../../interfaces/IMoonwell.sol";
+import { MoonwellConversions } from "./MoonwellConversions.sol";
 
 /// @author DELV
 /// @title MoonwellBase
@@ -28,20 +28,40 @@ abstract contract MoonwellBase is HyperdriveBase {
     /// @return The amount of ETH to refund. Since this yield source isn't
     ///         payable, this is always zero.
     function _depositWithBase(
-        uint256, // _baseAmount,
+        uint256 _baseAmount,
         bytes calldata // unused
     ) internal override returns (uint256, uint256) {
-        // Deposits with ETH is not supported because of accounting
-        // issues due to the Rocket Pool deposit fee.
-        revert IHyperdrive.UnsupportedToken();
+        // Take custody of the deposit in base.
+        ERC20(address(_baseToken)).safeTransferFrom(
+            msg.sender,
+            address(this),
+            _baseAmount
+        );
+
+        // Deposit the base into the yield source.
+        //
+        // NOTE: We increase the required approval amount by 1 wei so that
+        // the vault ends with an approval of 1 wei. This makes future
+        // approvals cheaper by keeping the storage slot warm.
+        ERC20(address(_baseToken)).forceApprove(
+            address(_vaultSharesToken),
+            _baseAmount + 1
+        );
+
+        uint256 sharesMinted = IMToken(address(_vaultSharesToken)).mint(
+            _baseAmount
+        );
+
+        return (sharesMinted, 0);
     }
 
     /// @dev Process a deposit in vault shares.
     /// @param _shareAmount The vault shares amount to deposit.
     function _depositWithShares(
         uint256 _shareAmount,
-        bytes calldata // unused _extraData
+        bytes calldata // unused
     ) internal override {
+        // Take custody of the deposit in vault shares.
         ERC20(address(_vaultSharesToken)).safeTransferFrom(
             msg.sender,
             address(this),
@@ -54,12 +74,17 @@ abstract contract MoonwellBase is HyperdriveBase {
 
     /// @return amountWithdrawn The amount of base withdrawn.
     function _withdrawWithBase(
-        uint256, // _shareAmount,
-        address, // _destination,
+        uint256 _shareAmount,
+        address, // unused _destination,
         bytes calldata // unused
     ) internal override returns (uint256 amountWithdrawn) {
-        revert IHyperdrive.UnsupportedToken();
+        // Redeem from the yield source and transfer the
+        // resulting base to the destination address.
+        amountWithdrawn = IMToken(address(_vaultSharesToken)).redeem(
+            _shareAmount
+        );
 
+        return amountWithdrawn;
     }
 
     /// @dev Process a withdrawal in vault shares and send the proceeds to the
@@ -71,7 +96,11 @@ abstract contract MoonwellBase is HyperdriveBase {
         address _destination,
         bytes calldata // unused
     ) internal override {
-        ERC20(address(_vaultSharesToken)).safeTransfer(_destination, _shareAmount);
+        // Transfer vault shares to the destination.
+        ERC20(address(_vaultSharesToken)).safeTransfer(
+            _destination,
+            _shareAmount
+        );
     }
 
     /// @dev Convert an amount of vault shares to an amount of base.
@@ -80,11 +109,14 @@ abstract contract MoonwellBase is HyperdriveBase {
     function _convertToBase(
         uint256 _shareAmount
     ) internal view override returns (uint256) {
-        revert IHyperdrive.UnsupportedToken();
+        // revert IHyperdrive.UnsupportedToken();
         // ****************************************************************
         // FIXME: Implement this for new instances.
-        // return
-        //     IERC4626(address(_vaultSharesToken)).convertToAssets(_shareAmount);
+        return
+            MoonwellConversions.convertToBase(
+                IMToken(address(_vaultSharesToken)),
+                _shareAmount
+            );
         // ****************************************************************
     }
 
@@ -94,11 +126,14 @@ abstract contract MoonwellBase is HyperdriveBase {
     function _convertToShares(
         uint256 _baseAmount
     ) internal view override returns (uint256) {
-        revert IHyperdrive.UnsupportedToken();
+        // revert IHyperdrive.UnsupportedToken();
         // ****************************************************************
         // FIXME: Implement this for new instances.
-        // return
-        //     IERC4626(address(_vaultSharesToken)).convertToShares(_baseAmount);
+        return
+            MoonwellConversions.convertToShares(
+                IMToken(address(_vaultSharesToken)),
+                _baseAmount
+            );
         // ****************************************************************
     }
 
