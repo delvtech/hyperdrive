@@ -68,7 +68,7 @@ contract AerodromeLpHyperdrive is Hyperdrive, AerodromeLpBase {
     /// @param _target2 The target2 address.
     /// @param _target3 The target3 address.
     /// @param _target4 The target4 address.
-    /// @param _gauge The Aerodrome Gauage contract.
+    /// @param _gauge The Aerodrome Gauge contract.
     constructor(
         string memory __name,
         IHyperdrive.PoolConfig memory _config,

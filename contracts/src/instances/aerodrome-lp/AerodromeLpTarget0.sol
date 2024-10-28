@@ -21,7 +21,7 @@ contract AerodromeLpTarget0 is HyperdriveTarget0, AerodromeLpBase {
     /// @param _config The configuration of the Hyperdrive pool.
     /// @param __adminController The admin controller that will specify the
     ///        admin parameters for this instance.
-    /// @param _gauge The Aerodrome Gauage contract.
+    /// @param _gauge The Aerodrome Gauge contract.
     constructor(
         IHyperdrive.PoolConfig memory _config,
         IHyperdriveAdminController __adminController,
@@ -32,5 +32,12 @@ contract AerodromeLpTarget0 is HyperdriveTarget0, AerodromeLpBase {
     /// @return The instance's kind.
     function kind() external pure override returns (string memory) {
         _revert(abi.encode(AERODROME_LP_HYPERDRIVE_KIND));
+    }
+
+    /// @notice Gets the Aerodrome gauge contract.  This is where Aerodrome LP
+    ///         tokens are deposited to collect AERO rewards.
+    /// @return The contract address.
+    function gauge() external view returns (address) {
+        _revert(abi.encode(address(_gauge)));
     }
 }

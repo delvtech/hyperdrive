@@ -20,7 +20,7 @@ contract AerodromeLpTarget1 is HyperdriveTarget1, AerodromeLpBase {
     /// @param _config The configuration of the Hyperdrive pool.
     /// @param __adminController The admin controller that will specify the
     ///        admin parameters for this instance.
-    /// @param _gauge The Aerodrome Gauage contract.
+    /// @param _gauge The Aerodrome Gauge contract.
     constructor(
         IHyperdrive.PoolConfig memory _config,
         IHyperdriveAdminController __adminController,

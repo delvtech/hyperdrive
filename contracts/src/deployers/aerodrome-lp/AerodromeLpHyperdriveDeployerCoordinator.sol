@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.22;
 
+import { IGauge } from "aerodrome/interfaces/IGauge.sol";
 import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
 import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { AerodromeLpConversions } from "../../instances/aerodrome-lp/AerodromeLpConversions.sol";
@@ -118,6 +119,11 @@ contract AerodromeLpHyperdriveDeployerCoordinator is
         IHyperdrive.PoolDeployConfig memory _deployConfig,
         bytes memory _extraData
     ) internal view override {
+        // The Aerodrome Gauge contract. This is where the base token will be
+        // deposited.
+        require(_extraData.length >= 20, "Invalid _extraData length");
+        IGauge gauge = abi.decode(_extraData, (IGauge));
+
         // Perform the default checks.
         super._checkPoolConfig(_deployConfig, _extraData);
 
@@ -129,7 +135,7 @@ contract AerodromeLpHyperdriveDeployerCoordinator is
         }
 
         // Ensure that the base token address is properly configured.
-        if (address(_deployConfig.baseToken) == address(0)) {
+        if (address(_deployConfig.baseToken) != gauge.stakingToken()) {
             revert IHyperdriveDeployerCoordinator.InvalidBaseToken();
         }
 
@@ -137,13 +143,13 @@ contract AerodromeLpHyperdriveDeployerCoordinator is
         // has been tested to prevent arithmetic overflows in the
         // `_updateLiquidity` function when the share reserves are as high as
         // 200 million.
-        if (_deployConfig.minimumShareReserves != 1e7) {
+        if (_deployConfig.minimumShareReserves != 1e8) {
             revert IHyperdriveDeployerCoordinator.InvalidMinimumShareReserves();
         }
 
         // Ensure that the minimum transaction amount are equal to 1e7. This
         // value has been tested to prevent precision issues.
-        if (_deployConfig.minimumTransactionAmount != 1e7) {
+        if (_deployConfig.minimumTransactionAmount != 1e8) {
             revert IHyperdriveDeployerCoordinator
                 .InvalidMinimumTransactionAmount();
         }

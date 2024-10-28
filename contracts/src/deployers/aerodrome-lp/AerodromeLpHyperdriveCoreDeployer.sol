@@ -14,17 +14,6 @@ import { AerodromeLpHyperdrive } from "../../instances/aerodrome-lp/AerodromeLpH
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
 contract AerodromeLpHyperdriveCoreDeployer is IHyperdriveCoreDeployer {
-    /// @dev The Aerodrome Gauage contract. This is where the base token will be
-    ///      deposited.
-    IGauge internal immutable gauge;
-
-    /// @notice Instantiates the AerodomeLpHyperdrive base contract.
-    /// @param _gauge The Aerodrome Gauage contract.
-    constructor(IGauge _gauge) {
-        gauge = _gauge;
-    }
-
-    /// @notice Deploys a Hyperdrive instance with the given parameters.
     /// @param __name The name of the Hyperdrive pool.
     /// @param _config The configuration of the Hyperdrive pool.
     /// @param _adminController The admin controller that will specify the
@@ -40,7 +29,7 @@ contract AerodromeLpHyperdriveCoreDeployer is IHyperdriveCoreDeployer {
         string memory __name,
         IHyperdrive.PoolConfig memory _config,
         IHyperdriveAdminController _adminController,
-        bytes memory, // unused _extraData,
+        bytes memory _extraData,
         address _target0,
         address _target1,
         address _target2,
@@ -48,6 +37,11 @@ contract AerodromeLpHyperdriveCoreDeployer is IHyperdriveCoreDeployer {
         address _target4,
         bytes32 _salt
     ) external returns (address) {
+        // The Aerodrome Gauge contract. This is where the base token will be
+        // deposited.
+        require(_extraData.length >= 20, "Invalid _extraData length");
+        IGauge gauge = abi.decode(_extraData, (IGauge));
+
         return (
             address(
                 // NOTE: We hash the sender with the salt to prevent the

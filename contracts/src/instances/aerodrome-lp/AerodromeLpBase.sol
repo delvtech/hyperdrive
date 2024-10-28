@@ -21,12 +21,12 @@ abstract contract AerodromeLpBase is HyperdriveBase {
     using SafeERC20 for ERC20;
 
     /// Yield Source ///
-    /// @dev The Aerodrome Gauage contract. This is where the base token will be
+    /// @dev The Aerodrome Gauge contract. This is where the base token will be
     ///      deposited.
     IGauge internal immutable _gauge;
 
     /// @notice Instantiates the AerodomeLpHyperdrive base contract.
-    /// @param __gauge The Aerodrome Gauage contract.
+    /// @param __gauge The Aerodrome Gauge contract.
     constructor(IGauge __gauge) {
         _gauge = __gauge;
     }

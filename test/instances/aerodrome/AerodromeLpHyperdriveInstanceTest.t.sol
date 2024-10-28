@@ -26,7 +26,7 @@ contract AerodromeLpHyperdriveInstanceTest is InstanceTest {
     using Lib for *;
     using stdStorage for StdStorage;
 
-    /// @dev The Aerodrome Gauage contract.
+    /// @dev The Aerodrome Gauge contract.
     IGauge internal immutable gauge;
 
     /// @notice Instantiates the instance testing suite with the configuration.
@@ -43,8 +43,8 @@ contract AerodromeLpHyperdriveInstanceTest is InstanceTest {
     /// @dev Gets the extra data used to deploy the Aerodrome LP instance. This
     ///      is empty.
     /// @return The empty extra data.
-    function getExtraData() internal pure override returns (bytes memory) {
-        return new bytes(0);
+    function getExtraData() internal view override returns (bytes memory) {
+        return abi.encode(gauge);
     }
 
     /// @dev Converts base amount to the equivalent about in shares.
@@ -77,12 +77,12 @@ contract AerodromeLpHyperdriveInstanceTest is InstanceTest {
                 new AerodromeLpHyperdriveDeployerCoordinator(
                     string.concat(config.name, "DeployerCoordinator"),
                     _factory,
-                    address(new AerodromeLpHyperdriveCoreDeployer(gauge)),
-                    address(new AerodromeLpTarget0Deployer(gauge)),
-                    address(new AerodromeLpTarget1Deployer(gauge)),
-                    address(new AerodromeLpTarget2Deployer(gauge)),
-                    address(new AerodromeLpTarget3Deployer(gauge)),
-                    address(new AerodromeLpTarget4Deployer(gauge))
+                    address(new AerodromeLpHyperdriveCoreDeployer()),
+                    address(new AerodromeLpTarget0Deployer()),
+                    address(new AerodromeLpTarget1Deployer()),
+                    address(new AerodromeLpTarget2Deployer()),
+                    address(new AerodromeLpTarget3Deployer()),
+                    address(new AerodromeLpTarget4Deployer())
                 )
             );
     }
@@ -94,8 +94,6 @@ contract AerodromeLpHyperdriveInstanceTest is InstanceTest {
         return (
             config.baseToken.balanceOf(address(gauge)),
             config.baseToken.balanceOf(address(gauge))
-            // gauge.totalSupply()
-            // config.baseToken.balanceOf(address(hyperdrive))
         );
     }
 

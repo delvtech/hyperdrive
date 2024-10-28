@@ -13,9 +13,9 @@ import { BASE_FACTORY_NAME } from "./factory";
 
 // The name of the pool.
 export const BASE_AERODROME_LP_AERO_USDC_91DAY_NAME =
-    "ElementDAO 91 Day Aerodrome Lp AERO-USDC Hyperdrive";
+    "ElementDAO 91 Day Aerodrome LP AERO-USDC Hyperdrive";
 
-const CONTRIBUTION = parseEther("100"); // 1e21
+const CONTRIBUTION = parseEther("100"); // 1e20
 
 export const BASE_AERODROME_LP_AERO_USDC_91DAY: HyperdriveInstanceConfig<"AerodromeLp"> =
     {
