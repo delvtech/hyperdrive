@@ -78,7 +78,7 @@ abstract contract AerodromeLpBase is HyperdriveBase {
         address _destination,
         bytes calldata // unused
     ) internal override returns (uint256 amountWithdrawn) {
-        // Withdraw the base tokens from the gauage contract.
+        // Withdraw the base tokens from the gauge contract.
         _gauge.withdraw(_shareAmount);
 
         // Transfer base tokens to the destination address.

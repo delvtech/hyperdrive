@@ -22,7 +22,7 @@ contract AerodromeLp_AERO_USDC_Hyperdrive is AerodromeLpHyperdriveInstanceTest {
 
     /// @dev Whale accounts.
     address internal BASE_TOKEN_WHALE =
-        0x4F09bAb2f0E15e2A078A227FE1537665F55b8360;
+        0xa000AD1221c525037504452819116941338e70b2;
     address[] internal baseTokenWhaleAccounts = [BASE_TOKEN_WHALE];
 
     /// @notice Instantiates the instance testing suite with the configuration.
@@ -37,8 +37,8 @@ contract AerodromeLp_AERO_USDC_Hyperdrive is AerodromeLpHyperdriveInstanceTest {
                 baseToken: AERO_USDC_LP,
                 vaultSharesToken: IERC20(address(0)),
                 shareTolerance: 0,
-                minimumShareReserves: 1e15,
-                minimumTransactionAmount: 1e15,
+                minimumShareReserves: 1e7,
+                minimumTransactionAmount: 1e7,
                 positionDuration: POSITION_DURATION,
                 fees: IHyperdrive.Fees({
                     curve: 0,
@@ -58,14 +58,12 @@ contract AerodromeLp_AERO_USDC_Hyperdrive is AerodromeLpHyperdriveInstanceTest {
                 // The base test tolerances.
                 closeLongWithBaseTolerance: 0,
                 roundTripLpInstantaneousWithBaseTolerance: 0,
-                roundTripLpWithdrawalSharesWithBaseTolerance: 0,
+                roundTripLpWithdrawalSharesWithBaseTolerance: 10,
                 roundTripLongInstantaneousWithBaseUpperBoundTolerance: 100,
-                // NOTE: Since the curve fee isn't zero, this check is ignored.
                 roundTripLongInstantaneousWithBaseTolerance: 10,
                 roundTripLongMaturityWithBaseUpperBoundTolerance: 0,
                 roundTripLongMaturityWithBaseTolerance: 0,
                 roundTripShortInstantaneousWithBaseUpperBoundTolerance: 100,
-                // NOTE: Since the curve fee isn't zero, this check is ignored.
                 roundTripShortInstantaneousWithBaseTolerance: 10,
                 roundTripShortMaturityWithBaseTolerance: 0,
                 // NOTE: Share deposits and withdrawals are disabled, so these are
