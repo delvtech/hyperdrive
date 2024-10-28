@@ -12,7 +12,7 @@ import { MoonwellTarget4Deployer } from "../../../contracts/src/deployers/moonwe
 import { MoonwellConversions } from "../../../contracts/src/instances/moonwell/MoonwellConversions.sol";
 import { IERC20 } from "../../../contracts/src/interfaces/IERC20.sol";
 import { IMoonwellHyperdrive } from "../../../contracts/src/interfaces/IMoonwellHyperdrive.sol";
-import { IMoonwell } from "../../../contracts/src/interfaces/IMoonwell.sol";
+import { IMToken } from "../../../contracts/src/interfaces/IMoonwell.sol";
 import { IHyperdrive } from "../../../contracts/src/interfaces/IHyperdrive.sol";
 import { FixedPointMath } from "../../../contracts/src/libraries/FixedPointMath.sol";
 import { InstanceTest } from "../../utils/InstanceTest.sol";
@@ -46,10 +46,9 @@ contract MoonwellHyperdriveInstanceTest is InstanceTest {
     /// @return The converted share amount.
     function convertToShares(
         uint256 baseAmount
-    ) internal pure override returns (uint256) {
+    ) internal view override returns (uint256) {
         return MoonwellConversions.convertToShares(
-            config.baseToken,
-            IMoonwell(address(config.vaultSharesToken)),
+            IMToken(address(config.vaultSharesToken)),
             baseAmount
         );
     }
@@ -59,10 +58,9 @@ contract MoonwellHyperdriveInstanceTest is InstanceTest {
     /// @return The converted base amount.
     function convertToBase(
         uint256 shareAmount
-    ) internal pure override returns (uint256) {
+    ) internal view override returns (uint256) {
         return MoonwellConversions.convertToBase(
-            config.baseToken,
-            IMoonwell(address(config.vaultSharesToken)),
+            IMToken(address(config.vaultSharesToken)),
             shareAmount
         );
     }
@@ -94,8 +92,8 @@ contract MoonwellHyperdriveInstanceTest is InstanceTest {
     /// @return The total supply of vault shares.
     function getSupply() internal view override returns (uint256, uint256) {
         return (
-            IMoonwell(address(config.vaultSharesToken)).totalReserves(),
-            IMoonwell(address(config.vaultSharesToken)).totalSupply()
+            IMToken(address(config.vaultSharesToken)).totalReserves(),
+            IMToken(address(config.vaultSharesToken)).totalSupply()
         );
     }
 

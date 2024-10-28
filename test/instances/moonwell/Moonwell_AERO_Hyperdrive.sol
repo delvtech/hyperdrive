@@ -3,7 +3,7 @@ pragma solidity 0.8.22;
 
 import { stdStorage, StdStorage } from "forge-std/Test.sol";
 import { IERC20 } from "../../../contracts/src/interfaces/IERC20.sol";
-import { IMoonwell } from "../../../contracts/src/interfaces/IMoonwell.sol";
+import { IMToken, IMoonwellComptroller } from "../../../contracts/src/interfaces/IMoonwell.sol";
 import { IHyperdrive } from "../../../contracts/src/interfaces/IHyperdrive.sol";
 import { MoonwellHyperdriveInstanceTest } from "./MoonwellHyperdriveInstanceTest.t.sol";
 import { InstanceTest } from "../../utils/InstanceTest.sol";
@@ -11,11 +11,15 @@ import { InstanceTest } from "../../utils/InstanceTest.sol";
 contract Moonwell_AERO_Hyperdrive is MoonwellHyperdriveInstanceTest {
     using stdStorage for StdStorage;
 
-    /// @dev The Base Moonwell AERO token.
-    address internal constant MAERO =
-        address(0x73902f619CEB9B31FD8EFecf435CbDf89E369Ba6);
+    /// @dev The Base Moonwell Comptroller.
+    IMoonwellComptroller COMPTROLLER =
+        IMoonwellComptroller(0xfBb21d0380beE3312B33c4353c8936a0F13EF26C);
 
-    /// @dev The mainnet AERO token.
+    /// @dev The Base Moonwell AERO token (vaultSharesToken).
+    IMToken internal constant MAERO =
+        IMToken(0x73902f619CEB9B31FD8EFecf435CbDf89E369Ba6);
+
+    /// @dev The Base AERO token (baseToken).
     address internal constant AERO =
         address(0x940181a94A35A4569E4529A3CDfB74e38FD98631);
 
@@ -33,14 +37,14 @@ contract Moonwell_AERO_Hyperdrive is MoonwellHyperdriveInstanceTest {
             InstanceTestConfig({
                 name: "Hyperdrive",
                 kind: "MoonwellHyperdrive",
-                decimals: 8,
+                decimals: 18,
                 baseTokenWhaleAccounts: baseTokenWhaleAccounts,
                 vaultSharesTokenWhaleAccounts: vaultSharesTokenWhaleAccounts,
                 baseToken: IERC20(AERO),
-                vaultSharesToken: IMoonwell(MAERO),
+                vaultSharesToken: IERC20(MAERO),
                 shareTolerance: 0,
-                minimumShareReserves: 1e5,
-                minimumTransactionAmount: 1e5,
+                minimumShareReserves: 1e15,
+                minimumTransactionAmount: 1e15,
                 positionDuration: POSITION_DURATION,
                 fees: IHyperdrive.Fees({
                     curve: 0.001e18,
@@ -48,9 +52,9 @@ contract Moonwell_AERO_Hyperdrive is MoonwellHyperdriveInstanceTest {
                     governanceLP: 0,
                     governanceZombie: 0
                 }),
-                enableBaseDeposits: false,
+                enableBaseDeposits: true,
                 enableShareDeposits: true,
-                enableBaseWithdraws: false,
+                enableBaseWithdraws: true,
                 enableShareWithdraws: true,
                 baseWithdrawError: abi.encodeWithSelector(
                     IHyperdrive.UnsupportedToken.selector
@@ -93,7 +97,7 @@ contract Moonwell_AERO_Hyperdrive is MoonwellHyperdriveInstanceTest {
     {}
 
     /// @notice Forge function that is invoked to setup the testing environment.
-    function setUp() public override __base_fork(21506268) {
+    function setUp() public override __base_fork(21680116) {
         // Invoke the instance testing suite setup.
         super.setUp();
     }
