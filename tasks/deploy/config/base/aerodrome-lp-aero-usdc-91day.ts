@@ -35,7 +35,9 @@ export const BASE_AERODROME_LP_AERO_USDC_91DAY: HyperdriveInstanceConfig<"Aerodr
         salt: toBytes32("0x69420"),
         extraData: AERO_USDC_GAUGE_ADDRESS_BASE,
         contribution: CONTRIBUTION,
-        fixedAPR: parseEther("0.08"),
+        // The emissions APR can be found here:
+        // https://aerodrome.finance/deposit?token0=0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913&token1=0x940181a94A35A4569E4529A3CDfB74e38FD98631&type=-1
+        fixedAPR: parseEther("0.5468"),
         timestretchAPR: parseEther("0.075"),
         options: async (hre: HardhatRuntimeEnvironment) => ({
             extraData: "0x",

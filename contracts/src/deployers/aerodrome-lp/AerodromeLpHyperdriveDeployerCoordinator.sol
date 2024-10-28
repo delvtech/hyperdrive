@@ -139,7 +139,7 @@ contract AerodromeLpHyperdriveDeployerCoordinator is
             revert IHyperdriveDeployerCoordinator.InvalidBaseToken();
         }
 
-        // Ensure that the minimum share reserves are equal to 1e7. This value
+        // Ensure that the minimum share reserves are equal to 1e8. This value
         // has been tested to prevent arithmetic overflows in the
         // `_updateLiquidity` function when the share reserves are as high as
         // 200 million.
@@ -147,7 +147,7 @@ contract AerodromeLpHyperdriveDeployerCoordinator is
             revert IHyperdriveDeployerCoordinator.InvalidMinimumShareReserves();
         }
 
-        // Ensure that the minimum transaction amount are equal to 1e7. This
+        // Ensure that the minimum transaction amount are equal to 1e8. This
         // value has been tested to prevent precision issues.
         if (_deployConfig.minimumTransactionAmount != 1e8) {
             revert IHyperdriveDeployerCoordinator

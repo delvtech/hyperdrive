@@ -30,8 +30,6 @@ contract AerodromeLpTarget2Deployer is IHyperdriveTargetDeployer {
         // deposited.
         require(_extraData.length >= 20, "Invalid _extraData length");
         IGauge gauge = abi.decode(_extraData, (IGauge));
-        // The Aerodrome Gauge contract. This is where the base token will be
-        // deposited.
 
         return
             address(
