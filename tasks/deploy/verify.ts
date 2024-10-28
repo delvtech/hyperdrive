@@ -251,6 +251,9 @@ task(
                 ];
             } else if (extras) {
                 targetArgs = [poolConfig, factoryAddress, ...extras];
+            } else {
+                console.log("got here");
+                targetArgs = [poolConfig, factoryAddress];
             }
 
             // verify the targets
@@ -322,6 +325,8 @@ task(
                 pathName = "ezeth-linea";
             } else if (kind == "RsETHLineaHyperdrive") {
                 pathName = "rseth-linea";
+            } else if (kind == "StkWellHyperdrive") {
+                pathName = "stk-well";
             } else {
                 pathName = instanceConfig.prefix.toLowerCase();
             }

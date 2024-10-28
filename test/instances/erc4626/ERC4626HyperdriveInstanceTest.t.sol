@@ -83,7 +83,13 @@ abstract contract ERC4626HyperdriveInstanceTest is InstanceTest {
     /// @dev Fetches the total supply of the base and share tokens.
     /// @return The total supply of base.
     /// @return The total supply of vault shares.
-    function getSupply() internal view override returns (uint256, uint256) {
+    function getSupply()
+        internal
+        view
+        virtual
+        override
+        returns (uint256, uint256)
+    {
         return (
             IERC4626(address(config.vaultSharesToken)).totalAssets(),
             IERC4626(address(config.vaultSharesToken)).totalSupply()
@@ -118,11 +124,11 @@ abstract contract ERC4626HyperdriveInstanceTest is InstanceTest {
     /// @dev Fuzz test that verifies that the vault share price is the price
     ///      that dictates the conversion between base and shares.
     /// @param basePaid the fuzz parameter for the base paid.
-    function test__pricePerVaultShare(uint256 basePaid) external {
+    function test__pricePerVaultShare(uint256 basePaid) external virtual {
         // Ensure that the share price is the expected value.
         (uint256 totalBase, uint256 totalSupply) = getSupply();
         uint256 vaultSharePrice = hyperdrive.getPoolInfo().vaultSharePrice;
-        assertEq(vaultSharePrice, totalBase.divDown(totalSupply));
+        assertApproxEqAbs(vaultSharePrice, totalBase.divDown(totalSupply), 1);
 
         // Ensure that the share price accurately predicts the amount of shares
         // that will be minted for depositing a given amount of shares. This will

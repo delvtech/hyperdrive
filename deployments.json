@@ -1453,81 +1453,6 @@
             "address": "0xFcdaF9A4A731C24ed2E1BFd6FA918d9CF7F50137",
             "timestamp": "2024-09-23T17:24:41.079Z"
         },
-        "ElementDAO ERC4626 Hyperdrive Deployer Coordinator_ERC4626HyperdriveCoreDeployer": {
-            "contract": "ERC4626HyperdriveCoreDeployer",
-            "address": "0xb1c456824cb526a0b57f6cea309785752ec015d7",
-            "timestamp": "2024-10-09T20:36:51.355Z"
-        },
-        "ElementDAO ERC4626 Hyperdrive Deployer Coordinator_ERC4626Target0Deployer": {
-            "contract": "ERC4626Target0Deployer",
-            "address": "0xd171c68eaa3fbd25c1fa34c1a5e63e193df39aa6",
-            "timestamp": "2024-10-09T20:36:58.302Z"
-        },
-        "ElementDAO ERC4626 Hyperdrive Deployer Coordinator_ERC4626Target1Deployer": {
-            "contract": "ERC4626Target1Deployer",
-            "address": "0xcc2282bf8002701fd31e56d3f6b2c744493ee27f",
-            "timestamp": "2024-10-09T20:37:03.173Z"
-        },
-        "ElementDAO ERC4626 Hyperdrive Deployer Coordinator_ERC4626Target2Deployer": {
-            "contract": "ERC4626Target2Deployer",
-            "address": "0xd917235d89a58af93302e9a998d62735740c8117",
-            "timestamp": "2024-10-09T20:37:06.975Z"
-        },
-        "ElementDAO ERC4626 Hyperdrive Deployer Coordinator_ERC4626Target3Deployer": {
-            "contract": "ERC4626Target3Deployer",
-            "address": "0x77644b188a5d1d58246a233761273c74b0f9d88d",
-            "timestamp": "2024-10-09T20:37:10.677Z"
-        },
-        "ElementDAO ERC4626 Hyperdrive Deployer Coordinator_ERC4626Target4Deployer": {
-            "contract": "ERC4626Target4Deployer",
-            "address": "0xbaa863b62c69993143b013fe7b8af278fd52f76b",
-            "timestamp": "2024-10-09T20:37:15.186Z"
-        },
-        "ElementDAO ERC4626 Hyperdrive Deployer Coordinator": {
-            "contract": "ERC4626HyperdriveDeployerCoordinator",
-            "address": "0x68ba944d89d7481f3a9d73dcb75b7e6c7db5562b",
-            "timestamp": "2024-10-09T20:37:24.510Z"
-        },
-        "ElementDAO Moonwell StkWell Hyperdrive Deployer Coordinator_StkWellHyperdriveCoreDeployer": {
-            "contract": "StkWellHyperdriveCoreDeployer",
-            "address": "0x8d6d5d48f881bcccd6c09256724692b3a971b87b",
-            "timestamp": "2024-10-09T20:37:34.640Z"
-        },
-        "StkWellConversions": {
-            "contract": "StkWellConversions",
-            "address": "0xe670f140dedcdf142e15ce198e1a99fecd67d21c",
-            "timestamp": "2024-10-09T20:37:38.315Z"
-        },
-        "ElementDAO Moonwell StkWell Hyperdrive Deployer Coordinator_StkWellTarget0Deployer": {
-            "contract": "StkWellTarget0Deployer",
-            "address": "0xb8bd93848aa71887e447642299b1f2a5cf898a9b",
-            "timestamp": "2024-10-09T20:37:42.255Z"
-        },
-        "ElementDAO Moonwell StkWell Hyperdrive Deployer Coordinator_StkWellTarget1Deployer": {
-            "contract": "StkWellTarget1Deployer",
-            "address": "0xf74085c4404fd08e7d636f151b734a580f44100f",
-            "timestamp": "2024-10-09T20:37:46.909Z"
-        },
-        "ElementDAO Moonwell StkWell Hyperdrive Deployer Coordinator_StkWellTarget2Deployer": {
-            "contract": "StkWellTarget2Deployer",
-            "address": "0x57858abb2773fa20de1bac61eda8283a8b1ecea3",
-            "timestamp": "2024-10-09T20:37:50.544Z"
-        },
-        "ElementDAO Moonwell StkWell Hyperdrive Deployer Coordinator_StkWellTarget3Deployer": {
-            "contract": "StkWellTarget3Deployer",
-            "address": "0xea21fbc9eb872c025959d82383bc898540334484",
-            "timestamp": "2024-10-09T20:38:07.386Z"
-        },
-        "ElementDAO Moonwell StkWell Hyperdrive Deployer Coordinator_StkWellTarget4Deployer": {
-            "contract": "StkWellTarget4Deployer",
-            "address": "0x02d668b32fc23f223464f3daf9df6e518cf1e9ee",
-            "timestamp": "2024-10-09T20:38:12.258Z"
-        },
-        "ElementDAO Moonwell StkWell Hyperdrive Deployer Coordinator": {
-            "contract": "StkWellHyperdriveDeployerCoordinator",
-            "address": "0x7d78ee16d314f14e01e222ee6dd839689bd294ca",
-            "timestamp": "2024-10-09T20:38:16.484Z"
-        },
         "ElementDAO 182 Day Moonwell ETH Hyperdrive_ERC4626Target0": {
             "contract": "ERC4626Target0",
             "address": "0x6e596c06Bb5a7eaf654BA14f8352c3257dD8403c",
@@ -1558,35 +1483,195 @@
             "address": "0xceD9F810098f8329472AEFbaa1112534E96A5c7b",
             "timestamp": "2024-10-09T20:39:12.262Z"
         },
+        "ElementDAO Moonwell StkWell Hyperdrive Deployer Coordinator_StkWellHyperdriveCoreDeployer": {
+            "contract": "StkWellHyperdriveCoreDeployer",
+            "address": "0x52f00bd18e53134ed75073e09f48a190559a0fe2",
+            "timestamp": "2024-10-17T07:38:36.544Z"
+        },
+        "ElementDAO Moonwell StkWell Hyperdrive Deployer Coordinator_StkWellTarget0Deployer": {
+            "contract": "StkWellTarget0Deployer",
+            "address": "0xcec152d19982ef88e69f538f5a7d06a38ca8773e",
+            "timestamp": "2024-10-17T07:38:40.474Z"
+        },
+        "ElementDAO Moonwell StkWell Hyperdrive Deployer Coordinator_StkWellTarget1Deployer": {
+            "contract": "StkWellTarget1Deployer",
+            "address": "0x1a4cee4e32ea51ec7671a0fd7333ca64fbf004f0",
+            "timestamp": "2024-10-17T07:38:44.527Z"
+        },
+        "ElementDAO Moonwell StkWell Hyperdrive Deployer Coordinator_StkWellTarget2Deployer": {
+            "contract": "StkWellTarget2Deployer",
+            "address": "0xe299a8c26bf6a7958f1a0aa8ea6fee9b8ede1df9",
+            "timestamp": "2024-10-17T07:38:48.536Z"
+        },
+        "ElementDAO Moonwell StkWell Hyperdrive Deployer Coordinator_StkWellTarget3Deployer": {
+            "contract": "StkWellTarget3Deployer",
+            "address": "0x8015beb77685a583751b411f896a8aca05044aa7",
+            "timestamp": "2024-10-17T07:38:52.814Z"
+        },
+        "ElementDAO Moonwell StkWell Hyperdrive Deployer Coordinator_StkWellTarget4Deployer": {
+            "contract": "StkWellTarget4Deployer",
+            "address": "0x78beeccfeedb99a1a461619c84cc7be78c97de70",
+            "timestamp": "2024-10-17T07:38:56.558Z"
+        },
+        "ElementDAO Moonwell StkWell Hyperdrive Deployer Coordinator": {
+            "contract": "StkWellHyperdriveDeployerCoordinator",
+            "address": "0x948860043742b53f73742c981aebb2242ed0e707",
+            "timestamp": "2024-10-17T07:39:00.782Z"
+        },
         "ElementDAO 182 Day Moonwell StkWell Hyperdrive_StkWellTarget0": {
             "contract": "StkWellTarget0",
-            "address": "0x387948e60f947bd9ee782e33241349bA3aE31aeC",
-            "timestamp": "2024-10-09T20:39:57.771Z"
+            "address": "0x6EF7ec1cC1F7bed3b3a2461EE78b2b381dFf152C",
+            "timestamp": "2024-10-17T07:39:46.558Z"
         },
         "ElementDAO 182 Day Moonwell StkWell Hyperdrive_StkWellTarget1": {
             "contract": "StkWellTarget1",
-            "address": "0x730F5A9A4649cD88a91c6B0cDc0111cd7E096eDf",
-            "timestamp": "2024-10-09T20:39:35.867Z"
+            "address": "0xdEAC3B00E20a7bc1dee2aF459ee9a3C2e48A5F81",
+            "timestamp": "2024-10-17T07:39:24.126Z"
         },
         "ElementDAO 182 Day Moonwell StkWell Hyperdrive_StkWellTarget2": {
             "contract": "StkWellTarget2",
-            "address": "0xD00dd133937063DbA2028FAb66ebB9B764cfCA5E",
-            "timestamp": "2024-10-09T20:39:42.386Z"
+            "address": "0x4cB748492cc5F300abea39E327E21AA88a157a01",
+            "timestamp": "2024-10-17T07:39:33.666Z"
         },
         "ElementDAO 182 Day Moonwell StkWell Hyperdrive_StkWellTarget3": {
             "contract": "StkWellTarget3",
-            "address": "0x8cB7D92029d5369186A789c3dD69a3B4E3cb9d94",
-            "timestamp": "2024-10-09T20:39:46.388Z"
+            "address": "0xADD2ec1A20edcd26fb18f30214f48D06d36B9c94",
+            "timestamp": "2024-10-17T07:39:38.522Z"
         },
         "ElementDAO 182 Day Moonwell StkWell Hyperdrive_StkWellTarget4": {
             "contract": "StkWellTarget4",
-            "address": "0xf7b7cCb57e8101cd59f40aF39ceC7f9624EF4d88",
-            "timestamp": "2024-10-09T20:39:52.240Z"
+            "address": "0x15C4c91E7b82e725544b412e66863dBf7dc50f83",
+            "timestamp": "2024-10-17T07:39:43.192Z"
         },
         "ElementDAO 182 Day Moonwell StkWell Hyperdrive": {
             "contract": "StkWellHyperdrive",
-            "address": "0x1681aa2E7551343D9dd53C778A83D70243b64360",
-            "timestamp": "2024-10-09T20:39:57.249Z"
+            "address": "0x9705c9BC7E9f3da041F23033225c4967d1Aa6385",
+            "timestamp": "2024-10-17T07:39:46.321Z"
+        },
+        "ElementDAO 30 Day Num Finance snARS Hyperdrive_ERC4626Target0": {
+            "contract": "ERC4626Target0",
+            "address": "0xcC36026D325519672d062f233A1FB84a023ad65D",
+            "timestamp": "2024-10-17T22:44:58.662Z"
+        },
+        "ElementDAO 30 Day Num Finance snARS Hyperdrive_ERC4626Target1": {
+            "contract": "ERC4626Target1",
+            "address": "0x59e48b46180cFA53A23884E076d999dAF4C6C174",
+            "timestamp": "2024-10-17T22:44:42.434Z"
+        },
+        "ElementDAO 30 Day Num Finance snARS Hyperdrive_ERC4626Target2": {
+            "contract": "ERC4626Target2",
+            "address": "0x4f06409E9a775F79b2E5970c8C27aA9AEc24E635",
+            "timestamp": "2024-10-17T22:44:46.336Z"
+        },
+        "ElementDAO 30 Day Num Finance snARS Hyperdrive_ERC4626Target3": {
+            "contract": "ERC4626Target3",
+            "address": "0x265aA795D8a52768C67e3eC3e4940565441b4253",
+            "timestamp": "2024-10-17T22:44:50.576Z"
+        },
+        "ElementDAO 30 Day Num Finance snARS Hyperdrive_ERC4626Target4": {
+            "contract": "ERC4626Target4",
+            "address": "0x19328453e9B570a8a4BC047BFAc0a28564edB02e",
+            "timestamp": "2024-10-17T22:44:54.440Z"
+        },
+        "ElementDAO 30 Day Num Finance snARS Hyperdrive": {
+            "contract": "ERC4626Hyperdrive",
+            "address": "0x1243C06146ACa2D4Aaf8F9860F6D8d59d636d46C",
+            "timestamp": "2024-10-17T22:44:58.410Z"
+        },
+        "ElementDAO ERC4626 Hyperdrive Deployer Coordinator_ERC4626HyperdriveCoreDeployer": {
+            "contract": "ERC4626HyperdriveCoreDeployer",
+            "address": "0x7dd0143eb6344808058912434d59df7e6b750b45",
+            "timestamp": "2024-10-22T00:16:14.719Z"
+        },
+        "ElementDAO ERC4626 Hyperdrive Deployer Coordinator_ERC4626Target0Deployer": {
+            "contract": "ERC4626Target0Deployer",
+            "address": "0xa35411b03078ef2edc254d1a2f0497d77c5b3e1d",
+            "timestamp": "2024-10-22T00:16:19.357Z"
+        },
+        "ElementDAO ERC4626 Hyperdrive Deployer Coordinator_ERC4626Target1Deployer": {
+            "contract": "ERC4626Target1Deployer",
+            "address": "0x30f48d0cace859fa633031035bf2395bbbfe030a",
+            "timestamp": "2024-10-22T00:16:27.301Z"
+        },
+        "ElementDAO ERC4626 Hyperdrive Deployer Coordinator_ERC4626Target2Deployer": {
+            "contract": "ERC4626Target2Deployer",
+            "address": "0x0a97d6e87661c9158e1dc4fde66e98ea96fccde0",
+            "timestamp": "2024-10-22T00:16:32.101Z"
+        },
+        "ElementDAO ERC4626 Hyperdrive Deployer Coordinator_ERC4626Target3Deployer": {
+            "contract": "ERC4626Target3Deployer",
+            "address": "0x144f74f2b663ab5030fb5e6f24bada13441aa4b3",
+            "timestamp": "2024-10-22T00:16:36.644Z"
+        },
+        "ElementDAO ERC4626 Hyperdrive Deployer Coordinator_ERC4626Target4Deployer": {
+            "contract": "ERC4626Target4Deployer",
+            "address": "0xb3f2380f7f9f78112ab152c486d27222bff4673c",
+            "timestamp": "2024-10-22T00:16:41.210Z"
+        },
+        "ElementDAO ERC4626 Hyperdrive Deployer Coordinator": {
+            "contract": "ERC4626HyperdriveDeployerCoordinator",
+            "address": "0xfa8a5165219c5bd7992038202bf504110de61efd",
+            "timestamp": "2024-10-22T00:16:44.039Z"
+        },
+        "ElementDAO 182 Day Moonwell EURC Hyperdrive_ERC4626Target0": {
+            "contract": "ERC4626Target0",
+            "address": "0x207deD1eEDE260Fd40760e8A230B51aE27B44dD3",
+            "timestamp": "2024-10-22T00:17:29.891Z"
+        },
+        "ElementDAO 182 Day Moonwell EURC Hyperdrive_ERC4626Target1": {
+            "contract": "ERC4626Target1",
+            "address": "0x34542Df0D0dB6524A7eBbb504d4a607b802Fad70",
+            "timestamp": "2024-10-22T00:17:07.906Z"
+        },
+        "ElementDAO 182 Day Moonwell EURC Hyperdrive_ERC4626Target2": {
+            "contract": "ERC4626Target2",
+            "address": "0x66264C6707E8d7eAb8f7a5E0bb522423c4E8A6a0",
+            "timestamp": "2024-10-22T00:17:12.562Z"
+        },
+        "ElementDAO 182 Day Moonwell EURC Hyperdrive_ERC4626Target3": {
+            "contract": "ERC4626Target3",
+            "address": "0xfd10C9d2695Dc78AB96fF75828E6beA438969518",
+            "timestamp": "2024-10-22T00:17:20.512Z"
+        },
+        "ElementDAO 182 Day Moonwell EURC Hyperdrive_ERC4626Target4": {
+            "contract": "ERC4626Target4",
+            "address": "0x0827943d58aB22dbE79A1FE2AB158480cb4F0D9A",
+            "timestamp": "2024-10-22T00:17:25.158Z"
+        },
+        "ElementDAO 182 Day Moonwell EURC Hyperdrive": {
+            "contract": "ERC4626Hyperdrive",
+            "address": "0xdd8E1B14A04cbdD98dfcAF3F0Db84A80Bfb8FC25",
+            "timestamp": "2024-10-22T00:17:29.739Z"
+        },
+        "ElementDAO 182 Day Moonwell USDC Hyperdrive_ERC4626Target0": {
+            "contract": "ERC4626Target0",
+            "address": "0x5580845D3F597A9A309a4448924c270ea0f4c736",
+            "timestamp": "2024-10-22T00:18:26.594Z"
+        },
+        "ElementDAO 182 Day Moonwell USDC Hyperdrive_ERC4626Target1": {
+            "contract": "ERC4626Target1",
+            "address": "0x5Db16781a29549d708c4c34bF2771C1b34415c21",
+            "timestamp": "2024-10-22T00:17:53.152Z"
+        },
+        "ElementDAO 182 Day Moonwell USDC Hyperdrive_ERC4626Target2": {
+            "contract": "ERC4626Target2",
+            "address": "0x257411570Bc419B1B13AEcb5Fe83eba6e2903CeA",
+            "timestamp": "2024-10-22T00:18:01.120Z"
+        },
+        "ElementDAO 182 Day Moonwell USDC Hyperdrive_ERC4626Target3": {
+            "contract": "ERC4626Target3",
+            "address": "0x56D2430eE396d3f4811781B146D66361206BA3Dc",
+            "timestamp": "2024-10-22T00:18:15.715Z"
+        },
+        "ElementDAO 182 Day Moonwell USDC Hyperdrive_ERC4626Target4": {
+            "contract": "ERC4626Target4",
+            "address": "0x0a4d43365229F46250fdBaAece73B6bce28e925F",
+            "timestamp": "2024-10-22T00:18:23.639Z"
+        },
+        "ElementDAO 182 Day Moonwell USDC Hyperdrive": {
+            "contract": "ERC4626Hyperdrive",
+            "address": "0xD9b66D9a819B36ECEfC26B043eF3B422d5A6123a",
+            "timestamp": "2024-10-22T00:18:26.463Z"
         }
     }
 }
