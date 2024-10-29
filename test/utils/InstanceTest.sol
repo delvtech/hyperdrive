@@ -398,7 +398,6 @@ abstract contract InstanceTest is HyperdriveTest {
         if (!config.enableShareDeposits && !asBase) {
             vm.expectRevert(IHyperdrive.UnsupportedToken.selector);
         }
-
         // Record Alice's ETH balance before the deployment call.
         uint256 aliceBalanceBefore = address(alice).balance;
 

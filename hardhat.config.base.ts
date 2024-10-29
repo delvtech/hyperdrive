@@ -19,6 +19,8 @@ import {
     BASE_STK_WELL_182DAY,
     BASE_STK_WELL_COORDINATOR,
 } from "./tasks/deploy/config/base";
+import { BASE_AERODROME_LP_AERO_USDC_91DAY } from "./tasks/deploy/config/base/aerodrome-lp-aero-usdc-91day";
+import { BASE_AERODROME_LP_COORDINATOR } from "./tasks/deploy/config/base/aerodrome-lp-coordinator";
 import { BASE_MORPHO_BLUE_CBETH_USDC_182DAY } from "./tasks/deploy/config/base/morpho-blue-cbeth-usdc-182day";
 
 const { env } = process;
@@ -37,6 +39,7 @@ const config: HardhatUserConfig = {
                     BASE_MORPHO_BLUE_COORDINATOR,
                     BASE_ERC4626_COORDINATOR,
                     BASE_STK_WELL_COORDINATOR,
+                    BASE_AERODROME_LP_COORDINATOR,
                 ],
                 instances: [
                     BASE_CBETH_182DAY,
@@ -46,6 +49,7 @@ const config: HardhatUserConfig = {
                     BASE_SNARS_30DAY,
                     BASE_MOONWELL_EURC_182DAY,
                     BASE_MOONWELL_USDC_182DAY,
+                    BASE_AERODROME_LP_AERO_USDC_91DAY,
                 ],
                 checkpointRewarders: [],
                 checkpointSubrewarders: [],
