@@ -48,7 +48,7 @@ abstract contract MoonwellBase is HyperdriveBase {
             _baseAmount + 1
         );
 
-        uint256 sharesMinted = IMToken(address(_vaultSharesToken)).mint(
+        (, uint256 sharesMinted) = IMToken(address(_vaultSharesToken)).mintInternal(
             _baseAmount
         );
 

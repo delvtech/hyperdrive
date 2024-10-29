@@ -161,10 +161,7 @@ contract MoonwellHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator 
         //
         // NOTE: Some pools may require larger minimum share reserves to be
         // considered safe. This is just a sanity check.
-        if (
-            _deployConfig.minimumShareReserves <
-            10 ** (_deployConfig.baseToken.decimals() - 3)
-        ) {
+        if (_deployConfig.minimumShareReserves != 1e5) {
             revert IHyperdriveDeployerCoordinator.InvalidMinimumShareReserves();
         }
 
@@ -173,12 +170,15 @@ contract MoonwellHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator 
         //
         // NOTE: Some pools may require larger minimum transaction amounts to be
         // considered safe. This is just a sanity check.
-        if (
-            _deployConfig.minimumTransactionAmount <
-            10 ** (_deployConfig.baseToken.decimals() - 3)
-        ) {
-            revert IHyperdriveDeployerCoordinator
-                .InvalidMinimumTransactionAmount();
+        // if (
+        //     _deployConfig.minimumTransactionAmount <
+        //     10 ** (_deployConfig.baseToken.decimals() - 3)
+        // ) {
+        //     revert IHyperdriveDeployerCoordinator
+        //         .InvalidMinimumTransactionAmount();
+        // }
+        if (_deployConfig.minimumTransactionAmount != 1e15) {
+            revert IHyperdriveDeployerCoordinator.InvalidMinimumShareReserves();
         }
     }
 

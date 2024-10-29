@@ -43,7 +43,7 @@ contract Moonwell_AERO_Hyperdrive is MoonwellHyperdriveInstanceTest {
                 baseToken: IERC20(AERO),
                 vaultSharesToken: IERC20(MAERO),
                 shareTolerance: 0,
-                minimumShareReserves: 1e15,
+                minimumShareReserves: 1e5,
                 minimumTransactionAmount: 1e15,
                 positionDuration: POSITION_DURATION,
                 fees: IHyperdrive.Fees({
