@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.22;
+
+// FIXME
 import { console2 as console } from "forge-std/console2.sol";
 
 import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
@@ -48,37 +50,35 @@ abstract contract MoonwellBase is HyperdriveBase {
             address(_vaultSharesToken),
             _baseAmount + 1
         );
-        
+
         // IMToken(address(_vaultSharesToken)).accrueInterest();
         IMToken token = IMToken(address(_vaultSharesToken));
 
-        console.log("sharesBefore: ", _convertToShares(_baseAmount));
-        console.log("exchangeRateStored before:  ", token.exchangeRateStored());
-        console.log("exchangeRateCurrent before: ", MoonwellConversions.exchangeRateCurrent(IMToken(address(_vaultSharesToken))));
+        // console.log("sharesBefore: ", _convertToShares(_baseAmount));
+        // console.log("exchangeRateStored before:  ", token.exchangeRateStored());
+        // console.log("exchangeRateCurrent before: ", MoonwellConversions.exchangeRateCurrent(IMToken(address(_vaultSharesToken))));
 
         uint256 sharesMinted = _convertToShares(_baseAmount);
-        console.log("baseAmount:           ", _baseAmount);
-        console.log("cash before mint:     ", token.getCash());
-        console.log("borrows before mint:  ", token.totalBorrows());
-        console.log("reserves before mint: ", token.totalReserves());
-        console.log("b Index before mint:  ", token.borrowIndex());
-        console.log("supply before mint:   ", token.totalSupply());
+        // console.log("baseAmount:           ", _baseAmount);
+        // console.log("cash before mint:     ", token.getCash());
+        // console.log("borrows before mint:  ", token.totalBorrows());
+        // console.log("reserves before mint: ", token.totalReserves());
+        // console.log("b Index before mint:  ", token.borrowIndex());
+        // console.log("supply before mint:   ", token.totalSupply());
 
-        uint err = IMToken(address(_vaultSharesToken)).mint(
-            _baseAmount
-        );
+        uint err = IMToken(address(_vaultSharesToken)).mint(_baseAmount);
 
-        console.log("cash after mint:      ", token.getCash());
-        console.log("borrows after mint:   ", token.totalBorrows());
-        console.log("reserves after mint:  ", token.totalReserves());
-        console.log("b Index after mint:   ", token.borrowIndex());
-        console.log("supply after mint:    ", token.totalSupply());
+        // console.log("cash after mint:      ", token.getCash());
+        // console.log("borrows after mint:   ", token.totalBorrows());
+        // console.log("reserves after mint:  ", token.totalReserves());
+        // console.log("b Index after mint:   ", token.borrowIndex());
+        // console.log("supply after mint:    ", token.totalSupply());
 
-        console.log("exchangeRateStored after:  ", token.exchangeRateStored());
-        console.log("exchangeRateCurrent after: ", MoonwellConversions.exchangeRateCurrent(IMToken(address(_vaultSharesToken))));
+        // console.log("exchangeRateStored after:  ", token.exchangeRateStored());
+        // console.log("exchangeRateCurrent after: ", MoonwellConversions.exchangeRateCurrent(IMToken(address(_vaultSharesToken))));
 
-        console.log("base converted to shares after minting:  ", _convertToShares(_baseAmount));
-        console.log("base converted to shares before minting: ", sharesMinted);
+        // console.log("base converted to shares after minting:  ", _convertToShares(_baseAmount));
+        // console.log("base converted to shares before minting: ", sharesMinted);
 
         return (sharesMinted, 0);
     }
@@ -99,18 +99,26 @@ abstract contract MoonwellBase is HyperdriveBase {
 
     /// @dev Process a withdrawal in base and send the proceeds to the
     ///      destination.
-
+    /// @param _destination The destination of the withdrawal.
     /// @return amountWithdrawn The amount of base withdrawn.
     function _withdrawWithBase(
         uint256 _shareAmount,
-        address, // unused _destination,
+        address _destination,
         bytes calldata // unused
     ) internal override returns (uint256 amountWithdrawn) {
-        // Redeem from the yield source and transfer the
-        // resulting base to the destination address.
-        amountWithdrawn = IMToken(address(_vaultSharesToken)).redeem(
+        // Redeem assets from the yield source and ensure that the redemption
+        // succeeded.
+        uint256 balanceBefore = _baseToken.balanceOf(address(this));
+        uint256 status = IMToken(address(_vaultSharesToken)).redeem(
             _shareAmount
         );
+        if (status != 0) {
+            revert IHyperdrive.TransferFailed();
+        }
+
+        // Transfer the assets that were withdrawn to the destination.
+        amountWithdrawn = _baseToken.balanceOf(address(this)) - balanceBefore;
+        ERC20(address(_baseToken)).safeTransfer(_destination, amountWithdrawn);
 
         return amountWithdrawn;
     }
@@ -137,15 +145,11 @@ abstract contract MoonwellBase is HyperdriveBase {
     function _convertToBase(
         uint256 _shareAmount
     ) internal view override returns (uint256) {
-        // revert IHyperdrive.UnsupportedToken();
-        // ****************************************************************
-        // FIXME: Implement this for new instances.
         return
             MoonwellConversions.convertToBase(
                 IMToken(address(_vaultSharesToken)),
                 _shareAmount
             );
-        // ****************************************************************
     }
 
     /// @dev Convert an amount of base to an amount of vault shares.
@@ -154,15 +158,11 @@ abstract contract MoonwellBase is HyperdriveBase {
     function _convertToShares(
         uint256 _baseAmount
     ) internal view override returns (uint256) {
-        // revert IHyperdrive.UnsupportedToken();
-        // ****************************************************************
-        // FIXME: Implement this for new instances.
         return
             MoonwellConversions.convertToShares(
                 IMToken(address(_vaultSharesToken)),
                 _baseAmount
             );
-        // ****************************************************************
     }
 
     /// @dev Gets the total amount of shares held by the pool in the yield
@@ -174,7 +174,6 @@ abstract contract MoonwellBase is HyperdriveBase {
         override
         returns (uint256 shareAmount)
     {
-        console.log("got to totalShares: ", _vaultSharesToken.balanceOf(address(this)));
         return _vaultSharesToken.balanceOf(address(this));
     }
 

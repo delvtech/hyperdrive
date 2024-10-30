@@ -1109,7 +1109,10 @@ abstract contract InstanceTest is HyperdriveTest {
 
         // Bob adds liquidity with vault shares.
         _contribution = _contribution.normalizeToRange(
-            2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
+            2 *
+                hyperdrive.convertToShares(
+                    hyperdrive.getPoolConfig().minimumTransactionAmount
+                ),
             IERC20(hyperdrive.vaultSharesToken()).balanceOf(bob) / 10
         );
         if (config.isRebasing) {
@@ -1310,7 +1313,10 @@ abstract contract InstanceTest is HyperdriveTest {
 
         // Bob adds liquidity with vault shares.
         _contribution = _contribution.normalizeToRange(
-            2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
+            2 *
+                hyperdrive.convertToShares(
+                    hyperdrive.getPoolConfig().minimumTransactionAmount
+                ),
             IERC20(hyperdrive.vaultSharesToken()).balanceOf(bob) / 10
         );
         if (config.isRebasing) {
@@ -1672,8 +1678,10 @@ abstract contract InstanceTest is HyperdriveTest {
         // Calculate the maximum amount of basePaid we can test. The limit is
         // either the maximum long that Hyperdrive can open or the amount of the
         // share token the trader has.
-        uint256 maxLongAmount = HyperdriveUtils.calculateMaxLong(hyperdrive);
-        uint256 maxShareAmount = bobBalancesBefore.sharesBalance;
+        uint256 maxLongAmount = hyperdrive.calculateMaxLong();
+        uint256 maxShareAmount = hyperdrive.convertToBase(
+            bobBalancesBefore.sharesBalance
+        );
 
         // We normalize the basePaid variable within a valid range the market can support.
         basePaid = basePaid.normalizeToRange(
