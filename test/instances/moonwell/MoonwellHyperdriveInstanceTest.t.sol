@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.22;
+
+// FIXME
 import { console2 as console } from "forge-std/console2.sol";
 
 import { stdStorage, StdStorage } from "forge-std/Test.sol";
@@ -20,7 +22,7 @@ import { InstanceTest } from "../../utils/InstanceTest.sol";
 import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
 import { Lib } from "../../utils/Lib.sol";
 
-contract MoonwellHyperdriveInstanceTest is InstanceTest {
+abstract contract MoonwellHyperdriveInstanceTest is InstanceTest {
     using FixedPointMath for uint256;
     using HyperdriveUtils for uint256;
     using HyperdriveUtils for IHyperdrive;
@@ -37,10 +39,7 @@ contract MoonwellHyperdriveInstanceTest is InstanceTest {
 
     /// @notice Instantiates the instance testing suite with the configuration.
     /// @param _config The instance test configuration.
-    constructor(
-        InstanceTestConfig memory _config
-    ) InstanceTest(_config) {
-    }
+    constructor(InstanceTestConfig memory _config) InstanceTest(_config) {}
 
     /// @dev Converts base amount to the equivalent amount in shares.
     /// @param baseAmount The base amount.
@@ -48,10 +47,11 @@ contract MoonwellHyperdriveInstanceTest is InstanceTest {
     function convertToShares(
         uint256 baseAmount
     ) internal view override returns (uint256) {
-        return MoonwellConversions.convertToShares(
-            IMToken(address(config.vaultSharesToken)),
-            baseAmount
-        );
+        return
+            MoonwellConversions.convertToShares(
+                IMToken(address(config.vaultSharesToken)),
+                baseAmount
+            );
     }
 
     /// @dev Converts share amount to the equivalent amount in base.
@@ -60,10 +60,11 @@ contract MoonwellHyperdriveInstanceTest is InstanceTest {
     function convertToBase(
         uint256 shareAmount
     ) internal view override returns (uint256) {
-        return MoonwellConversions.convertToBase(
-            IMToken(address(config.vaultSharesToken)),
-            shareAmount
-        );
+        return
+            MoonwellConversions.convertToBase(
+                IMToken(address(config.vaultSharesToken)),
+                shareAmount
+            );
     }
 
     /// @dev Deploys the Moonwell Hyperdrive deployer coordinator contract.
@@ -129,7 +130,12 @@ contract MoonwellHyperdriveInstanceTest is InstanceTest {
         // Ensure that the share price is the expected value.
         (uint256 totalBase, uint256 totalShares) = getSupply();
         uint256 vaultSharePrice = hyperdrive.getPoolInfo().vaultSharePrice;
-        assertEq(vaultSharePrice, MoonwellConversions.exchangeRateCurrent(IMToken(address(config.vaultSharesToken))));
+        assertEq(
+            vaultSharePrice,
+            MoonwellConversions.exchangeRateCurrent(
+                IMToken(address(config.vaultSharesToken))
+            )
+        );
 
         // Ensure that the share price accurately predicts the amount of shares
         // that will be minted for depositing a given amount of shares. This will
@@ -162,11 +168,42 @@ contract MoonwellHyperdriveInstanceTest is InstanceTest {
         uint256 timeDelta,
         int256 variableRate
     ) internal override {
-        // Moonwell doesn't accrue interest, so we revert if the variable rate isn't
-        // zero.
-        require(variableRate == 0, "MoonwellHyperdriveTest: variableRate isn't 0");
+        // Accrue interest to ensure that `exchangeRateCurrent` equals
+        // `exchangeRateStored`.
+        IMToken mToken = IMToken(address(config.vaultSharesToken));
+        mToken.accrueInterest();
+
+        // Gets some data before advancing the time.
+        uint256 cash = mToken.getCash();
+        uint256 totalAssets = cash +
+            mToken.totalBorrows() -
+            mToken.totalReserves();
 
         // Advance the time.
         vm.warp(block.timestamp + timeDelta);
+
+        // Accruing interest amounts to updating the exchange rate. We do this
+        // in two ways:
+        //
+        // 1. We override the `accrualBlockTimestamp` to be the current block
+        //    timestamp to avoid accruing interest because of the `vm.warp`.
+        // 2. We update the base balance of the Moonwell pool. This will change
+        //    the return value of the `getCash()` getter, which gives us a
+        //    degree of freedom to modify the exchange rate.
+        vm.store(
+            address(mToken),
+            bytes32(uint256(9)),
+            bytes32(block.timestamp)
+        );
+        (, int256 interest) = totalAssets.calculateInterest(
+            variableRate,
+            timeDelta
+        );
+        setBaseBalance(address(mToken), uint256(int256(cash) + interest));
     }
+
+    /// @dev Sets the base balance of an account.
+    /// @param _owner The owner of the tokens.
+    /// @param _balance The balance to set.
+    function setBaseBalance(address _owner, uint256 _balance) internal virtual;
 }

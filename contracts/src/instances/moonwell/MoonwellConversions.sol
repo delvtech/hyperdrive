@@ -50,7 +50,8 @@ library MoonwellConversions {
         IMToken vaultSharesToken
     ) internal view returns (uint256) {
         /* Remember the initial block timestamp */
-        uint256 accrualBlockTimestampPrior = vaultSharesToken.accrualBlockTimestamp();
+        uint256 accrualBlockTimestampPrior = vaultSharesToken
+            .accrualBlockTimestamp();
         console.log("current block timestamp: ", block.timestamp);
         console.log("accrualBlockTimestamp:   ", accrualBlockTimestampPrior);
 
@@ -67,10 +68,15 @@ library MoonwellConversions {
         uint256 totalSupply = vaultSharesToken.totalSupply();
 
         /* Calculate the current borrow interest rate */
-        uint256 borrowRate = vaultSharesToken.interestRateModel().getBorrowRate(cashPrior, borrowsPrior, reservesPrior);
+        uint256 borrowRate = vaultSharesToken.interestRateModel().getBorrowRate(
+            cashPrior,
+            borrowsPrior,
+            reservesPrior
+        );
 
         /* Calculate the number of blocks elapsed since the last accrual */
-        uint256 blockDelta = (block.timestamp - accrualBlockTimestampPrior) * 1e18;
+        uint256 blockDelta = (block.timestamp - accrualBlockTimestampPrior) *
+            1e18;
 
         /*
          * Calculate the interest accumulated into borrows and reserves and the new index:
@@ -82,10 +88,13 @@ library MoonwellConversions {
          */
 
         uint256 simpleInterestFactor = borrowRate.mulDown(blockDelta);
-        uint256 interestAccumulated = simpleInterestFactor.mulDown(borrowsPrior);
+        uint256 interestAccumulated = simpleInterestFactor.mulDown(
+            borrowsPrior
+        );
         uint256 totalBorrowsNew = interestAccumulated + borrowsPrior;
         uint256 reserveFactor = vaultSharesToken.reserveFactorMantissa();
-        uint256 totalReservesNew = interestAccumulated.mulDown(reserveFactor) + reservesPrior;
+        uint256 totalReservesNew = interestAccumulated.mulDown(reserveFactor) +
+            reservesPrior;
         // uint256 borrowIndexNew = simpleInterestFactor.mulDown(borrowIndexPrior) + borrowIndexPrior;
 
         // console.log("borrowRate:            ", borrowRate);

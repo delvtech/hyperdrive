@@ -19,7 +19,9 @@ import { HyperdriveDeployerCoordinator } from "../HyperdriveDeployerCoordinator.
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-contract MoonwellHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
+contract MoonwellHyperdriveDeployerCoordinator is
+    HyperdriveDeployerCoordinator
+{
     using SafeERC20 for ERC20;
 
     /// @notice The deployer coordinator's kind.

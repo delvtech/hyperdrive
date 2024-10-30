@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.22;
-import { console2 as console } from "forge-std/console2.sol";
 
 import { stdStorage, StdStorage } from "forge-std/Test.sol";
 import { IERC20 } from "../../../contracts/src/interfaces/IERC20.sol";
@@ -101,5 +100,16 @@ contract Moonwell_AERO_Hyperdrive is MoonwellHyperdriveInstanceTest {
     function setUp() public override __base_fork(21712351) {
         // Invoke the instance testing suite setup.
         super.setUp();
+    }
+
+    /// @dev Sets the base balance of an account.
+    /// @param _owner The owner of the tokens.
+    /// @param _balance The balance to set.
+    function setBaseBalance(
+        address _owner,
+        uint256 _balance
+    ) internal override {
+        bytes32 balanceLocation = keccak256(abi.encode(_owner, 0));
+        vm.store(address(config.baseToken), balanceLocation, bytes32(_balance));
     }
 }

@@ -33,10 +33,11 @@ contract MoonwellTarget0 is HyperdriveTarget0, MoonwellBase {
         _revert(abi.encode(MOONWELL_HYPERDRIVE_KIND));
     }
 
-    /// @notice Gets the current exchange rate on the Moonwell vault.
-    /// @return The current exchange rate on the Moonwell vault.
+    // FIXME
+    //
+    // /// @notice Gets the current exchange rate on the Moonwell vault.
+    // /// @return The current exchange rate on the Moonwell vault.
     // function exchangeRateCurrent() external returns (uint256) {
-    //     console.log("got here!");
     //     _revert(abi.encode(IMToken(address(_vaultSharesToken))));
     // }
 }
