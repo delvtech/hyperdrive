@@ -1,9 +1,11 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.22;
+import { console2 as console } from "forge-std/console2.sol";
 
 import { HyperdriveTarget0 } from "../../external/HyperdriveTarget0.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IHyperdriveAdminController } from "../../interfaces/IHyperdriveAdminController.sol";
+import { IMToken } from "../../interfaces/IMoonwell.sol";
 import { MOONWELL_HYPERDRIVE_KIND } from "../../libraries/Constants.sol";
 import { MoonwellBase } from "./MoonwellBase.sol";
 
@@ -30,4 +32,11 @@ contract MoonwellTarget0 is HyperdriveTarget0, MoonwellBase {
     function kind() external pure override returns (string memory) {
         _revert(abi.encode(MOONWELL_HYPERDRIVE_KIND));
     }
+
+    /// @notice Gets the current exchange rate on the Moonwell vault.
+    /// @return The current exchange rate on the Moonwell vault.
+    // function exchangeRateCurrent() external returns (uint256) {
+    //     console.log("got here!");
+    //     _revert(abi.encode(IMToken(address(_vaultSharesToken))));
+    // }
 }

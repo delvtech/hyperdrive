@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.22;
+import { console2 as console } from "forge-std/console2.sol";
 
 import { stdStorage, StdStorage } from "forge-std/Test.sol";
 import { IERC20 } from "../../../contracts/src/interfaces/IERC20.sol";
@@ -28,7 +29,7 @@ contract Moonwell_AERO_Hyperdrive is MoonwellHyperdriveInstanceTest {
         address(0x807877258B55BfEfaBDD469dA1C72731C5070839);
     address[] internal baseTokenWhaleAccounts = [AERO_TOKEN_WHALE];
     address internal MAERO_TOKEN_WHALE =
-        address(0x7C976f00E84Db0b44F945fC6d7faD34B43150a1A);
+        address(0x3B11267dfC4B9EBe8427E8F557056b4B6cE98112);
     address[] internal vaultSharesTokenWhaleAccounts = [MAERO_TOKEN_WHALE];
 
     /// @notice Instantiates the instance testing suite with the configuration.
@@ -97,7 +98,7 @@ contract Moonwell_AERO_Hyperdrive is MoonwellHyperdriveInstanceTest {
     {}
 
     /// @notice Forge function that is invoked to setup the testing environment.
-    function setUp() public override __base_fork(21680116) {
+    function setUp() public override __base_fork(21712351) {
         // Invoke the instance testing suite setup.
         super.setUp();
     }

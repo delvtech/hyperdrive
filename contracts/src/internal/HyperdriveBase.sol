@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.22;
+import { console2 as console } from "forge-std/console2.sol";
+import { IMToken } from "../interfaces/IMoonwell.sol";
 
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveEvents } from "../interfaces/IHyperdriveEvents.sol";
@@ -50,6 +52,7 @@ abstract contract HyperdriveBase is IHyperdriveEvents, HyperdriveStorage {
 
         // Deposit with either base or shares depending on the provided options.
         uint256 refund;
+        console.log("before deposit: ", IMToken(address(_vaultSharesToken)).exchangeRateCurrent());
         if (_options.asBase) {
             // Process the deposit in base.
             (sharesMinted, refund) = _depositWithBase(
@@ -64,6 +67,7 @@ abstract contract HyperdriveBase is IHyperdriveEvents, HyperdriveStorage {
             // Process the deposit in shares.
             _depositWithShares(_amount, _options.extraData);
         }
+        console.log("after deposit:  ", IMToken(address(_vaultSharesToken)).exchangeRateCurrent());
 
         // Calculate the vault share price.
         vaultSharePrice = _pricePerVaultShare();

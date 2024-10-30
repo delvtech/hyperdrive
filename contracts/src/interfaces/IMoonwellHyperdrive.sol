@@ -6,7 +6,7 @@ import { IHyperdrive } from "./IHyperdrive.sol";
 interface IMoonwellHyperdrive is
     IHyperdrive
 {
-    /// @notice Gets the vault used as this pool's yield source.
-    /// @return The compatible yield source.
-    function vault() external view returns (address);
+    /// @notice Gets the current exchange rate on the Moonwell vault.
+    /// @return The current exchange rate on the Moonwell vault.
+    function exchangeRateCurrent() external view returns (uint256);
 }

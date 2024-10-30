@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.22;
+import { console2 as console } from "forge-std/console2.sol";
 
 import { stdStorage, StdStorage } from "forge-std/Test.sol";
 import { MoonwellHyperdriveCoreDeployer } from "../../../contracts/src/deployers/moonwell/MoonwellHyperdriveCoreDeployer.sol";
@@ -106,7 +107,7 @@ contract MoonwellHyperdriveInstanceTest is InstanceTest {
     ) internal view override returns (uint256, uint256) {
         return (
             config.baseToken.balanceOf(account),
-            0
+            IMToken(address(config.vaultSharesToken)).balanceOf(account)
         );
     }
 
@@ -115,6 +116,7 @@ contract MoonwellHyperdriveInstanceTest is InstanceTest {
     /// @dev Test the instances getters.
     function test_getters() external view {
         (, uint256 totalShares) = getTokenBalances(address(hyperdrive));
+        IMToken(address(config.vaultSharesToken)).balanceOf(address(this));
         assertEq(hyperdrive.totalShares(), totalShares);
     }
 
@@ -127,7 +129,7 @@ contract MoonwellHyperdriveInstanceTest is InstanceTest {
         // Ensure that the share price is the expected value.
         (uint256 totalBase, uint256 totalShares) = getSupply();
         uint256 vaultSharePrice = hyperdrive.getPoolInfo().vaultSharePrice;
-        assertEq(vaultSharePrice, totalBase.divDown(totalShares));
+        assertEq(vaultSharePrice, MoonwellConversions.exchangeRateCurrent(IMToken(address(config.vaultSharesToken))));
 
         // Ensure that the share price accurately predicts the amount of shares
         // that will be minted for depositing a given amount of shares. This will
@@ -143,6 +145,7 @@ contract MoonwellHyperdriveInstanceTest is InstanceTest {
         (, uint256 hyperdriveSharesAfter) = getTokenBalances(
             address(hyperdrive)
         );
+        console.log("sharesPaid: ", basePaid.divDown(vaultSharePrice));
         assertApproxEqAbs(
             hyperdriveSharesAfter,
             hyperdriveSharesBefore + basePaid.divDown(vaultSharePrice),
