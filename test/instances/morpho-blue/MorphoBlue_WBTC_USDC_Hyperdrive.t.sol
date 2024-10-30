@@ -10,9 +10,7 @@ import { IMorphoBlueHyperdrive } from "../../../contracts/src/interfaces/IMorpho
 import { Lib } from "../../utils/Lib.sol";
 import { MorphoBlueHyperdriveInstanceTest } from "./MorphoBlueHyperdriveInstanceTest.t.sol";
 
-contract MorphoBlue_WBTC_USDC_Hyperdrive is
-    MorphoBlueHyperdriveInstanceTest
-{
+contract MorphoBlue_WBTC_USDC_Hyperdrive is MorphoBlueHyperdriveInstanceTest {
     using Lib for *;
     using stdStorage for StdStorage;
 
