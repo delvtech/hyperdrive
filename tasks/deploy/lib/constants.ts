@@ -101,6 +101,9 @@ export const USDS_ADDRESS_MAINNET =
 export const WSTETH_ADDRESS_MAINNET =
     "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0" as Address;
 
+export const WBTC_ADDRESS_MAINNET =
+    "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599" as Address;
+
 // ╭─────────────────────────────────────────────────────────╮
 // │ Mainnet Whales                                          │
 // ╰─────────────────────────────────────────────────────────╯
