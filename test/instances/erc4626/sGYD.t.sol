@@ -11,27 +11,27 @@ import { InstanceTest } from "../../utils/InstanceTest.sol";
 import { Lib } from "../../utils/Lib.sol";
 import { ERC4626HyperdriveInstanceTest } from "./ERC4626HyperdriveInstanceTest.t.sol";
 
-contract sxDaiHyperdriveTest is ERC4626HyperdriveInstanceTest {
+contract sGYDHyperdriveTest is ERC4626HyperdriveInstanceTest {
     using HyperdriveUtils for uint256;
     using HyperdriveUtils for IHyperdrive;
     using Lib for *;
     using stdStorage for StdStorage;
 
-    /// @dev The wxDai contract.
-    IERC20 internal constant WXDAI =
-        IERC20(0xe91D153E0b41518A2Ce8Dd3D7944Fa863463a97d);
+    /// @dev The GYD contract.
+    IERC20 internal constant GYD =
+        IERC20(0xe07F9D810a48ab5c3c914BA3cA53AF14E4491e8A);
 
-    /// @dev The sxDai contract.
-    IERC4626 internal constant SXDAI =
-        IERC4626(0xaf204776c7245bF4147c2612BF6e5972Ee483701);
+    /// @dev The sGYD contract.
+    IERC4626 internal constant SGYD =
+        IERC4626(0xeA50f402653c41cAdbaFD1f788341dB7B7F37816);
 
     /// @dev Whale accounts.
-    address internal WXDAI_TOKEN_WHALE =
-        address(0xd0Dd6cEF72143E22cCED4867eb0d5F2328715533);
-    address[] internal baseTokenWhaleAccounts = [WXDAI_TOKEN_WHALE];
-    address internal SXDAI_TOKEN_WHALE =
-        address(0x7a5c3860a77a8DC1b225BD46d0fb2ac1C6D191BC);
-    address[] internal vaultSharesTokenWhaleAccounts = [SXDAI_TOKEN_WHALE];
+    address internal GYD_TOKEN_WHALE =
+        address(0xa1886c8d748DeB3774225593a70c79454B1DA8a6);
+    address[] internal baseTokenWhaleAccounts = [GYD_TOKEN_WHALE];
+    address internal SGYD_TOKEN_WHALE =
+        address(0x7a12F90D69E3D779049632634ADE17ad082447e5);
+    address[] internal vaultSharesTokenWhaleAccounts = [SGYD_TOKEN_WHALE];
 
     /// @notice Instantiates the instance testing suite with the configuration.
     constructor()
@@ -42,8 +42,8 @@ contract sxDaiHyperdriveTest is ERC4626HyperdriveInstanceTest {
                 decimals: 18,
                 baseTokenWhaleAccounts: baseTokenWhaleAccounts,
                 vaultSharesTokenWhaleAccounts: vaultSharesTokenWhaleAccounts,
-                baseToken: WXDAI,
-                vaultSharesToken: SXDAI,
+                baseToken: GYD,
+                vaultSharesToken: IERC20(SGYD),
                 shareTolerance: 1e3,
                 minimumShareReserves: 1e15,
                 minimumTransactionAmount: 1e15,
@@ -92,9 +92,16 @@ contract sxDaiHyperdriveTest is ERC4626HyperdriveInstanceTest {
     {}
 
     /// @notice Forge function that is invoked to setup the testing environment.
-    function setUp() public override __gnosis_chain_fork(35_681_086) {
+    function setUp() public override __mainnet_fork(21_088_994) {
         // Invoke the Instance testing suite setup.
         super.setUp();
+
+        // sGYD receives payments from "streams" that are configured to pay GYD
+        // to the sGYD contract over time. To simplify the interest accrual
+        // logic, we advance enough time to ensure that all of these streams
+        // have concluded their payouts.
+        uint256 maximumDuration = 1 days * 365 * 5; // 5 years
+        vm.warp(block.timestamp + maximumDuration);
     }
 
     /// Helpers ///
@@ -109,14 +116,14 @@ contract sxDaiHyperdriveTest is ERC4626HyperdriveInstanceTest {
         // Advance the time.
         vm.warp(block.timestamp + timeDelta);
 
-        // Accrue interest in the sxDAI market. This amounts to manually
-        // updating the total supply assets.
-        uint256 totalAssets = SXDAI.totalAssets();
+        // Accrue interest in the sGYD market. This amounts to manually
+        // updating the total supply assets by minting more GYD to the contract.
+        uint256 totalAssets = SGYD.totalAssets();
         (totalAssets, ) = totalAssets.calculateInterest(
             variableRate,
             timeDelta
         );
-        bytes32 balanceLocation = keccak256(abi.encode(address(SXDAI), 3));
-        vm.store(address(WXDAI), balanceLocation, bytes32(totalAssets));
+        bytes32 balanceLocation = keccak256(abi.encode(address(SGYD), 52));
+        vm.store(address(GYD), balanceLocation, bytes32(totalAssets));
     }
 }

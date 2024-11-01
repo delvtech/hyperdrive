@@ -17,6 +17,7 @@ import {
     MAINNET_MORPHO_BLUE_WSTETH_USDA_182DAY,
     MAINNET_RETH_182DAY,
     MAINNET_RETH_COORDINATOR,
+    MAINNET_SGYD_182DAY,
     MAINNET_STUSD_182DAY,
     MAINNET_SUSDE_182DAY,
 } from "./tasks/deploy/config/mainnet";
@@ -46,6 +47,7 @@ const config: HardhatUserConfig = {
                     MAINNET_MORPHO_BLUE_WSTETH_USDA_182DAY,
                     MAINNET_STUSD_182DAY,
                     MAINNET_SUSDE_182DAY,
+                    MAINNET_SGYD_182DAY,
                 ],
                 checkpointRewarders: [],
                 checkpointSubrewarders: [],
