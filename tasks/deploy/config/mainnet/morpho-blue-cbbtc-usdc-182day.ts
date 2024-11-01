@@ -7,20 +7,20 @@ import {
     zeroAddress,
 } from "viem";
 import {
-    CBETH_ADDRESS_BASE,
+    CBBTC_ADDRESS_MAINNET,
     HyperdriveInstanceConfig,
     SIX_MONTHS,
-    USDC_ADDRESS_BASE,
+    USDC_ADDRESS_MAINNET,
     getLinkerDetails,
     normalizeFee,
     parseDuration,
     toBytes32,
 } from "../../lib";
-import { BASE_FACTORY_NAME } from "./factory";
-import { BASE_MORPHO_BLUE_COORDINATOR_NAME } from "./morpho-blue-coordinator";
+import { MAINNET_FACTORY_NAME } from "./factory";
+import { MAINNET_MORPHO_BLUE_COORDINATOR_NAME } from "./morpho-blue-coordinator";
 
-export const BASE_MORPHO_BLUE_CBETH_USDC_182DAY_NAME =
-    "ElementDAO 182 Day Morpho Blue cbETH/USDC Hyperdrive";
+export const MAINNET_MORPHO_BLUE_CBBTC_USDC_182DAY_NAME =
+    "ElementDAO 182 Day Morpho Blue cbBTC/USDC Hyperdrive";
 
 // USDC only has 6 decimals.
 const CONTRIBUTION = 100_000_000n;
@@ -57,28 +57,30 @@ const morphoBlueParameters = encodeAbiParameters(
     [
         {
             morpho: "0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb" as `0x${string}`,
-            collateralToken: CBETH_ADDRESS_BASE,
-            oracle: "0xb40d93F44411D8C09aD17d7F88195eF9b05cCD96" as `0x${string}`,
-            irm: "0x46415998764C29aB2a25CbeA6254146D50D22687" as `0x${string}`,
+            collateralToken: CBBTC_ADDRESS_MAINNET,
+            oracle: "0xA6D6950c9F177F1De7f7757FB33539e3Ec60182a" as `0x${string}`,
+            irm: "0x870aC11D48B15DB9a138Cf899d20F13F79Ba00BC" as `0x${string}`,
             lltv: BigInt("860000000000000000"),
         },
     ],
 );
 
-export const BASE_MORPHO_BLUE_CBETH_USDC_182DAY: HyperdriveInstanceConfig<"MorphoBlue"> =
+export const MAINNET_MORPHO_BLUE_CBBTC_USDC_182DAY: HyperdriveInstanceConfig<"MorphoBlue"> =
     {
-        name: BASE_MORPHO_BLUE_CBETH_USDC_182DAY_NAME,
+        name: MAINNET_MORPHO_BLUE_CBBTC_USDC_182DAY_NAME,
         prefix: "MorphoBlue",
         coordinatorAddress: async (hre) =>
             hre.hyperdriveDeploy.deployments.byName(
-                BASE_MORPHO_BLUE_COORDINATOR_NAME,
+                MAINNET_MORPHO_BLUE_COORDINATOR_NAME,
             ).address,
-        deploymentId: keccak256(toHex(BASE_MORPHO_BLUE_CBETH_USDC_182DAY_NAME)),
+        deploymentId: keccak256(
+            toHex(MAINNET_MORPHO_BLUE_CBBTC_USDC_182DAY_NAME),
+        ),
         salt: toBytes32("0x42080085"),
         extraData: morphoBlueParameters,
         contribution: CONTRIBUTION,
         // NOTE: The latest variable rate on the Morpho Blue market is 2.93% APY:
-        // https://app.morpho.org/market?id=0x1c21c59df9db44bf6f645d854ee710a8ca17b479451447e9f56758aee10a2fad&network=base&morphoPrice=0.75
+        // https://app.morpho.org/market?id=0x64d65c9a2d91c36d56fbc42d69e979335320169b3df63bf92789e2c8883fcc64&network=mainnet&morphoPrice=0.75
         fixedAPR: parseEther("0.0293"),
         timestretchAPR: parseEther("0.05"),
         options: async (hre) => ({
@@ -91,11 +93,11 @@ export const BASE_MORPHO_BLUE_CBETH_USDC_182DAY: HyperdriveInstanceConfig<"Morph
             let pc = await hre.viem.getPublicClient();
             let baseToken = await hre.viem.getContractAt(
                 "contracts/src/interfaces/IERC20.sol:IERC20",
-                USDC_ADDRESS_BASE,
+                USDC_ADDRESS_MAINNET,
             );
             let tx = await baseToken.write.approve([
                 hre.hyperdriveDeploy.deployments.byName(
-                    BASE_MORPHO_BLUE_COORDINATOR_NAME,
+                    MAINNET_MORPHO_BLUE_COORDINATOR_NAME,
                 ).address,
                 CONTRIBUTION,
             ]);
@@ -104,11 +106,11 @@ export const BASE_MORPHO_BLUE_CBETH_USDC_182DAY: HyperdriveInstanceConfig<"Morph
         poolDeployConfig: async (hre) => {
             let factoryContract = await hre.viem.getContractAt(
                 "HyperdriveFactory",
-                hre.hyperdriveDeploy.deployments.byName(BASE_FACTORY_NAME)
+                hre.hyperdriveDeploy.deployments.byName(MAINNET_FACTORY_NAME)
                     .address,
             );
             return {
-                baseToken: USDC_ADDRESS_BASE,
+                baseToken: USDC_ADDRESS_MAINNET,
                 vaultSharesToken: zeroAddress,
                 circuitBreakerDelta: parseEther("0.05"),
                 minimumShareReserves: 1_000_000n,
@@ -123,8 +125,9 @@ export const BASE_MORPHO_BLUE_CBETH_USDC_182DAY: HyperdriveInstanceConfig<"Morph
                     await factoryContract.read.checkpointRewarder(),
                 ...(await getLinkerDetails(
                     hre,
-                    hre.hyperdriveDeploy.deployments.byName(BASE_FACTORY_NAME)
-                        .address,
+                    hre.hyperdriveDeploy.deployments.byName(
+                        MAINNET_FACTORY_NAME,
+                    ).address,
                 )),
                 fees: {
                     curve: parseEther("0.01"),
