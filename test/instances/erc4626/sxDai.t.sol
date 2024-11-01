@@ -63,6 +63,8 @@ contract sxDaiHyperdriveTest is ERC4626HyperdriveInstanceTest {
                 shouldAccrueInterest: true,
                 // The base test tolerances.
                 closeLongWithBaseTolerance: 20,
+                closeShortWithBaseUpperBoundTolerance: 10,
+                closeShortWithBaseTolerance: 100,
                 roundTripLpInstantaneousWithBaseTolerance: 1e5,
                 roundTripLpWithdrawalSharesWithBaseTolerance: 1e5,
                 roundTripLongInstantaneousWithBaseUpperBoundTolerance: 1e3,

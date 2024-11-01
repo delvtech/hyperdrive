@@ -5,40 +5,37 @@ import { stdStorage, StdStorage } from "forge-std/Test.sol";
 import { IERC20 } from "../../../contracts/src/interfaces/IERC20.sol";
 import { IERC4626 } from "../../../contracts/src/interfaces/IERC4626.sol";
 import { IHyperdrive } from "../../../contracts/src/interfaces/IHyperdrive.sol";
+import { InstanceTest } from "../../utils/InstanceTest.sol";
 import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
 import { InstanceTest } from "../../utils/InstanceTest.sol";
 import { Lib } from "../../utils/Lib.sol";
 import { ERC4626HyperdriveInstanceTest } from "./ERC4626HyperdriveInstanceTest.t.sol";
 
-// NOTE: This is an abstract contract rather than an interface since IERC4626 is
-//       an abstract contract.
-abstract contract ISTUSD is IERC4626 {
-    function lastUpdate() external view virtual returns (uint40);
-
-    function rate() external view virtual returns (uint208);
-}
-
-contract stUSDHyperdriveTest is ERC4626HyperdriveInstanceTest {
+contract sGYD_gnosis_HyperdriveTest is ERC4626HyperdriveInstanceTest {
     using HyperdriveUtils for uint256;
     using HyperdriveUtils for IHyperdrive;
     using Lib for *;
     using stdStorage for StdStorage;
 
-    /// @dev The USDA contract.
-    IERC20 internal constant USDA =
-        IERC20(0x0000206329b97DB379d5E1Bf586BbDB969C63274);
+    /// @dev The storage location of ERC20 data in L2 GYD and sGYD.
+    bytes32 ERC20_STORAGE_LOCATION =
+        0x52c63247e1f47db19d5ce0460030c497f067ca4cebf71ba98eeadabe20bace00;
 
-    /// @dev The stUSD contract.
-    ISTUSD internal constant STUSD =
-        ISTUSD(0x0022228a2cc5E7eF0274A7Baa600d44da5aB5776);
+    /// @dev The GYD contract.
+    IERC20 internal constant GYD =
+        IERC20(0xCA5d8F8a8d49439357d3CF46Ca2e720702F132b8);
+
+    /// @dev The sGYD contract.
+    IERC4626 internal constant SGYD =
+        IERC4626(0xeA50f402653c41cAdbaFD1f788341dB7B7F37816);
 
     /// @dev Whale accounts.
-    address internal USDA_TOKEN_WHALE =
-        address(0xEc0B13b2271E212E1a74D55D51932BD52A002961);
-    address[] internal baseTokenWhaleAccounts = [USDA_TOKEN_WHALE];
-    address internal STUSD_TOKEN_WHALE =
-        address(0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb);
-    address[] internal vaultSharesTokenWhaleAccounts = [STUSD_TOKEN_WHALE];
+    address internal GYD_TOKEN_WHALE =
+        address(0xa1886c8d748DeB3774225593a70c79454B1DA8a6);
+    address[] internal baseTokenWhaleAccounts = [GYD_TOKEN_WHALE];
+    address internal SGYD_TOKEN_WHALE =
+        address(0x7a12F90D69E3D779049632634ADE17ad082447e5);
+    address[] internal vaultSharesTokenWhaleAccounts = [SGYD_TOKEN_WHALE];
 
     /// @notice Instantiates the instance testing suite with the configuration.
     constructor()
@@ -49,8 +46,8 @@ contract stUSDHyperdriveTest is ERC4626HyperdriveInstanceTest {
                 decimals: 18,
                 baseTokenWhaleAccounts: baseTokenWhaleAccounts,
                 vaultSharesTokenWhaleAccounts: vaultSharesTokenWhaleAccounts,
-                baseToken: USDA,
-                vaultSharesToken: STUSD,
+                baseToken: GYD,
+                vaultSharesToken: IERC20(SGYD),
                 shareTolerance: 1e3,
                 minimumShareReserves: 1e15,
                 minimumTransactionAmount: 1e15,
@@ -70,10 +67,10 @@ contract stUSDHyperdriveTest is ERC4626HyperdriveInstanceTest {
                 shouldAccrueInterest: true,
                 // The base test tolerances.
                 closeLongWithBaseTolerance: 20,
-                closeShortWithBaseUpperBoundTolerance: 10,
-                closeShortWithBaseTolerance: 100,
+                closeShortWithBaseUpperBoundTolerance: 1e3,
+                closeShortWithBaseTolerance: 1e3,
                 roundTripLpInstantaneousWithBaseTolerance: 1e5,
-                roundTripLpWithdrawalSharesWithBaseTolerance: 1e6,
+                roundTripLpWithdrawalSharesWithBaseTolerance: 1e5,
                 roundTripLongInstantaneousWithBaseUpperBoundTolerance: 1e3,
                 roundTripLongInstantaneousWithBaseTolerance: 1e5,
                 roundTripLongMaturityWithBaseUpperBoundTolerance: 1e3,
@@ -101,7 +98,21 @@ contract stUSDHyperdriveTest is ERC4626HyperdriveInstanceTest {
     {}
 
     /// @notice Forge function that is invoked to setup the testing environment.
-    function setUp() public override __mainnet_fork(20_643_578) {
+    function setUp() public override __gnosis_chain_fork(36_808_076) {
+        // NOTE: We need to mint GYD since the current supply is very low.
+        //
+        // Mint GYD to the GYD whale.
+        setBalanceGYD(GYD_TOKEN_WHALE, 1_000_000e18);
+
+        // NOTE: We need to mint sGYD since the current supply is zero.
+        //
+        // Mint GYD to the sGYD whale and mint sGYD.
+        setBalanceGYD(SGYD_TOKEN_WHALE, 1_000_000e18);
+        vm.stopPrank();
+        vm.startPrank(SGYD_TOKEN_WHALE);
+        GYD.approve(address(SGYD), 1_000_000e18);
+        SGYD.deposit(1_000_000e18, SGYD_TOKEN_WHALE);
+
         // Invoke the Instance testing suite setup.
         super.setUp();
     }
@@ -115,28 +126,36 @@ contract stUSDHyperdriveTest is ERC4626HyperdriveInstanceTest {
         uint256 timeDelta,
         int256 variableRate
     ) internal override {
-        // Get the total assets before advancing time.
-        uint256 totalAssets = STUSD.totalAssets();
-
         // Advance the time.
         vm.warp(block.timestamp + timeDelta);
 
-        // Accrue interest in the stUSD market. This amounts to manually
-        // updating the total supply assets by updating the USDA balance of
-        // stUSD. Since stUSD's `totalAssets` function computes unaccrued
-        // interest, we also overwrite stUSD's `lastUpdate` value to the current
-        // block time.
-        bytes32 lastUpdateLocation = bytes32(uint256(201));
-        vm.store(
-            address(STUSD),
-            lastUpdateLocation,
-            bytes32((block.timestamp << 208) | uint256(STUSD.rate()))
-        );
+        // Accrue interest in the sGYD market. This amounts to manually
+        // updating the total supply assets by minting more GYD to the contract.
+        uint256 totalAssets = SGYD.totalAssets();
         (totalAssets, ) = totalAssets.calculateInterest(
             variableRate,
             timeDelta
         );
-        bytes32 balanceLocation = keccak256(abi.encode(address(STUSD), 51));
-        vm.store(address(USDA), balanceLocation, bytes32(totalAssets));
+        setBalanceGYD(address(SGYD), totalAssets);
+    }
+
+    /// @dev Sets the GYD balance of an account.
+    /// @param _account The account to be updated.
+    /// @param _amount The amount of tokens to set.
+    function setBalanceGYD(address _account, uint256 _amount) internal {
+        bytes32 balanceLocation = keccak256(
+            abi.encode(address(_account), ERC20_STORAGE_LOCATION)
+        );
+        vm.store(address(GYD), balanceLocation, bytes32(_amount));
+    }
+
+    /// @dev Sets the sGYD balance of an account.
+    /// @param _account The account to be updated.
+    /// @param _amount The amount of tokens to set.
+    function setBalanceSGYD(address _account, uint256 _amount) internal {
+        bytes32 balanceLocation = keccak256(
+            abi.encode(address(_account), ERC20_STORAGE_LOCATION)
+        );
+        vm.store(address(SGYD), balanceLocation, bytes32(_amount));
     }
 }

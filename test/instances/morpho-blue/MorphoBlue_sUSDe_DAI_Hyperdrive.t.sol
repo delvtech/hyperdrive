@@ -62,6 +62,8 @@ contract MorphoBlue_sUSDe_DAI_HyperdriveTest is
                 shouldAccrueInterest: true,
                 // The base test tolerances.
                 closeLongWithBaseTolerance: 2,
+                closeShortWithBaseUpperBoundTolerance: 10,
+                closeShortWithBaseTolerance: 100,
                 roundTripLpInstantaneousWithBaseTolerance: 1e13,
                 roundTripLpWithdrawalSharesWithBaseTolerance: 1e13,
                 roundTripLongInstantaneousWithBaseUpperBoundTolerance: 1e3,

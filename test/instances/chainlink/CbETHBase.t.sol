@@ -56,6 +56,8 @@ contract CbETHBaseTest is ChainlinkHyperdriveInstanceTest {
                 //
                 // The base test tolerances.
                 closeLongWithBaseTolerance: 20,
+                closeShortWithBaseUpperBoundTolerance: 10,
+                closeShortWithBaseTolerance: 100,
                 roundTripLpInstantaneousWithBaseTolerance: 0,
                 roundTripLpWithdrawalSharesWithBaseTolerance: 0,
                 roundTripLongInstantaneousWithBaseUpperBoundTolerance: 0,

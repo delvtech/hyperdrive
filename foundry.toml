@@ -28,6 +28,8 @@ remappings = [
 gas_limit = "18446744073709551615"
 # allows the ffi to be used
 ffi = true
+# the evm version
+evm_version = "cancun"
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config
 
 [profile.production]
@@ -39,7 +41,6 @@ optimizer_runs = 13000
 via_ir = false
 # Enable gas-reporting for all contracts
 gas_reports = ["*"]
-evm_version = "paris"
 verbosity = 4
 
 [profile.lite]

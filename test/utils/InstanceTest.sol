@@ -85,6 +85,12 @@ abstract contract InstanceTest is HyperdriveTest {
         /// @dev The equality tolerance in wei for the close long with base
         ///      test.
         uint256 closeLongWithBaseTolerance;
+        /// @dev The upper bound tolerance in wei for the close short with base
+        ///      test.
+        uint256 closeShortWithBaseUpperBoundTolerance;
+        /// @dev The equality tolerance in wei for the close short with base
+        ///      test.
+        uint256 closeShortWithBaseTolerance;
         /// @dev The equality tolerance in wei for the close short with shares
         ///      test.
         uint256 closeShortWithSharesTolerance;
@@ -2560,8 +2566,15 @@ abstract contract InstanceTest is HyperdriveTest {
 
         // Convert proceeds to the base token and ensure the proper about of
         // interest was credited to Bob.
-        assertLe(baseProceeds, expectedBaseProceeds + 10);
-        assertApproxEqAbs(baseProceeds, expectedBaseProceeds, 100);
+        assertLe(
+            baseProceeds,
+            expectedBaseProceeds + config.closeShortWithBaseUpperBoundTolerance
+        );
+        assertApproxEqAbs(
+            baseProceeds,
+            expectedBaseProceeds,
+            config.closeShortWithBaseTolerance
+        );
 
         // Ensure the withdrawal accounting is correct.
         verifyWithdrawal(
