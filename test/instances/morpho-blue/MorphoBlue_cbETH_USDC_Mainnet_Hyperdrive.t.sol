@@ -10,7 +10,7 @@ import { IMorphoBlueHyperdrive } from "../../../contracts/src/interfaces/IMorpho
 import { Lib } from "../../utils/Lib.sol";
 import { MorphoBlueHyperdriveInstanceTest } from "./MorphoBlueHyperdriveInstanceTest.t.sol";
 
-contract MorphoBlue_cbETH_USDC_Base_HyperdriveTest is
+contract MorphoBlue_cbBTC_USDC_Mainnet_HyperdriveTest is
     MorphoBlueHyperdriveInstanceTest
 {
     using Lib for *;
@@ -18,11 +18,11 @@ contract MorphoBlue_cbETH_USDC_Base_HyperdriveTest is
 
     /// @dev The address of the loan token. This is just the USDC token.
     address internal constant LOAN_TOKEN =
-        address(0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913);
+        address(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48);
 
     /// @dev Whale accounts.
     address internal LOAN_TOKEN_WHALE =
-        address(0x3304E22DDaa22bCdC5fCa2269b418046aE7b566A);
+        address(0x51eDF02152EBfb338e03E30d65C15fBf06cc9ECC);
     address[] internal baseTokenWhaleAccounts = [LOAN_TOKEN_WHALE];
 
     /// @notice Instantiates the instance testing suite with the configuration.
@@ -96,15 +96,14 @@ contract MorphoBlue_cbETH_USDC_Base_HyperdriveTest is
             IMorphoBlueHyperdrive.MorphoBlueParams({
                 // The mainnet Morpho Blue pool
                 morpho: IMorpho(0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb),
-                // The address of the collateral token. This is just the wstETH
-                // token.
+                // The address of the collateral token. This is cbBTC.
                 collateralToken: address(
-                    0x2Ae3F1Ec7F1F5012CFEab0185bfc7aa3cf0DEc22
+                    0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf
                 ),
                 // The address of the oracle.
-                oracle: address(0xb40d93F44411D8C09aD17d7F88195eF9b05cCD96),
+                oracle: address(0xA6D6950c9F177F1De7f7757FB33539e3Ec60182a),
                 // The address of the interest rate model.
-                irm: address(0x46415998764C29aB2a25CbeA6254146D50D22687),
+                irm: address(0x870aC11D48B15DB9a138Cf899d20F13F79Ba00BC),
                 // The liquidation loan to value ratio.
                 lltv: 860000000000000000
             })
@@ -112,7 +111,7 @@ contract MorphoBlue_cbETH_USDC_Base_HyperdriveTest is
     {}
 
     /// @notice Forge function that is invoked to setup the testing environment.
-    function setUp() public override __base_fork(19_604_571) {
+    function setUp() public override __mainnet_fork(21_092_084) {
         // Invoke the instance testing suite setup.
         super.setUp();
     }
@@ -127,10 +126,6 @@ contract MorphoBlue_cbETH_USDC_Base_HyperdriveTest is
         uint256 _amount
     ) internal override {
         bytes32 balanceLocation = keccak256(abi.encode(address(_recipient), 9));
-        vm.store(
-            IFiatTokenProxy(LOAN_TOKEN).implementation(),
-            balanceLocation,
-            bytes32(_amount)
-        );
+        vm.store(LOAN_TOKEN, balanceLocation, bytes32(_amount));
     }
 }
