@@ -867,41 +867,6 @@
             "address": "0x7548c4F665402BAb3a4298B88527824B7b18Fe27",
             "timestamp": "2024-09-03T20:36:40.438Z"
         },
-        "ElementDAO ERC4626 Hyperdrive Deployer Coordinator_ERC4626HyperdriveCoreDeployer": {
-            "contract": "ERC4626HyperdriveCoreDeployer",
-            "address": "0x1dcac79c73ca892d5872e5d8cb3ff43db0c81289",
-            "timestamp": "2024-09-03T21:44:28.498Z"
-        },
-        "ElementDAO ERC4626 Hyperdrive Deployer Coordinator_ERC4626Target0Deployer": {
-            "contract": "ERC4626Target0Deployer",
-            "address": "0x9e8af51810042156f4cdae3109523345cc768541",
-            "timestamp": "2024-09-03T21:44:41.585Z"
-        },
-        "ElementDAO ERC4626 Hyperdrive Deployer Coordinator_ERC4626Target1Deployer": {
-            "contract": "ERC4626Target1Deployer",
-            "address": "0xf19359677a2a0d5e3e43b7cc2bc73bac892d4c04",
-            "timestamp": "2024-09-03T21:44:50.642Z"
-        },
-        "ElementDAO ERC4626 Hyperdrive Deployer Coordinator_ERC4626Target2Deployer": {
-            "contract": "ERC4626Target2Deployer",
-            "address": "0x218077b6c774abe7f262f9f1fc0b995352a0b6f3",
-            "timestamp": "2024-09-03T21:45:03.729Z"
-        },
-        "ElementDAO ERC4626 Hyperdrive Deployer Coordinator_ERC4626Target3Deployer": {
-            "contract": "ERC4626Target3Deployer",
-            "address": "0xe275a81e0223688eb7da761169eb121b4ef7c3ef",
-            "timestamp": "2024-09-03T21:45:16.862Z"
-        },
-        "ElementDAO ERC4626 Hyperdrive Deployer Coordinator_ERC4626Target4Deployer": {
-            "contract": "ERC4626Target4Deployer",
-            "address": "0x0fb70c3de906eddab929b5d288b638adb5238ccb",
-            "timestamp": "2024-09-03T21:45:29.967Z"
-        },
-        "ElementDAO ERC4626 Hyperdrive Deployer Coordinator": {
-            "contract": "ERC4626HyperdriveDeployerCoordinator",
-            "address": "0x50ea16a4050e65748eeb82d94e0c84ac233225df",
-            "timestamp": "2024-09-03T21:45:39.060Z"
-        },
         "ElementDAO 182 Day stUSD Hyperdrive_ERC4626Target0": {
             "contract": "ERC4626Target0",
             "address": "0x686ffbDd397De6B2fff855b1bed53947da673F4f",
@@ -992,36 +957,71 @@
             "address": "0x05b65FA90AD702e6Fd0C3Bd7c4c9C47BAB2BEa6b",
             "timestamp": "2024-10-10T00:32:40.530Z"
         },
-       "ElementDAO 182 Day sGYD Hyperdrive_ERC4626Target0": {
-           "contract": "ERC4626Target0",
-           "address": "0xEf12aa6376B03477d72E16C14992C7743ACC16E8",
-           "timestamp": "2024-11-03T22:08:37.437Z"
-       },
-       "ElementDAO 182 Day sGYD Hyperdrive_ERC4626Target1": {
-           "contract": "ERC4626Target1",
-           "address": "0xB734417899eF2B84A63a4A6150eBbf95a5780889",
-           "timestamp": "2024-11-03T22:07:51.177Z"
-       },
-       "ElementDAO 182 Day sGYD Hyperdrive_ERC4626Target2": {
-           "contract": "ERC4626Target2",
-           "address": "0xe0fF98378220668039fA12fCA09CA8b99264890A",
-           "timestamp": "2024-11-03T22:08:04.803Z"
-       },
-       "ElementDAO 182 Day sGYD Hyperdrive_ERC4626Target3": {
-           "contract": "ERC4626Target3",
-           "address": "0x7E625beF30bf17D03bD468B1AF810a001EB011dA",
-           "timestamp": "2024-11-03T22:08:18.312Z"
-       },
-       "ElementDAO 182 Day sGYD Hyperdrive_ERC4626Target4": {
-           "contract": "ERC4626Target4",
-           "address": "0x3476f7f8b452A7ccCC5c61ed1BF2f9732a28F5F3",
-           "timestamp": "2024-11-03T22:08:27.673Z"
-       },
-       "ElementDAO 182 Day sGYD Hyperdrive": {
-           "contract": "ERC4626Hyperdrive",
-           "address": "0xD3e2FC96F34348A85CDcf0c528d4096dd9f400Cc",
-           "timestamp": "2024-11-03T22:08:37.279Z"
-       }
+        "ElementDAO ERC4626 Hyperdrive Deployer Coordinator_ERC4626HyperdriveCoreDeployer": {
+            "contract": "ERC4626HyperdriveCoreDeployer",
+            "address": "0xa7f4fa98e61cca63130b66699620bd80ccdbe5b7",
+            "timestamp": "2024-11-03T23:31:16.861Z"
+        },
+        "ElementDAO ERC4626 Hyperdrive Deployer Coordinator_ERC4626Target0Deployer": {
+            "contract": "ERC4626Target0Deployer",
+            "address": "0x56568eb63e1b0dde1adccf60fa370d051bfdf89f",
+            "timestamp": "2024-11-03T23:31:26.412Z"
+        },
+        "ElementDAO ERC4626 Hyperdrive Deployer Coordinator_ERC4626Target1Deployer": {
+            "contract": "ERC4626Target1Deployer",
+            "address": "0x83cfd1fb412d0b4ab5c4852f3faf990d63cc760a",
+            "timestamp": "2024-11-03T23:31:40.184Z"
+        },
+        "ElementDAO ERC4626 Hyperdrive Deployer Coordinator_ERC4626Target2Deployer": {
+            "contract": "ERC4626Target2Deployer",
+            "address": "0x3837024d7b9d4a60514bb9f7cb9d9493e29656fd",
+            "timestamp": "2024-11-03T23:31:53.431Z"
+        },
+        "ElementDAO ERC4626 Hyperdrive Deployer Coordinator_ERC4626Target3Deployer": {
+            "contract": "ERC4626Target3Deployer",
+            "address": "0x01f06f23d684d2beacb4dc9dcb4bd27a3fe624b1",
+            "timestamp": "2024-11-03T23:32:02.705Z"
+        },
+        "ElementDAO ERC4626 Hyperdrive Deployer Coordinator_ERC4626Target4Deployer": {
+            "contract": "ERC4626Target4Deployer",
+            "address": "0x7b5ce2411fcf3d06e9e60bde66cc8ee869ff13b9",
+            "timestamp": "2024-11-03T23:32:16.194Z"
+        },
+        "ElementDAO ERC4626 Hyperdrive Deployer Coordinator": {
+            "contract": "ERC4626HyperdriveDeployerCoordinator",
+            "address": "0x0ebbb7e85337cf4ed496dd81a300c6c31ba633c9",
+            "timestamp": "2024-11-03T23:32:25.459Z"
+        },
+        "ElementDAO 182 Day sGYD Hyperdrive_ERC4626Target0": {
+            "contract": "ERC4626Target0",
+            "address": "0x12A860db0b8928da0C0b64b5ce51A524c3a40e13",
+            "timestamp": "2024-11-03T23:34:03.923Z"
+        },
+        "ElementDAO 182 Day sGYD Hyperdrive_ERC4626Target1": {
+            "contract": "ERC4626Target1",
+            "address": "0x05890fac1b957B48a4f74d6fE74cf76C92389B17",
+            "timestamp": "2024-11-03T23:33:14.380Z"
+        },
+        "ElementDAO 182 Day sGYD Hyperdrive_ERC4626Target2": {
+            "contract": "ERC4626Target2",
+            "address": "0x72f88Ba5DD6cF894A7367010C54Eddb5E208Ce45",
+            "timestamp": "2024-11-03T23:33:27.773Z"
+        },
+        "ElementDAO 182 Day sGYD Hyperdrive_ERC4626Target3": {
+            "contract": "ERC4626Target3",
+            "address": "0x9aA89A768E642a9d4Ce0c8d0ebFc2DC051F55289",
+            "timestamp": "2024-11-03T23:33:41.239Z"
+        },
+        "ElementDAO 182 Day sGYD Hyperdrive_ERC4626Target4": {
+            "contract": "ERC4626Target4",
+            "address": "0xe549BAc862A408294df78c6CA7B89D75e8582147",
+            "timestamp": "2024-11-03T23:33:50.414Z"
+        },
+        "ElementDAO 182 Day sGYD Hyperdrive": {
+            "contract": "ERC4626Hyperdrive",
+            "address": "0xf1232Dc21eADAf503D82f1e1361CfF2BBf40394D",
+            "timestamp": "2024-11-03T23:34:03.748Z"
+        }
     },
     "gnosis": {
         "DELV Hyperdrive Registry": {

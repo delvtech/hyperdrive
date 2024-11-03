@@ -27,8 +27,8 @@ export const MAINNET_SGYD_182DAY: HyperdriveInstanceConfig<"ERC4626"> = {
         hre.hyperdriveDeploy.deployments.byName(
             MAINNET_ERC4626_COORDINATOR_NAME,
         ).address,
-    deploymentId: keccak256(toBytes(MAINNET_SGYD_182DAY_NAME)),
-    salt: toBytes32("0x69420"),
+    deploymentId: keccak256(toBytes(MAINNET_SGYD_182DAY_NAME + "1")),
+    salt: toBytes32("0x69421"),
     extraData: "0x",
     contribution: CONTRIBUTION,
     // The current fixed rate on sGYD is 11.85%, but our maximum is 10%:
