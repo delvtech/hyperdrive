@@ -991,7 +991,37 @@
             "contract": "ERC4626Hyperdrive",
             "address": "0x05b65FA90AD702e6Fd0C3Bd7c4c9C47BAB2BEa6b",
             "timestamp": "2024-10-10T00:32:40.530Z"
-        }
+        },
+       "ElementDAO 182 Day sGYD Hyperdrive_ERC4626Target0": {
+           "contract": "ERC4626Target0",
+           "address": "0xEf12aa6376B03477d72E16C14992C7743ACC16E8",
+           "timestamp": "2024-11-03T22:08:37.437Z"
+       },
+       "ElementDAO 182 Day sGYD Hyperdrive_ERC4626Target1": {
+           "contract": "ERC4626Target1",
+           "address": "0xB734417899eF2B84A63a4A6150eBbf95a5780889",
+           "timestamp": "2024-11-03T22:07:51.177Z"
+       },
+       "ElementDAO 182 Day sGYD Hyperdrive_ERC4626Target2": {
+           "contract": "ERC4626Target2",
+           "address": "0xe0fF98378220668039fA12fCA09CA8b99264890A",
+           "timestamp": "2024-11-03T22:08:04.803Z"
+       },
+       "ElementDAO 182 Day sGYD Hyperdrive_ERC4626Target3": {
+           "contract": "ERC4626Target3",
+           "address": "0x7E625beF30bf17D03bD468B1AF810a001EB011dA",
+           "timestamp": "2024-11-03T22:08:18.312Z"
+       },
+       "ElementDAO 182 Day sGYD Hyperdrive_ERC4626Target4": {
+           "contract": "ERC4626Target4",
+           "address": "0x3476f7f8b452A7ccCC5c61ed1BF2f9732a28F5F3",
+           "timestamp": "2024-11-03T22:08:27.673Z"
+       },
+       "ElementDAO 182 Day sGYD Hyperdrive": {
+           "contract": "ERC4626Hyperdrive",
+           "address": "0xD3e2FC96F34348A85CDcf0c528d4096dd9f400Cc",
+           "timestamp": "2024-11-03T22:08:37.279Z"
+       }
     },
     "gnosis": {
         "DELV Hyperdrive Registry": {
