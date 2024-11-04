@@ -1079,41 +1079,6 @@
             "address": "0x0fb305a458b1008faee03147b700b3975bea03fd",
             "timestamp": "2024-08-29T18:28:07.186Z"
         },
-        "ElementDAO ERC4626 Hyperdrive Deployer Coordinator_ERC4626HyperdriveCoreDeployer": {
-            "contract": "ERC4626HyperdriveCoreDeployer",
-            "address": "0xb2f17302ed12fe72d883fcc2b66f1b844fbb7964",
-            "timestamp": "2024-08-29T18:28:26.929Z"
-        },
-        "ElementDAO ERC4626 Hyperdrive Deployer Coordinator_ERC4626Target0Deployer": {
-            "contract": "ERC4626Target0Deployer",
-            "address": "0xe441e793f7d6f7b0d633a770554d8924103a30b4",
-            "timestamp": "2024-08-29T18:28:32.385Z"
-        },
-        "ElementDAO ERC4626 Hyperdrive Deployer Coordinator_ERC4626Target1Deployer": {
-            "contract": "ERC4626Target1Deployer",
-            "address": "0xe8dc5073b02d062388db8e50762a8c9a1c823540",
-            "timestamp": "2024-08-29T18:28:37.783Z"
-        },
-        "ElementDAO ERC4626 Hyperdrive Deployer Coordinator_ERC4626Target2Deployer": {
-            "contract": "ERC4626Target2Deployer",
-            "address": "0xe0da47a1a6ceb80bb945652cb96a821fa5d91327",
-            "timestamp": "2024-08-29T18:28:47.370Z"
-        },
-        "ElementDAO ERC4626 Hyperdrive Deployer Coordinator_ERC4626Target3Deployer": {
-            "contract": "ERC4626Target3Deployer",
-            "address": "0x279c0504575639131be082923c21289d553d7c08",
-            "timestamp": "2024-08-29T18:28:57.080Z"
-        },
-        "ElementDAO ERC4626 Hyperdrive Deployer Coordinator_ERC4626Target4Deployer": {
-            "contract": "ERC4626Target4Deployer",
-            "address": "0xca76fd3033fa9f754c05844773d79c193ad784b5",
-            "timestamp": "2024-08-29T18:29:02.504Z"
-        },
-        "ElementDAO ERC4626 Hyperdrive Deployer Coordinator": {
-            "contract": "ERC4626HyperdriveDeployerCoordinator",
-            "address": "0xb274f4fcc2b391e0dfabfbe7b7c130447018f6ea",
-            "timestamp": "2024-08-29T18:29:12.102Z"
-        },
         "ElementDAO 182 Day wstETH Hyperdrive_ChainlinkTarget0": {
             "contract": "ChainlinkTarget0",
             "address": "0x87f566edE278C328e9A3af3b6958e0F95fE80476",
