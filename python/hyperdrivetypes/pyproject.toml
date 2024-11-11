@@ -7,6 +7,7 @@ version = "1.0.20.10"
 authors = [
     { name = "Dylan Paiton", email = "dylan@delv.tech" },
     { name = "Matthew Brown", email = "matt@delv.tech" },
+    { name = "Sheng Lundquist", email = "sheng@delv.tech" },
 ]
 description = "Python type definitions for the Hyperdrive smart contracts and integrations."
 readme = "README.md"
