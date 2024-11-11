@@ -64,6 +64,8 @@ jobs:
           path: dist
           merge-multiple: true
       - name: Upload to pypi
-        uses: pypa/gh-action-pypi-publish@release/v1.11.0
+        # Pinned due to issues with uploading composite actions
+        # https://github.com/pypa/gh-action-pypi-publish/issues/299
+        uses: pypa/gh-action-pypi-publish@v1.11.0
         with:
           verbose: true
