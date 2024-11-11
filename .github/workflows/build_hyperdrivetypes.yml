@@ -1,12 +1,23 @@
 name: build and upload hyperdrivetypes wheel
 
 on:
-  workflow_call:
+  push:
+    branches:
+      - "main"
+  # FIXME
+  pull_request:
 
 jobs:
+  detect-changes:
+    uses: ./.github/workflows/check_diff.yaml
+    with:
+      pattern: ^python/hyperdrivetypes/pyproject.toml$
+
   build-wheel:
     name: build hyperdrivetypes wheel
+    needs: detect-changes
     runs-on: ubuntu-latest
+    if: needs.detect-changes.outputs.changed == 'true'
     steps:
       - name: checkout hyperdrive
         uses: actions/checkout@v4
@@ -64,8 +75,4 @@ jobs:
           path: dist
           merge-multiple: true
       - name: Upload to pypi
-        # Pinned due to issues with uploading composite actions
-        # https://github.com/pypa/gh-action-pypi-publish/issues/299
-        uses: pypa/gh-action-pypi-publish@v1.11.0
-        with:
-          verbose: true
+        uses: pypa/gh-action-pypi-publish@release/v1
