@@ -392,6 +392,11 @@
   dependencies:
     "@jridgewell/trace-mapping" "0.3.9"
 
+"@delvtech/hyperdrive-wasm@^0.15.3":
+  version "0.15.3"
+  resolved "https://registry.yarnpkg.com/@delvtech/hyperdrive-wasm/-/hyperdrive-wasm-0.15.3.tgz#ba7a717fa417ce96d624f65351abbf4af8554eba"
+  integrity sha512-j7mHuj8S05tUCuWYS7qEqEtLhlM7eZCUaA6XPfcC84zG6zXIyG2NT178W7fpFK1FZaatmfxy4EVGKmfn41W2dw==
+
 "@ethereumjs/rlp@^4.0.1":
   version "4.0.1"
   resolved "https://registry.yarnpkg.com/@ethereumjs/rlp/-/rlp-4.0.1.tgz#626fabfd9081baab3d0a3074b0c7ecaf674aaa41"
