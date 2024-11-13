@@ -61,6 +61,8 @@
     "zod": "^3.23.4"
   },
   "dependencies": {
+    "@delvtech/hyperdrive-wasm": "^0.15.3",
+    "esm": "^3.2.25",
     "yarn": "^1.22.19"
   }
 }
