@@ -4,6 +4,8 @@ pragma solidity 0.8.22;
 import { console2 as console } from "forge-std/console2.sol";
 import { IMorpho } from "morpho-blue/src/interfaces/IMorpho.sol";
 import { IMorphoFlashLoanCallback } from "morpho-blue/src/interfaces/IMorphoCallbacks.sol";
+import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
+import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { MorphoBlueConversions } from "../../../contracts/src/instances/morpho-blue/MorphoBlueConversions.sol";
 import { MorphoBlueHyperdrive } from "../../../contracts/src/instances/morpho-blue/MorphoBlueHyperdrive.sol";
 import { MorphoBlueTarget0 } from "../../../contracts/src/instances/morpho-blue/MorphoBlueTarget0.sol";
@@ -38,6 +40,8 @@ contract HyperdriveOTC is IMorphoFlashLoanCallback {
     using HyperdriveUtils for *;
     using Lib for *;
 
+    using SafeERC20 for ERC20;
+
     // FIXME: Set this up properly.
     IMorpho public constant MORPHO =
         IMorpho(0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb);
@@ -50,10 +54,9 @@ contract HyperdriveOTC is IMorphoFlashLoanCallback {
         IHyperdrive.Options options;
     }
 
-    // FIXME: Write a function that calls Morpho for flash loans.
+    // FIXME: Re-architect this before documenting it.
     //
-    // FIXME: I need more info for the LP side of the equation for things like
-    // asBase and extraData.
+    /// @notice Executes an OTC trade.
     function executeOTC(
         IHyperdrive _hyperdrive,
         address _long,
@@ -93,7 +96,12 @@ contract HyperdriveOTC is IMorphoFlashLoanCallback {
         );
     }
 
-    // FIXME: Rewrite this function and clean it up.
+    // FIXME: Rewrite this function and clean it up. There are a few things we
+    // need to think through.
+    //
+    // 1. [ ] Consolidate the arguments.
+    // 2. [ ] Add validation for the orders. We'll also need cancels.
+    // 3. [ ] Reduce the complexity of the function. Can we DRY up the logic?
     //
     // FIXME: Document this.
     //
@@ -127,20 +135,16 @@ contract HyperdriveOTC is IMorphoFlashLoanCallback {
                 )
             );
 
-        // FIXME: Ensure that the add liquidity options forward the funds to
-        // this contract.
-        //
         // FIXME: Handle rebasing tokens.
         //
         // Add liquidity to the pool.
-        IERC20 addLiquidityToken;
+        ERC20 addLiquidityToken;
         if (addLiquidityOptions.asBase) {
-            addLiquidityToken = IERC20(hyperdrive.baseToken());
+            addLiquidityToken = ERC20(hyperdrive.baseToken());
         } else {
-            addLiquidityToken = IERC20(hyperdrive.vaultSharesToken());
+            addLiquidityToken = ERC20(hyperdrive.vaultSharesToken());
         }
-        // FIXME: forceApprove
-        addLiquidityToken.approve(address(hyperdrive), lpAmount + 1);
+        addLiquidityToken.forceApprove(address(hyperdrive), lpAmount + 1);
         uint256 lpShares = hyperdrive.addLiquidity(
             lpAmount,
             0,
@@ -149,19 +153,24 @@ contract HyperdriveOTC is IMorphoFlashLoanCallback {
             addLiquidityOptions
         );
 
-        // FIXME: Refund the short.
-        //
         // FIXME: Handle rebasing tokens.
         //
         // Open the short and send it to the short trader.
-        IERC20 shortAsset;
+        ERC20 shortAsset;
         if (shortTrade.options.asBase) {
-            shortAsset = IERC20(hyperdrive.baseToken());
+            shortAsset = ERC20(hyperdrive.baseToken());
         } else {
-            shortAsset = IERC20(hyperdrive.vaultSharesToken());
+            shortAsset = ERC20(hyperdrive.vaultSharesToken());
         }
-        shortAsset.transferFrom(short, address(this), shortTrade.slippageGuard);
-        shortAsset.approve(address(hyperdrive), shortTrade.slippageGuard + 1);
+        shortAsset.safeTransferFrom(
+            short,
+            address(this),
+            shortTrade.slippageGuard
+        );
+        shortAsset.forceApprove(
+            address(hyperdrive),
+            shortTrade.slippageGuard + 1
+        );
         (, uint256 shortPaid) = hyperdrive.openShort(
             shortTrade.amount,
             shortTrade.slippageGuard,
@@ -169,21 +178,23 @@ contract HyperdriveOTC is IMorphoFlashLoanCallback {
             shortTrade.options
         );
         if (shortTrade.slippageGuard > shortPaid) {
-            // FIXME: Use safe transfer.
-            shortAsset.transfer(short, shortTrade.slippageGuard - shortPaid);
+            shortAsset.safeTransfer(
+                short,
+                shortTrade.slippageGuard - shortPaid
+            );
         }
 
         // FIXME: Handle rebasing tokens.
         //
         // Open the long and send it to the long trader.
-        IERC20 longAsset;
+        ERC20 longAsset;
         if (longTrade.options.asBase) {
-            longAsset = IERC20(hyperdrive.baseToken());
+            longAsset = ERC20(hyperdrive.baseToken());
         } else {
-            longAsset = IERC20(hyperdrive.vaultSharesToken());
+            longAsset = ERC20(hyperdrive.vaultSharesToken());
         }
-        longAsset.transferFrom(long, address(this), longTrade.amount);
-        longAsset.approve(address(hyperdrive), longTrade.amount + 1);
+        longAsset.safeTransferFrom(long, address(this), longTrade.amount);
+        longAsset.forceApprove(address(hyperdrive), longTrade.amount + 1);
         (, uint256 longAmount) = hyperdrive.openLong(
             longTrade.amount,
             longTrade.slippageGuard,
@@ -202,16 +213,16 @@ contract HyperdriveOTC is IMorphoFlashLoanCallback {
         require(withdrawalShares == 0, "Invalid withdrawal shares");
 
         // FIXME: Send any excess proceeds back to the long.
+        console.log("proceeds = %s", (proceeds - lpAmount).toString(18));
 
         // Approve Morpho Blue to take back the assets that were provided.
-        IERC20 loanToken;
+        ERC20 loanToken;
         if (addLiquidityOptions.asBase) {
-            loanToken = IERC20(hyperdrive_.baseToken());
+            loanToken = ERC20(hyperdrive_.baseToken());
         } else {
-            loanToken = IERC20(hyperdrive_.vaultSharesToken());
+            loanToken = ERC20(hyperdrive_.vaultSharesToken());
         }
-        // FIXME: forceApprove
-        loanToken.approve(address(MORPHO), lpAmount);
+        loanToken.forceApprove(address(MORPHO), lpAmount);
     }
 }
 
@@ -335,7 +346,7 @@ contract JITLiquidityTest is HyperdriveTest, EtchingUtils {
         // The LP adds JIT liquidity.
         vm.stopPrank();
         vm.startPrank(LP);
-        uint256 contribution = 25_000_000e6;
+        uint256 contribution = 21_000_000e6;
         uint256 lpShares = hyperdrive.addLiquidity(
             contribution,
             0,
@@ -557,7 +568,7 @@ contract JITLiquidityTest is HyperdriveTest, EtchingUtils {
             console.log(
                 "fixed rate = %s%",
                 (HyperdriveUtils.calculateAPRFromRealizedPrice(
-                    longPaid,
+                    longPaid - 3776809450,
                     longAmount,
                     hyperdrive.getPoolConfig().positionDuration.divDown(
                         365 days
