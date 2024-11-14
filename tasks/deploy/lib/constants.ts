@@ -44,6 +44,8 @@ export const RSETH_POOL_LINEA =
 // │ Mainnet Addresses                                       │
 // ╰─────────────────────────────────────────────────────────╯
 
+export const CBBTC_ADDRESS_MAINNET =
+    "0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf" as Address;
 export const CORN_SILO_ADDRESS_MAINNET =
     "0x8bc93498b861fd98277c3b51d240e7E56E48F23c" as Address;
 
