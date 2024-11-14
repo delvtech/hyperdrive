@@ -1732,6 +1732,76 @@
             "contract": "ERC4626Hyperdrive",
             "address": "0xD9b66D9a819B36ECEfC26B043eF3B422d5A6123a",
             "timestamp": "2024-10-22T00:18:26.463Z"
+        },
+        "ElementDAO Aerodrome LP Hyperdrive Deployer Coordinator_AerodromeLpHyperdriveCoreDeployer": {
+            "contract": "AerodromeLpHyperdriveCoreDeployer",
+            "address": "0x248ba8bfc1e4a4dc092de7e50c3c299775e85f3a",
+            "timestamp": "2024-10-30T18:11:09.249Z"
+        },
+        "AerodromeLpConversions": {
+            "contract": "AerodromeLpConversions",
+            "address": "0x4f3e88e6dc6d6a68fcfdc5d6e4ba4681c8704140",
+            "timestamp": "2024-10-30T18:11:14.246Z"
+        },
+        "ElementDAO Aerodrome LP Hyperdrive Deployer Coordinator_AerodromeLpTarget0Deployer": {
+            "contract": "AerodromeLpTarget0Deployer",
+            "address": "0x746887d49347292e2089449552bb2d25475b344a",
+            "timestamp": "2024-10-30T18:11:18.889Z"
+        },
+        "ElementDAO Aerodrome LP Hyperdrive Deployer Coordinator_AerodromeLpTarget1Deployer": {
+            "contract": "AerodromeLpTarget1Deployer",
+            "address": "0xd4bc07dee13b6b300643e20c1a4b8736feacd9ec",
+            "timestamp": "2024-10-30T18:11:23.374Z"
+        },
+        "ElementDAO Aerodrome LP Hyperdrive Deployer Coordinator_AerodromeLpTarget2Deployer": {
+            "contract": "AerodromeLpTarget2Deployer",
+            "address": "0x22e80a035558e4a18a04fa52c92e20d86c8411b5",
+            "timestamp": "2024-10-30T18:11:26.525Z"
+        },
+        "ElementDAO Aerodrome LP Hyperdrive Deployer Coordinator_AerodromeLpTarget3Deployer": {
+            "contract": "AerodromeLpTarget3Deployer",
+            "address": "0x805677e1536591c84c534df00b4909af7b002dac",
+            "timestamp": "2024-10-30T18:11:31.265Z"
+        },
+        "ElementDAO Aerodrome LP Hyperdrive Deployer Coordinator_AerodromeLpTarget4Deployer": {
+            "contract": "AerodromeLpTarget4Deployer",
+            "address": "0x39c701f3659b6029672ee18433b3c32d184933b9",
+            "timestamp": "2024-10-30T18:11:34.313Z"
+        },
+        "ElementDAO Aerodrome LP Hyperdrive Deployer Coordinator": {
+            "contract": "AerodromeLpHyperdriveDeployerCoordinator",
+            "address": "0xc49731384c0c4dbbfff8dae727eb001caffcb107",
+            "timestamp": "2024-10-30T18:11:39.034Z"
+        },
+        "ElementDAO 91 Day Aerodrome LP AERO-USDC Hyperdrive_AerodromeLpTarget0": {
+            "contract": "AerodromeLpTarget0",
+            "address": "0xf49D1f422a7661541033C566f358E944a2bFb976",
+            "timestamp": "2024-10-30T18:12:24.774Z"
+        },
+        "ElementDAO 91 Day Aerodrome LP AERO-USDC Hyperdrive_AerodromeLpTarget1": {
+            "contract": "AerodromeLpTarget1",
+            "address": "0x77EB47d666F3D8A89085335B12C5ef29956516E5",
+            "timestamp": "2024-10-30T18:12:07.450Z"
+        },
+        "ElementDAO 91 Day Aerodrome LP AERO-USDC Hyperdrive_AerodromeLpTarget2": {
+            "contract": "AerodromeLpTarget2",
+            "address": "0x02715A4223B02681c2d5936B75c516cEa51Db2a0",
+            "timestamp": "2024-10-30T18:12:12.432Z"
+        },
+        "ElementDAO 91 Day Aerodrome LP AERO-USDC Hyperdrive_AerodromeLpTarget3": {
+            "contract": "AerodromeLpTarget3",
+            "address": "0x5341D9A9935beAbF06F3904fe3601984EFDDc420",
+            "timestamp": "2024-10-30T18:12:17.045Z"
+        },
+        "ElementDAO 91 Day Aerodrome LP AERO-USDC Hyperdrive_AerodromeLpTarget4": {
+            "contract": "AerodromeLpTarget4",
+            "address": "0x9927F9c74e5AD5579c4C5ad2Ca4eaEFBADF6F5dC",
+            "timestamp": "2024-10-30T18:12:21.688Z"
+        },
+        "ElementDAO 91 Day Aerodrome LP AERO-USDC Hyperdrive": {
+            "contract": "AerodromeLpHyperdrive",
+            "address": "0x9bAdB6A21FbA04EE94fde3E85F7d170E90394c89",
+            "timestamp": "2024-10-30T18:12:24.607Z"
         }
     }
 }
