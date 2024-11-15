@@ -44,6 +44,8 @@ export const RSETH_POOL_LINEA =
 // │ Mainnet Addresses                                       │
 // ╰─────────────────────────────────────────────────────────╯
 
+export const CBBTC_ADDRESS_MAINNET =
+    "0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf" as Address;
 export const CORN_SILO_ADDRESS_MAINNET =
     "0x8bc93498b861fd98277c3b51d240e7E56E48F23c" as Address;
 
@@ -158,7 +160,7 @@ export const SEPOLIA_USDE_ADDRESS =
 export const AERO_USDC_LP_ADDRESS_BASE =
     "0x6cDcb1C4A4D1C3C6d054b27AC5B77e89eAFb971d" as Address;
 
-export const AERO_USDC_GAUGE =
+export const AERO_USDC_GAUGE_ADDRESS_BASE =
     "0x4F09bAb2f0E15e2A078A227FE1537665F55b8360" as Address;
 
 export const CBETH_ADDRESS_BASE =

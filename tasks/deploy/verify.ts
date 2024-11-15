@@ -249,10 +249,15 @@ task(
                     aggregator,
                     BigInt(decimals),
                 ];
+            } else if (kind == "AerodromeLpHyperdrive") {
+                const [gauge] = decodeAbiParameters(
+                    parseAbiParameters("address"),
+                    instanceConfig.extraData,
+                );
+                targetArgs = [poolConfig, factoryAddress, gauge];
             } else if (extras) {
                 targetArgs = [poolConfig, factoryAddress, ...extras];
             } else {
-                console.log("got here");
                 targetArgs = [poolConfig, factoryAddress];
             }
 
@@ -313,6 +318,12 @@ task(
                     instanceConfig.extraData,
                 );
                 args.push(...[aggregator, BigInt(decimals)]);
+            } else if (kind == "AerodromeLpHyperdrive") {
+                const [gauge] = decodeAbiParameters(
+                    parseAbiParameters("address"),
+                    instanceConfig.extraData,
+                );
+                args.push(...[gauge]);
             } else if (extras) {
                 args.push(...extras);
             }
@@ -327,6 +338,8 @@ task(
                 pathName = "rseth-linea";
             } else if (kind == "StkWellHyperdrive") {
                 pathName = "stk-well";
+            } else if (kind == "AerodromeLpHyperdrive") {
+                pathName = "aerodrome-lp";
             } else {
                 pathName = instanceConfig.prefix.toLowerCase();
             }

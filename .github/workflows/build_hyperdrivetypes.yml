@@ -1,12 +1,21 @@
 name: build and upload hyperdrivetypes wheel
 
 on:
-  workflow_call:
+  push:
+    branches:
+      - "main"
 
 jobs:
+  detect-changes:
+    uses: ./.github/workflows/check_diff.yaml
+    with:
+      pattern: ^python/hyperdrivetypes/pyproject.toml$
+
   build-wheel:
     name: build hyperdrivetypes wheel
+    needs: detect-changes
     runs-on: ubuntu-latest
+    if: needs.detect-changes.outputs.changed == 'true'
     steps:
       - name: checkout hyperdrive
         uses: actions/checkout@v4
