@@ -1,6 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.22;
-import { console2 as console } from "forge-std/console2.sol";
 
 import { stdStorage, StdStorage } from "forge-std/Test.sol";
 import { IERC20 } from "../../../contracts/src/interfaces/IERC20.sol";
@@ -133,14 +132,24 @@ contract scrvUSDHyperdriveTest is ERC4626HyperdriveInstanceTest {
         // We exclude this factor by updating the unlock date and lastProfitUpdate
         // according to the timeDelta.
 
-        uint256 fullProfitUnlockDate = ISCRVUSD(address(SCRVUSD)).fullProfitUnlockDate();
-        uint256 lastProfitUpdate = ISCRVUSD(address(SCRVUSD)).lastProfitUpdate();
+        uint256 fullProfitUnlockDate = ISCRVUSD(address(SCRVUSD))
+            .fullProfitUnlockDate();
+        uint256 lastProfitUpdate = ISCRVUSD(address(SCRVUSD))
+            .lastProfitUpdate();
 
         bytes32 fullProfitLocation = bytes32(uint256(38));
         bytes32 lastProfitLocation = bytes32(uint256(40));
 
-        vm.store(address(SCRVUSD), fullProfitLocation, bytes32(fullProfitUnlockDate + timeDelta));
-        vm.store(address(SCRVUSD), lastProfitLocation, bytes32(lastProfitUpdate + timeDelta));
+        vm.store(
+            address(SCRVUSD),
+            fullProfitLocation,
+            bytes32(fullProfitUnlockDate + timeDelta)
+        );
+        vm.store(
+            address(SCRVUSD),
+            lastProfitLocation,
+            bytes32(lastProfitUpdate + timeDelta)
+        );
 
         bytes32 idleLocation = bytes32(uint256(22));
         vm.store(address(SCRVUSD), idleLocation, bytes32(totalAssets));
