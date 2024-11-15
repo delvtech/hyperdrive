@@ -8,6 +8,7 @@ export * from "./erc4626-coordinator";
 export * from "./ezeth-182day";
 export * from "./ezeth-coordinator";
 export * from "./factory";
+export * from "./morpho-blue-cbbtc-usdc-182day";
 export * from "./morpho-blue-coordinator";
 export * from "./morpho-blue-susde-dai-182day";
 export * from "./morpho-blue-usde-dai-182day";
