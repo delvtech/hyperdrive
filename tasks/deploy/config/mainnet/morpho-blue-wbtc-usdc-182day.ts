@@ -79,7 +79,7 @@ export const MAINNET_MORPHO_BLUE_WBTC_USDC_182DAY: HyperdriveInstanceConfig<"Mor
         salt: toBytes32("0x42080085"),
         extraData: morphoBlueParameters,
         contribution: CONTRIBUTION,
-        // NOTE: The latest variable rate on the Morpho Blue market is 2.93% APY:
+        // NOTE: Link to the underlying market on Morpho:
         // https://app.morpho.org/market?id=0x3a85e619751152991742810df6ec69ce473daef99e28a64ab2340d7b7ccfee49&network=mainnet&morphoPrice=0.75
         fixedAPR: parseEther("0.0575"),
         timestretchAPR: parseEther("0.075"),
