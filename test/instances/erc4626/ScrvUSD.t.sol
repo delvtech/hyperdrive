@@ -112,9 +112,6 @@ contract scrvUSDHyperdriveTest is ERC4626HyperdriveInstanceTest {
     ) internal override {
         // Get the total assets before advancing time.
         uint256 totalAssets = SCRVUSD.totalAssets();
-        uint256 totalSupply = SCRVUSD.totalSupply();
-        console.log("totalAssets before: ", totalAssets);
-        console.log("totalSupply before: ", totalSupply);
 
         // Advance the time.
         vm.warp(block.timestamp + timeDelta);
