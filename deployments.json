@@ -899,8 +899,8 @@
         },
         "ElementDAO ERC4626 Hyperdrive Deployer Coordinator": {
             "contract": "ERC4626HyperdriveDeployerCoordinator",
-            "address": "0x50ea16a4050e65748eeb82d94e0c84ac233225df",
-            "timestamp": "2024-09-03T21:45:39.060Z"
+            "address": "0x0EBbB7e85337cf4Ed496dd81A300c6C31ba633c9",
+            "timestamp": "2024-11-03T23:32:23.060Z"
         },
         "ElementDAO 182 Day stUSD Hyperdrive_ERC4626Target0": {
             "contract": "ERC4626Target0",
