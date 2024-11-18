@@ -26,7 +26,7 @@ export const MAINNET_SCRVUSD_182DAY: HyperdriveInstanceConfig = {
     prefix: "ERC4626",
     coordinatorAddress: async (hre) =>
         hre.hyperdriveDeploy.deployments.byName(
-            MAINNET_ERC4626_COORDINATOR_NAME
+            MAINNET_ERC4626_COORDINATOR_NAME,
         ).address,
     deploymentId: keccak256(toBytes(MAINNET_SCRVUSD_182DAY_NAME)),
     salt: toBytes32("0x69420"),
@@ -45,11 +45,11 @@ export const MAINNET_SCRVUSD_182DAY: HyperdriveInstanceConfig = {
     prepare: async (hre) => {
         let baseToken = await hre.viem.getContractAt(
             "contracts/src/interfaces/IERC20.sol:IERC20",
-            CRVUSD_ADDRESS_MAINNET
+            CRVUSD_ADDRESS_MAINNET,
         );
         let tx = await baseToken.write.approve([
             hre.hyperdriveDeploy.deployments.byName(
-                MAINNET_ERC4626_COORDINATOR_NAME
+                MAINNET_ERC4626_COORDINATOR_NAME,
             ).address,
             CONTRIBUTION,
         ]);
@@ -60,7 +60,7 @@ export const MAINNET_SCRVUSD_182DAY: HyperdriveInstanceConfig = {
         let factoryContract = await hre.viem.getContractAt(
             "HyperdriveFactory",
             hre.hyperdriveDeploy.deployments.byName(MAINNET_FACTORY_NAME)
-                .address
+                .address,
         );
         return {
             baseToken: CRVUSD_ADDRESS_MAINNET,
@@ -78,7 +78,7 @@ export const MAINNET_SCRVUSD_182DAY: HyperdriveInstanceConfig = {
             ...(await getLinkerDetails(
                 hre,
                 hre.hyperdriveDeploy.deployments.byName(MAINNET_FACTORY_NAME)
-                    .address
+                    .address,
             )),
             fees: {
                 curve: parseEther("0.01"),
