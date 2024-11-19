@@ -17,6 +17,7 @@ FUNCTION_NAMES = [
     "checkpoint",
 ]
 
+print("Starting gas benchmarks...")
 # HACK: We have to ignore the Chainlink instance test and the combinatorial test
 # since these tests fail during gas benchmarking.
 #
