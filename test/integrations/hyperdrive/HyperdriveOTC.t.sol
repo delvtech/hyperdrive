@@ -2,7 +2,8 @@
 pragma solidity 0.8.22;
 
 import { console2 as console } from "forge-std/console2.sol";
-import { IMorpho } from "morpho-blue/src/interfaces/IMorpho.sol";
+import { IMorpho, Market, MarketParams, Id } from "morpho-blue/src/interfaces/IMorpho.sol";
+import { IIrm } from "morpho-blue/src/interfaces/IIrm.sol";
 import { IMorphoFlashLoanCallback } from "morpho-blue/src/interfaces/IMorphoCallbacks.sol";
 import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
 import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
@@ -24,6 +25,21 @@ import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
 import { Lib } from "../../utils/Lib.sol";
 
+// FIXME: Vendoring this to work around type weirdness.
+//
+/// @title IAdaptiveCurveIrm
+/// @author Morpho Labs
+/// @custom:contact security@morpho.org
+/// @notice Interface exposed by the AdaptiveCurveIrm.
+interface IAdaptiveCurveIrm is IIrm {
+    /// @notice Address of Morpho.
+    function MORPHO() external view returns (address);
+
+    /// @notice Rate at target utilization.
+    /// @dev Tells the height of the curve.
+    function rateAtTarget(Id id) external view returns (int256);
+}
+
 // FIXME: Eventually, this will need to support rebasing.
 //
 // FIXME: Eventually, this should handle ETH.
@@ -37,6 +53,7 @@ import { Lib } from "../../utils/Lib.sol";
 //        do some initial valuation.
 contract HyperdriveOTC is IMorphoFlashLoanCallback {
     // FIXME
+    using FixedPointMath for *;
     using HyperdriveUtils for *;
     using Lib for *;
 
@@ -252,7 +269,7 @@ contract JITLiquidityTest is HyperdriveTest, EtchingUtils {
         // Run the higher-level setup logic.
         super.setUp();
 
-        // Deploy a Morpho Blue cbBTC/USDC pool and etch it.
+        // Deploy a Morpho Blue cbBTC/USDC pool.
         IMorphoBlueHyperdrive.MorphoBlueParams
             memory params = IMorphoBlueHyperdrive.MorphoBlueParams({
                 morpho: MORPHO,
@@ -338,6 +355,64 @@ contract JITLiquidityTest is HyperdriveTest, EtchingUtils {
                 extraData: ""
             })
         );
+    }
+
+    /// @dev This test does the math to compute the gap rate.
+    function test_gap_rate() external {
+        // Get the Morpho interest rate model's rate at target.
+        IMorphoBlueHyperdrive morphoBlueHyperdrive = IMorphoBlueHyperdrive(
+            address(hyperdrive)
+        );
+        IAdaptiveCurveIrm irm = IAdaptiveCurveIrm(morphoBlueHyperdrive.irm());
+        uint256 rateAtTarget = uint256(
+            irm.rateAtTarget(morphoBlueHyperdrive.id())
+        );
+        console.log(
+            "id = %s",
+            vm.toString(Id.unwrap(morphoBlueHyperdrive.id()))
+        );
+        console.log("rateAtTarget = %s", rateAtTarget.toString(18));
+
+        // FIXME: Does this work? Double check the utilization.
+        //
+        // Get the average borrow rate if the pool is at a utilization of 35%.
+        // We create a market that has this utilization and only specify the
+        // parameters that are actually used in the calculation.
+        uint256 borrowRate = irm.borrowRateView(
+            MarketParams({
+                loanToken: morphoBlueHyperdrive.baseToken(),
+                collateralToken: morphoBlueHyperdrive.collateralToken(),
+                oracle: morphoBlueHyperdrive.oracle(),
+                irm: morphoBlueHyperdrive.irm(),
+                lltv: morphoBlueHyperdrive.lltv()
+            }),
+            Market({
+                totalSupplyAssets: 1e18,
+                totalSupplyShares: 0,
+                totalBorrowAssets: 0.35e18,
+                totalBorrowShares: 0,
+                lastUpdate: MORPHO.market(morphoBlueHyperdrive.id()).lastUpdate,
+                fee: 0
+            })
+        );
+        console.log("borrowRate = %s", borrowRate.toString(18));
+
+        // Since Morpho's fee is zero, the supply rate is just the borrow rate
+        // scaled by the utilization.
+        uint256 supplyRate = borrowRate.mulUp(0.35e18);
+        console.log("supplyRate = %s", supplyRate.toString(18));
+
+        // Convert the borrow and supply rates to APYs.
+        uint256 borrowAPY = _getAPY(borrowRate);
+        console.log("borrowAPY = %s", borrowAPY.toString(18));
+        uint256 supplyAPY = _getAPY(supplyRate);
+        console.log("supplyAPY = %s", supplyAPY.toString(18));
+
+        // FIXME: Compute the gapAPY as borrowAPY - supplyAPY
+        uint256 gapAPY = borrowAPY - supplyAPY;
+        console.log("gapAPY = %s", gapAPY.toString(18));
+        // FIXME: Look into the conversion that they do with the short rate.
+        //        At a surface level, this looks really weird to me.
     }
 
     /// @dev This test demonstrates that JIT liquidity can be provided and
@@ -576,5 +651,16 @@ contract JITLiquidityTest is HyperdriveTest, EtchingUtils {
                 ) * 100).toString(18)
             );
         }
+    }
+
+    /// @dev Gets the APY implied by the rate.
+    /// @param _rate The rate to compound.
+    /// @return The APY implied by the rate.
+    function _getAPY(uint256 _rate) internal pure returns (uint256) {
+        uint256 firstTerm = _rate * 365 days;
+        uint256 secondTerm = firstTerm.mulDivDown(firstTerm, 2e18);
+        uint256 thirdTerm = secondTerm.mulDivDown(firstTerm, 3e18);
+
+        return firstTerm + secondTerm + thirdTerm;
     }
 }
