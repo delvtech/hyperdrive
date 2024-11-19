@@ -1230,6 +1230,41 @@
             "contract": "LPMath",
             "address": "0xbaa863b62c69993143b013fe7b8af278fd52f76b",
             "timestamp": "2024-11-19T01:16:00.797Z"
+        },
+        "ElementDAO Renzo xezETH Hyperdrive Deployer Coordinator_EzETHLineaTarget0Deployer": {
+            "contract": "EzETHLineaTarget0Deployer",
+            "address": "0x68ba944d89d7481f3a9d73dcb75b7e6c7db5562b",
+            "timestamp": "2024-11-19T01:58:37.312Z"
+        },
+        "ElementDAO Renzo xezETH Hyperdrive Deployer Coordinator_EzETHLineaTarget1Deployer": {
+            "contract": "EzETHLineaTarget1Deployer",
+            "address": "0xb8bd93848aa71887e447642299b1f2a5cf898a9b",
+            "timestamp": "2024-11-19T02:23:24.476Z"
+        },
+        "ElementDAO Renzo xezETH Hyperdrive Deployer Coordinator_EzETHLineaTarget2Deployer": {
+            "contract": "EzETHLineaTarget2Deployer",
+            "address": "0xf74085c4404fd08e7d636f151b734a580f44100f",
+            "timestamp": "2024-11-19T02:23:30.224Z"
+        },
+        "ElementDAO Renzo xezETH Hyperdrive Deployer Coordinator_EzETHLineaTarget3Deployer": {
+            "contract": "EzETHLineaTarget3Deployer",
+            "address": "0x57858abb2773fa20de1bac61eda8283a8b1ecea3",
+            "timestamp": "2024-11-19T02:23:35.990Z"
+        },
+        "ElementDAO Renzo xezETH Hyperdrive Deployer Coordinator_EzETHLineaTarget4Deployer": {
+            "contract": "EzETHLineaTarget4Deployer",
+            "address": "0xea21fbc9eb872c025959d82383bc898540334484",
+            "timestamp": "2024-11-19T02:23:42.058Z"
+        },
+        "ElementDAO Renzo xezETH Hyperdrive Deployer Coordinator": {
+            "contract": "EzETHLineaHyperdriveDeployerCoordinator",
+            "address": "0x02d668b32fc23f223464f3daf9df6e518cf1e9ee",
+            "timestamp": "2024-11-19T02:23:47.745Z"
+        },
+        "ElementDAO KelpDAO rsETH Hyperdrive Deployer Coordinator_RsETHLineaHyperdriveCoreDeployer": {
+            "contract": "RsETHLineaHyperdriveCoreDeployer",
+            "address": "0xc6fe0b1a0d145c67ec87bffc1536a7b5da727662",
+            "timestamp": "2024-11-19T02:23:59.903Z"
         }
     },
     "base": {
