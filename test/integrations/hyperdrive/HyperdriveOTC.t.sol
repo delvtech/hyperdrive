@@ -73,6 +73,8 @@ contract HyperdriveOTC is IMorphoFlashLoanCallback {
 
     // FIXME: Re-architect this before documenting it.
     //
+    // FIXME: Rename this.
+    //
     /// @notice Executes an OTC trade.
     function executeOTC(
         IHyperdrive _hyperdrive,
@@ -173,6 +175,7 @@ contract HyperdriveOTC is IMorphoFlashLoanCallback {
         // FIXME: Handle rebasing tokens.
         //
         // Open the short and send it to the short trader.
+        console.log("onMorphoFlashLoan: 1");
         ERC20 shortAsset;
         if (shortTrade.options.asBase) {
             shortAsset = ERC20(hyperdrive.baseToken());
@@ -200,6 +203,7 @@ contract HyperdriveOTC is IMorphoFlashLoanCallback {
                 shortTrade.slippageGuard - shortPaid
             );
         }
+        console.log("onMorphoFlashLoan: 2");
 
         // FIXME: Handle rebasing tokens.
         //
@@ -218,6 +222,8 @@ contract HyperdriveOTC is IMorphoFlashLoanCallback {
             longTrade.minVaultSharePrice,
             longTrade.options
         );
+        console.log("longAmount = %s", longAmount.toString(6));
+        console.log("onMorphoFlashLoan: 3");
 
         // FIXME: Handle the case where we can only add liquidity with base and
         // remove with shares. We'll probably need a zap for this case.
@@ -228,6 +234,7 @@ contract HyperdriveOTC is IMorphoFlashLoanCallback {
         (uint256 proceeds, uint256 withdrawalShares) = hyperdrive_
             .removeLiquidity(lpShares, 0, removeLiquidityOptions);
         require(withdrawalShares == 0, "Invalid withdrawal shares");
+        console.log("onMorphoFlashLoan: 4");
 
         // FIXME: Send any excess proceeds back to the long.
         console.log("proceeds = %s", (proceeds - lpAmount).toString(18));
@@ -265,7 +272,7 @@ contract JITLiquidityTest is HyperdriveTest, EtchingUtils {
         0x4B16c5dE96EB2117bBE5fd171E4d203624B014aa;
 
     /// @dev Sets up the test harness on a base fork.
-    function setUp() public override __mainnet_fork(21_046_731) {
+    function setUp() public override __mainnet_fork(21_224_875) {
         // Run the higher-level setup logic.
         super.setUp();
 
@@ -357,6 +364,8 @@ contract JITLiquidityTest is HyperdriveTest, EtchingUtils {
         );
     }
 
+    // FIXME: This isn't working correctly.
+    //
     /// @dev This test does the math to compute the gap rate.
     function test_gap_rate() external {
         // Get the Morpho interest rate model's rate at target.
@@ -521,6 +530,8 @@ contract JITLiquidityTest is HyperdriveTest, EtchingUtils {
         console.log("withdrawalShares = %s", withdrawalShares.toString(6));
     }
 
+    // FIXME: Update this to work so that the short gets a rate of 5.11%.
+    //
     /// @dev This test demonstrates that JIT liquidity can be provided using
     ///      free Morpho flash loans and includes some relevant statistics.
     function test_jit_liquidity_flash_loan() external {
@@ -563,8 +574,8 @@ contract JITLiquidityTest is HyperdriveTest, EtchingUtils {
             HEDGER,
             // long trade
             HyperdriveOTC.Trade({
-                amount: 4_831_102e6,
-                slippageGuard: 4_999_999e6,
+                amount: 2_439_250e6,
+                slippageGuard: 2_499_999e6,
                 minVaultSharePrice: 0,
                 options: IHyperdrive.Options({
                     asBase: true,
@@ -574,8 +585,8 @@ contract JITLiquidityTest is HyperdriveTest, EtchingUtils {
             }),
             // short trade
             HyperdriveOTC.Trade({
-                amount: 5_000_000e6,
-                slippageGuard: 200_000e6,
+                amount: 2_500_000e6,
+                slippageGuard: 100_000e6,
                 minVaultSharePrice: 0,
                 options: IHyperdrive.Options({
                     asBase: true,
@@ -584,7 +595,7 @@ contract JITLiquidityTest is HyperdriveTest, EtchingUtils {
                 })
             }),
             // flash loan amount
-            19_000_000e6,
+            17_750_000e6,
             // add liquidity options
             IHyperdrive.Options({
                 asBase: true,
@@ -639,11 +650,12 @@ contract JITLiquidityTest is HyperdriveTest, EtchingUtils {
                 ),
                 LP
             ) - lpLongBalanceBefore;
+            // FIXME: Send the fees to the long.
             console.log("# Long");
             console.log(
                 "fixed rate = %s%",
                 (HyperdriveUtils.calculateAPRFromRealizedPrice(
-                    longPaid - 3776809450,
+                    longPaid,
                     longAmount,
                     hyperdrive.getPoolConfig().positionDuration.divDown(
                         365 days
