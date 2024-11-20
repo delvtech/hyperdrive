@@ -102,6 +102,20 @@ interface IHyperdriveEvents is IMultiTokenEvents {
         bytes extraData
     );
 
+    /// @notice Emitted when a pair of long and short positions are opened.
+    event OpenPair(
+        address indexed longTrader,
+        address indexed shortTrader,
+        uint256 indexed maturityTime,
+        uint256 longAssetId,
+        uint256 shortAssetId,
+        uint256 amount,
+        uint256 vaultSharePrice,
+        bool asBase,
+        uint256 bondAmount,
+        bytes extraData
+    );
+
     /// @notice Emitted when a checkpoint is created.
     event CreateCheckpoint(
         uint256 indexed checkpointTime,
