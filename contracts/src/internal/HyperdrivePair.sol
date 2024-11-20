@@ -27,21 +27,8 @@ abstract contract HyperdrivePair is
     using SafeCast for uint256;
     using SafeCast for int256;
 
-    // FIXME: Which (if any) slippage guards should this have? `minVaultSharePrice`
-    // seems reasonable.
-    //
-    // FIXME: This function should do the following:
-    //
-    // 1. [x] Accept a deposit of `_amount` with `_options.asBase` configuring the
-    //    deposit from the msg.sender.
-    // 2. [x] Given the amount of shares from the deposit, convert the shares
-    //    amount to base.
-    // 3. [x] Mint longs and shorts with bond amounts equal to the base amount
-    //    deposited.
-    // 4. [x] Update the pool's accounting to reflect the new longs and shorts.
-    // 5. [x] Send the longs and shorts to the appropriate destination addresses.
-    // 6. [x] Emit an event.
-    // 7. [ ] Compute a governance fee for both positions.
+    // FIXME: Add in a governance fee that is taken from the deposit amount and
+    //        reduces the bond amount earned.
     //
     /// @dev Opens a pair of long and short positions that directly match each
     ///      other. The amount of long and short positions that are created is
