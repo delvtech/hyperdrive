@@ -1,5 +1,4 @@
 import json
-import multiprocessing
 import subprocess
 import sys
 
@@ -45,22 +44,23 @@ print("Starting gas benchmarks...")
 # 3. Go line by line and capture the gas report for functions that we are interested in.
 # 4. When we reach the end of the report, break out of the for-loop.
 try:
-    num_threads = multiprocessing.cpu_count()
-    print(f"{num_threads=}")
-
     # HACK: We have to ignore certains tests that fail during gas benchmarking.
     SKIP_TESTS = [
+        # ZombieInterestTest tests with high fuzz amounts
         "test_zombie_interest_short_lp",
         "test_zombie_interest_long_lp",
         "test_zombie_long",
         "test_zombie_short",
         "test_zombie_long_short",
+        # IntraCheckpointNettingTest tests with high fuzz amounts
         "test_netting_fuzz",
+        # ExtremeInputs tests with high fuzz amounts
         "test__updateLiquidity__extremeValues__fuzz",
         "test_short_below_minimum_share_reserves",
     ]
+    SKIP_CONTRACTS = ["MultiToken__transferFrom", "ExtremeInputs", "ZombieInterestTest", "IntraCheckpointNettingTest"]
     process = subprocess.Popen(
-        f"FOUNDRY_FUZZ_RUNS=100 forge test --no-match-path 'test/instances/*' --no-match-test '{','.join(SKIP_TESTS)}' --no-match-contract 'MultiToken__transferFrom' --jobs {num_threads} --gas-report",
+        f"FOUNDRY_FUZZ_RUNS=100 forge test --no-match-path 'test/instances/*' --no-match-test '{','.join(SKIP_TESTS)}' --no-match-contract '{','.join(SKIP_CONTRACTS)}' --gas-report",
         shell=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
