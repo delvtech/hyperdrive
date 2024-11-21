@@ -14,6 +14,14 @@ import { HYPERDRIVE_MATCHING_ENGINE_KIND, VERSION } from "../libraries/Constants
 import { FixedPointMath } from "../libraries/FixedPointMath.sol";
 
 // TODO: Document the simplifications that were made.
+//
+/// @author DELV
+/// @title HyperdriveMatchingEngine
+/// @notice A matching engine that processes order intents and settles trades on
+///         the Hyperdrive AMM.
+/// @custom:disclaimer The language used in this code is for coding convenience
+///                    only, and is not intended to, and does not, have any
+///                    particular legal or regulatory significance.
 contract HyperdriveMatchingEngine is
     IHyperdriveMatchingEngine,
     ReentrancyGuard,
@@ -388,8 +396,8 @@ contract HyperdriveMatchingEngine is
 
         // Ensure that neither order has expired.
         if (
-            _longOrder.expiry >= block.timestamp ||
-            _shortOrder.expiry >= block.timestamp
+            _longOrder.expiry < block.timestamp ||
+            _shortOrder.expiry < block.timestamp
         ) {
             revert AlreadyExpired();
         }
@@ -409,9 +417,14 @@ contract HyperdriveMatchingEngine is
             revert InvalidSettlementAsset();
         }
 
-        // Ensure that the order's cross.
+        // Ensure that the order's cross. We can calculate a worst-case price
+        // for the long and short using the `amount` and `slippageGuard` fields.
+        // In order for the orders to cross, the price of the long should be
+        // equal to or higher than the price of the short. This implies that the
+        // long is willing to buy bonds at a price equal or higher than the
+        // short is selling bonds, which ensures that the trade is valid.
         if (
-            _longOrder.amount.divDown(_longOrder.slippageGuard) >=
+            _longOrder.amount.divDown(_longOrder.slippageGuard) <=
             (_shortOrder.amount - _shortOrder.slippageGuard).divDown(
                 _shortOrder.amount
             )
