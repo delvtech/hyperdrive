@@ -113,8 +113,8 @@ try:
             elif found_report:
                 break
 
-    # Force the process to terminate now that we have the gas report.
-    process.terminate()
+    # Wait for the process to finish.
+    process.wait()
     if process.returncode != 0 and process.stderr:
         print(process.stderr.read())
         exit(1)
