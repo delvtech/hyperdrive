@@ -10,6 +10,7 @@ import { EIP712 } from "openzeppelin/utils/cryptography/EIP712.sol";
 import { ReentrancyGuard } from "openzeppelin/utils/ReentrancyGuard.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveMatchingEngine } from "../interfaces/IHyperdriveMatchingEngine.sol";
+import { AssetId } from "../libraries/AssetId.sol";
 import { HYPERDRIVE_MATCHING_ENGINE_KIND, VERSION } from "../libraries/Constants.sol";
 import { FixedPointMath } from "../libraries/FixedPointMath.sol";
 
@@ -219,8 +220,16 @@ contract HyperdriveMatchingEngine is
         // are any withdrawal shares.
         (uint256 proceeds, uint256 withdrawalShares) = hyperdrive
             .removeLiquidity(lpShares, 0, removeLiquidityOptions);
+
+        // If the withdrawal shares are greater than zero, send them to the fee
+        // recipient.
         if (withdrawalShares > 0) {
-            revert UnexpectedWithdrawalShares();
+            hyperdrive.transferFrom(
+                AssetId._WITHDRAWAL_SHARE_ASSET_ID,
+                address(this),
+                feeRecipient,
+                withdrawalShares
+            );
         }
 
         // If the proceeds are greater than the LP amount, we send the difference

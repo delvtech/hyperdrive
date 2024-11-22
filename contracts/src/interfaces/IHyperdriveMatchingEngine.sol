@@ -36,10 +36,6 @@ interface IHyperdriveMatchingEngine is IMorphoFlashLoanCallback {
     ///         Hyperdrive instance.
     error MismatchedHyperdrive();
 
-    /// @notice Thrown when remove liquidity unexpectedly receives withdrawal
-    ///         shares.
-    error UnexpectedWithdrawalShares();
-
     /// @notice Emitted when orders are cancelled
     event OrdersCancelled(address indexed trader, bytes32[] orderHashes);
 

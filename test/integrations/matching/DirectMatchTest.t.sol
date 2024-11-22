@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.22;
 
-import { console2 as console } from "forge-std/console2.sol";
-import { IMorpho, Id } from "morpho-blue/src/interfaces/IMorpho.sol";
+import { IMorpho, Market, MarketParams, Id } from "morpho-blue/src/interfaces/IMorpho.sol";
+import { MarketParamsLib } from "morpho-blue/src/libraries/MarketParamsLib.sol";
 import { MorphoBlueConversions } from "../../../contracts/src/instances/morpho-blue/MorphoBlueConversions.sol";
 import { MorphoBlueHyperdrive } from "../../../contracts/src/instances/morpho-blue/MorphoBlueHyperdrive.sol";
 import { MorphoBlueTarget0 } from "../../../contracts/src/instances/morpho-blue/MorphoBlueTarget0.sol";
@@ -21,14 +21,34 @@ import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
 import { Lib } from "../../utils/Lib.sol";
 
-contract JITLiquidityTest is HyperdriveTest {
+/// @dev This test suite demonstrates how two traders can be matched directly
+///      using the Hyperdrive Matching Engine.
+contract DirectMatchTest is HyperdriveTest {
     using FixedPointMath for *;
     using HyperdriveUtils for *;
+    using MarketParamsLib for MarketParams;
     using Lib for *;
+
+    /// @dev The cbBTC address.
+    address internal constant CB_BTC =
+        0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf;
+
+    /// @dev The USDC address.
+    address internal constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
 
     /// @dev The address of the Morpho Blue pool.
     IMorpho internal constant MORPHO =
         IMorpho(0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb);
+
+    /// @dev The address of the oracle for Morpho's cbBTC/USDC pool.
+    address internal constant ORACLE =
+        0xA6D6950c9F177F1De7f7757FB33539e3Ec60182a;
+
+    /// @dev The address of the interest rate model for Morpho's cbBTC/USDC pool.
+    address internal constant IRM = 0x870aC11D48B15DB9a138Cf899d20F13F79Ba00BC;
+
+    /// @dev The liquidation loan to value for Morpho's cbBTC/USDC pool.
+    uint256 internal constant LLTV = 860000000000000000;
 
     /// @dev The whale addresses that have large balances of USDC.
     address[] internal WHALES = [
@@ -67,7 +87,7 @@ contract JITLiquidityTest is HyperdriveTest {
     ///      2. Deploy the Hyperdrive matching engine.
     ///      3. Set up whale accounts.
     ///      4. Initialize the Hyperdrive pool.
-    function setUp() public override __mainnet_fork(21_224_875) {
+    function setUp() public override __mainnet_fork(21_239_626) {
         // Run the higher-level setup logic.
         super.setUp();
 
@@ -75,15 +95,13 @@ contract JITLiquidityTest is HyperdriveTest {
         IMorphoBlueHyperdrive.MorphoBlueParams
             memory params = IMorphoBlueHyperdrive.MorphoBlueParams({
                 morpho: MORPHO,
-                collateralToken: address(
-                    0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf
-                ),
-                oracle: address(0xA6D6950c9F177F1De7f7757FB33539e3Ec60182a),
-                irm: address(0x870aC11D48B15DB9a138Cf899d20F13F79Ba00BC),
-                lltv: 860000000000000000
+                collateralToken: address(CB_BTC),
+                oracle: address(ORACLE),
+                irm: address(IRM),
+                lltv: LLTV
             });
         IHyperdrive.PoolConfig memory config = testConfig(0.04e18, 182 days);
-        config.baseToken = IERC20(0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48);
+        config.baseToken = IERC20(USDC);
         config.vaultSharesToken = IERC20(address(0));
         config.fees.curve = 0.01e18;
         config.fees.flat = 0.0005e18;
@@ -167,11 +185,23 @@ contract JITLiquidityTest is HyperdriveTest {
         );
     }
 
-    // FIXME: Update this to work so that the short gets a rate of 5.11%.
-    //
-    /// @dev This test demonstrates that JIT liquidity can be provided using
-    ///      free Morpho flash loans and includes some relevant statistics.
-    function test_jit_liquidity_flash_loan() external {
+    /// @dev This test demonstrates matching two traders using the Hyperdrive
+    ///      matching engine. The short receives a rate better than 5.11% and
+    ///      the long receives a rate better than 5.02%. We add a random jitter
+    ///      at the beginning of the test by advancing some time and accruing
+    ///      interest. This demonstrates that orders aren't brittle and can be
+    ///      signed and then executed several days later while interest is
+    ///      accruing. Having this jitter does increase the spread between the
+    ///      borrow and supply rates (the fixed lender would get a rate higher
+    ///      than 5.09% without the jitter).
+    /// @param _timeElapsed The random jitter to advance before executing the
+    ///        trade.
+    /// @param _variableRate The random amount of interest to accrue during the
+    ///        jitter.
+    function test_direct_match(
+        uint256 _timeElapsed,
+        uint256 _variableRate
+    ) external {
         // Get some information before the trade.
         uint256 lpBaseBalanceBefore = IERC20(hyperdrive.baseToken()).balanceOf(
             LP
@@ -193,13 +223,20 @@ contract JITLiquidityTest is HyperdriveTest {
             HEDGER
         );
 
-        // FIXME: Add the DFB extra data.
-        //
+        // Advance the time and accrue some interest. By fuzzing over the time
+        // to advance and the variable rate, we demonstrate that the orders that
+        // we create aren't "brittle." Once we find a set of orders that works
+        // to directly match two parties, the orders should still work several
+        // days later.
+        _timeElapsed = _timeElapsed.normalizeToRange(0, 3 days);
+        _variableRate = _variableRate.normalizeToRange(0, 0.1e18);
+        advanceTime(_timeElapsed, int256(_variableRate));
+
         // Create the two orders and sign them.
         IHyperdriveMatchingEngine.OrderIntent
             memory longOrder = IHyperdriveMatchingEngine.OrderIntent({
                 hyperdrive: hyperdrive,
-                amount: 2_439_250e6,
+                amount: 2_440_000e6,
                 slippageGuard: 2_499_999e6,
                 minVaultSharePrice: hyperdrive
                     .getCheckpoint(hyperdrive.latestCheckpoint())
@@ -218,7 +255,7 @@ contract JITLiquidityTest is HyperdriveTest {
             memory shortOrder = IHyperdriveMatchingEngine.OrderIntent({
                 hyperdrive: hyperdrive,
                 amount: 2_500_000e6,
-                slippageGuard: 100_000e6,
+                slippageGuard: 65_000e6,
                 minVaultSharePrice: hyperdrive
                     .getCheckpoint(hyperdrive.latestCheckpoint())
                     .vaultSharePrice,
@@ -243,6 +280,12 @@ contract JITLiquidityTest is HyperdriveTest {
         );
         shortOrder.signature = abi.encodePacked(r, s, v);
 
+        // Update the short order's extra data after signing. This simulates
+        // what the DFB UI will do to ensure an up-to-date quote. Since the
+        // extra data isn't baked into the hash, this will not cause issues with
+        // signature verification.
+        shortOrder.options.extraData = hex"deadbeefbabefade6660";
+
         // Match the two counterparties using flash loans.
         matchingEngine.matchOrders(
             // long
@@ -254,7 +297,7 @@ contract JITLiquidityTest is HyperdriveTest {
             // short order
             shortOrder,
             // flash loan amount
-            17_750_000e6,
+            18_500_000e6,
             // add liquidity options
             IHyperdrive.Options({
                 asBase: true,
@@ -271,7 +314,85 @@ contract JITLiquidityTest is HyperdriveTest {
             false
         );
 
-        // FIXME: Logs
+        // Create two more orders and sign them.
+        longOrder = IHyperdriveMatchingEngine.OrderIntent({
+            hyperdrive: hyperdrive,
+            amount: 2_440_000e6,
+            slippageGuard: 2_499_999e6,
+            minVaultSharePrice: hyperdrive
+                .getCheckpoint(hyperdrive.latestCheckpoint())
+                .vaultSharePrice,
+            options: IHyperdrive.Options({
+                asBase: true,
+                destination: LP,
+                extraData: ""
+            }),
+            orderType: IHyperdriveMatchingEngine.OrderType.OpenLong,
+            signature: new bytes(0),
+            expiry: block.timestamp + 1 hours,
+            salt: bytes32(uint256(0xbeefdead))
+        });
+        shortOrder = IHyperdriveMatchingEngine.OrderIntent({
+            hyperdrive: hyperdrive,
+            amount: 2_500_000e6,
+            slippageGuard: 65_000e6,
+            minVaultSharePrice: hyperdrive
+                .getCheckpoint(hyperdrive.latestCheckpoint())
+                .vaultSharePrice,
+            options: IHyperdrive.Options({
+                asBase: true,
+                destination: HEDGER,
+                extraData: ""
+            }),
+            orderType: IHyperdriveMatchingEngine.OrderType.OpenShort,
+            signature: new bytes(0),
+            expiry: block.timestamp + 1 hours,
+            salt: bytes32(uint256(0xbabebeef))
+        });
+        (v, r, s) = vm.sign(LP_PK, matchingEngine.hashOrderIntent(longOrder));
+        longOrder.signature = abi.encodePacked(r, s, v);
+        (v, r, s) = vm.sign(
+            HEDGER_PK,
+            matchingEngine.hashOrderIntent(shortOrder)
+        );
+        shortOrder.signature = abi.encodePacked(r, s, v);
+
+        // Update the short order's extra data after signing. This simulates
+        // what the DFB UI will do to ensure an up-to-date quote. Since the
+        // extra data isn't baked into the hash, this will not cause issues with
+        // signature verification.
+        shortOrder.options.extraData = hex"deadbeefbabefade6660";
+
+        // Match the two counterparties using flash loans.
+        matchingEngine.matchOrders(
+            // long
+            LP,
+            // short
+            HEDGER,
+            // long order
+            longOrder,
+            // short order
+            shortOrder,
+            // flash loan amount
+            18_500_000e6,
+            // add liquidity options
+            IHyperdrive.Options({
+                asBase: true,
+                destination: address(matchingEngine),
+                extraData: ""
+            }),
+            // remove liquidity options
+            IHyperdrive.Options({
+                asBase: true,
+                destination: address(matchingEngine),
+                extraData: ""
+            }),
+            LP,
+            false
+        );
+
+        // Ensure that the short received 5,000,000 bonds and that their rate
+        // was lower than 5.11%.
         {
             uint256 shortPaid = hedgerBaseBalanceBefore -
                 IERC20(hyperdrive.baseToken()).balanceOf(HEDGER);
@@ -283,10 +404,15 @@ contract JITLiquidityTest is HyperdriveTest {
                 ),
                 HEDGER
             ) - hedgerShortBalanceBefore;
-            console.log("# Short");
-            console.log(
-                "fixed rate = %s%",
-                (HyperdriveUtils.calculateAPRFromRealizedPrice(
+            uint256 prepaidInterest = shortAmount.mulDown(
+                hyperdrive.getPoolInfo().vaultSharePrice -
+                    hyperdrive
+                        .getCheckpoint(hyperdrive.latestCheckpoint())
+                        .vaultSharePrice
+            );
+            shortPaid -= prepaidInterest;
+            uint256 shortFixedRate = HyperdriveUtils
+                .calculateAPRFromRealizedPrice(
                     shortAmount -
                         (shortPaid -
                             shortAmount.mulDown(
@@ -296,10 +422,13 @@ contract JITLiquidityTest is HyperdriveTest {
                     hyperdrive.getPoolConfig().positionDuration.divDown(
                         365 days
                     )
-                ) * 100).toString(18)
-            );
-            console.log("");
+                );
+            assertEq(shortAmount, 5_000_000e6);
+            assertLt(shortFixedRate, 0.0511e18);
         }
+
+        // Ensure that the long received 5,000,000 or more bonds and that their
+        // rate was higher than 5.02%.
         {
             uint256 longPaid = lpBaseBalanceBefore -
                 IERC20(hyperdrive.baseToken()).balanceOf(LP);
@@ -311,92 +440,65 @@ contract JITLiquidityTest is HyperdriveTest {
                 ),
                 LP
             ) - lpLongBalanceBefore;
-            // FIXME: Send the fees to the long.
-            console.log("# Long");
-            console.log(
-                "fixed rate = %s%",
-                (HyperdriveUtils.calculateAPRFromRealizedPrice(
+            uint256 longFixedRate = HyperdriveUtils
+                .calculateAPRFromRealizedPrice(
                     longPaid,
                     longAmount,
                     hyperdrive.getPoolConfig().positionDuration.divDown(
                         365 days
                     )
-                ) * 100).toString(18)
-            );
+                );
+            assertGt(longAmount, 5_000_000e6);
+            assertGt(longFixedRate, 0.0502e18);
         }
     }
 
-    // FIXME: Get this working. Something that would be cool is building this
-    // into a CLI.
-    //
-    // FIXME: This isn't working correctly.
-    //
-    /// @dev This test does the math to compute the gap rate.
-    // function test_gap_rate() external {
-    //     // Get the Morpho interest rate model's rate at target.
-    //     IMorphoBlueHyperdrive morphoBlueHyperdrive = IMorphoBlueHyperdrive(
-    //         address(hyperdrive)
-    //     );
-    //     IAdaptiveCurveIrm irm = IAdaptiveCurveIrm(morphoBlueHyperdrive.irm());
-    //     uint256 rateAtTarget = uint256(
-    //         irm.rateAtTarget(morphoBlueHyperdrive.id())
-    //     );
-    //     console.log(
-    //         "id = %s",
-    //         vm.toString(Id.unwrap(morphoBlueHyperdrive.id()))
-    //     );
-    //     console.log("rateAtTarget = %s", rateAtTarget.toString(18));
-    //
-    //     // FIXME: Does this work? Double check the utilization.
-    //     //
-    //     // Get the average borrow rate if the pool is at a utilization of 35%.
-    //     // We create a market that has this utilization and only specify the
-    //     // parameters that are actually used in the calculation.
-    //     uint256 borrowRate = irm.borrowRateView(
-    //         MarketParams({
-    //             loanToken: morphoBlueHyperdrive.baseToken(),
-    //             collateralToken: morphoBlueHyperdrive.collateralToken(),
-    //             oracle: morphoBlueHyperdrive.oracle(),
-    //             irm: morphoBlueHyperdrive.irm(),
-    //             lltv: morphoBlueHyperdrive.lltv()
-    //         }),
-    //         Market({
-    //             totalSupplyAssets: 1e18,
-    //             totalSupplyShares: 0,
-    //             totalBorrowAssets: 0.35e18,
-    //             totalBorrowShares: 0,
-    //             lastUpdate: MORPHO.market(morphoBlueHyperdrive.id()).lastUpdate,
-    //             fee: 0
-    //         })
-    //     );
-    //     console.log("borrowRate = %s", borrowRate.toString(18));
-    //
-    //     // Since Morpho's fee is zero, the supply rate is just the borrow rate
-    //     // scaled by the utilization.
-    //     uint256 supplyRate = borrowRate.mulUp(0.35e18);
-    //     console.log("supplyRate = %s", supplyRate.toString(18));
-    //
-    //     // Convert the borrow and supply rates to APYs.
-    //     uint256 borrowAPY = _getAPY(borrowRate);
-    //     console.log("borrowAPY = %s", borrowAPY.toString(18));
-    //     uint256 supplyAPY = _getAPY(supplyRate);
-    //     console.log("supplyAPY = %s", supplyAPY.toString(18));
-    //
-    //     // FIXME: Compute the gapAPY as borrowAPY - supplyAPY
-    //     uint256 gapAPY = borrowAPY - supplyAPY;
-    //     console.log("gapAPY = %s", gapAPY.toString(18));
-    //     // FIXME: Look into the conversion that they do with the short rate.
-    //     //        At a surface level, this looks really weird to me.
-    // }
+    /// @dev Advance time and accrue interest.
+    /// @param timeDelta The time to advance.
+    /// @param variableRate The variable rate.
+    function advanceTime(
+        uint256 timeDelta,
+        int256 variableRate
+    ) internal override {
+        // Advance the time.
+        vm.warp(block.timestamp + timeDelta);
 
-    // /// @dev Gets the APY implied by the rate.
-    // /// @param _rate The rate to compound.
-    // /// @return The APY implied by the rate.
-    // function _getAPY(uint256 _rate) internal pure returns (uint256) {
-    //     uint256 firstTerm = _rate * 365 days;
-    //     uint256 secondTerm = firstTerm.mulDivDown(firstTerm, 2e18);
-    //     uint256 thirdTerm = secondTerm.mulDivDown(firstTerm, 3e18);
-    //
-    //     return firstTerm + secondTerm + thirdTerm;
-    // }
+        // Accrue interest in the Morpho market. This amounts to manually
+        // updating the total supply assets and the last update time.
+        Id marketId = MarketParams({
+            loanToken: USDC,
+            collateralToken: CB_BTC,
+            oracle: ORACLE,
+            irm: IRM,
+            lltv: LLTV
+        }).id();
+        Market memory market = MORPHO.market(marketId);
+        (uint256 totalSupplyAssets, ) = uint256(market.totalSupplyAssets)
+            .calculateInterest(variableRate, timeDelta);
+        bytes32 marketLocation = keccak256(abi.encode(marketId, 3));
+        vm.store(
+            address(MORPHO),
+            marketLocation,
+            bytes32(
+                (uint256(market.totalSupplyShares) << 128) | totalSupplyAssets
+            )
+        );
+        vm.store(
+            address(MORPHO),
+            bytes32(uint256(marketLocation) + 2),
+            bytes32((uint256(market.fee) << 128) | uint256(block.timestamp))
+        );
+
+        // In order to prevent transfers from failing, we also need to increase
+        // the DAI balance of the Morpho vault to match the total assets.
+        mintBaseTokens(address(MORPHO), totalSupplyAssets);
+    }
+
+    /// @dev Mints base tokens to a specified account.
+    /// @param _recipient The recipient of the minted tokens.
+    /// @param _amount The amount of tokens to mint.
+    function mintBaseTokens(address _recipient, uint256 _amount) internal {
+        bytes32 balanceLocation = keccak256(abi.encode(address(_recipient), 9));
+        vm.store(USDC, balanceLocation, bytes32(_amount));
+    }
 }
