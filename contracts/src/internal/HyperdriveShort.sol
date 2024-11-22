@@ -53,6 +53,7 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
         if (_bondAmount < _minimumTransactionAmount) {
             revert IHyperdrive.MinimumTransactionAmount();
         }
+
         // Perform a checkpoint and compute the amount of interest the short
         // would have received if they opened at the beginning of the checkpoint.
         // Since the short will receive interest from the beginning of the
