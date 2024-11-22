@@ -60,7 +60,7 @@ try:
     ]
     SKIP_CONTRACTS = ["MultiToken__transferFrom", "ExtremeInputs", "ZombieInterestTest", "IntraCheckpointNettingTest"]
     process = subprocess.Popen(
-        f"FOUNDRY_FUZZ_RUNS=100 forge test --no-match-path 'test/instances/*' --no-match-test '{','.join(SKIP_TESTS)}' --no-match-contract '{','.join(SKIP_CONTRACTS)}' --gas-report",
+        f"FOUNDRY_FUZZ_RUNS=100 forge test --no-match-path 'test/instances/*' --no-match-test '{'|'.join(SKIP_TESTS)}' --no-match-contract '{'|'.join(SKIP_CONTRACTS)}' --gas-report",
         shell=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
