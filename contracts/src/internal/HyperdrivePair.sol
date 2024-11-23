@@ -27,10 +27,7 @@ abstract contract HyperdrivePair is
     using SafeCast for uint256;
     using SafeCast for int256;
 
-    // FIXME: Add in a governance fee that is taken from the deposit amount and
-    //        reduces the bond amount earned.
-    //
-    /// @dev Opens a pair of long and short positions that directly match each
+    /// @dev Mints a pair of long and short positions that directly match each
     ///      other. The amount of long and short positions that are created is
     ///      equal to the base value of the deposit. These positions are sent to
     ///      the provided destinations.
@@ -40,7 +37,7 @@ abstract contract HyperdrivePair is
     /// @param _options The pair options that configure how the trade is settled.
     /// @return maturityTime The maturity time of the new long and short positions.
     /// @return bondAmount The bond amount of the new long and short positoins.
-    function _openPair(
+    function _mint(
         uint256 _amount,
         uint256 _minVaultSharePrice,
         IHyperdrive.PairOptions calldata _options
@@ -56,14 +53,22 @@ abstract contract HyperdrivePair is
         // Check that the provided options are valid.
         _checkPairOptions(_options);
 
-        // Deposit the user's input amount. The amount of base deposited is
-        // equal to the amount of bonds that will be minted.
+        // Deposit the user's input amount.
         (uint256 sharesDeposited, uint256 vaultSharePrice) = _deposit(
             _amount,
             _options.asBase,
             _options.extraData
         );
-        bondAmount = sharesDeposited.mulDown(vaultSharePrice);
+
+        // The governance fee is twice the governance fee paid on the flat fee
+        // since a long and short are both minted.
+        uint256 governanceFee = 2 *
+            sharesDeposited.mulDown(_flatFee).mulDown(_governanceLPFee);
+        _governanceFeesAccrued += governanceFee;
+
+        // The amount of bonds that will be minted is equal to the amount of
+        // base deposited minus the governance fee.
+        bondAmount = (sharesDeposited - governanceFee).mulDown(vaultSharePrice);
 
         // Enforce the minimum vault share price.
         if (vaultSharePrice < _minVaultSharePrice) {
@@ -81,7 +86,7 @@ abstract contract HyperdrivePair is
 
         // Apply the state changes caused by creating the pair.
         maturityTime = latestCheckpoint + _positionDuration;
-        _applyCreatePair(maturityTime, sharesDeposited, bondAmount);
+        _applyMint(maturityTime, bondAmount);
 
         // Mint bonds equal in value to the base deposited.
         uint256 longAssetId = AssetId.encodeAssetId(
@@ -95,8 +100,8 @@ abstract contract HyperdrivePair is
         _mint(longAssetId, _options.longDestination, bondAmount);
         _mint(shortAssetId, _options.shortDestination, bondAmount);
 
-        // Emit an OpenPair event.
-        emit OpenPair(
+        // Emit an Mint event.
+        emit Mint(
             _options.longDestination,
             _options.shortDestination,
             maturityTime,
@@ -137,13 +142,8 @@ abstract contract HyperdrivePair is
     ///      - Idle capital does not need to be redistributed to LPs.
     /// @param _maturityTime The maturity time of the pair of long and short
     ///        positions
-    /// @param _sharesDeposited The amount of shares deposited.
     /// @param _bondAmount The amount of bonds created.
-    function _applyCreatePair(
-        uint256 _maturityTime,
-        uint256 _sharesDeposited,
-        uint256 _bondAmount
-    ) internal {
+    function _applyMint(uint256 _maturityTime, uint256 _bondAmount) internal {
         // Update the average maturity time of longs and short positions and the
         // amount of long and short positions outstanding. Everything else
         // remains constant.

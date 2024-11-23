@@ -102,8 +102,8 @@ interface IHyperdriveEvents is IMultiTokenEvents {
         bytes extraData
     );
 
-    /// @notice Emitted when a pair of long and short positions are opened.
-    event OpenPair(
+    /// @notice Emitted when a pair of long and short positions are minted.
+    event Mint(
         address indexed longTrader,
         address indexed shortTrader,
         uint256 indexed maturityTime,
