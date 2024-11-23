@@ -8,6 +8,8 @@ import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
 import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { IHyperdrive } from "../../../contracts/src/interfaces/IHyperdrive.sol";
 import { IHyperdriveMatchingEngine } from "../../../contracts/src/interfaces/IHyperdriveMatchingEngine.sol";
+import { AssetId } from "../../../contracts/src/libraries/AssetId.sol";
+import { FixedPointMath } from "../../../contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMatchingEngine } from "../../../contracts/src/matching/HyperdriveMatchingEngine.sol";
 import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
@@ -85,6 +87,7 @@ contract EIP1271Signer {
 
 // FIXME: Fully Natspec this whole test suite.
 contract HyperdriveMatchingEngineTest is HyperdriveTest {
+    using FixedPointMath for uint256;
     using HyperdriveUtils for IHyperdrive;
     using Lib for *;
 
@@ -637,7 +640,7 @@ contract HyperdriveMatchingEngineTest is HyperdriveTest {
         );
     }
 
-    /// @dev Ensures that order matching fails when either order and/or either .
+    /// @dev Ensures that order matching fails when either order and/or either
     ///      option have specified `asBase` as false.
     function test_matchOrders_failure_invalidSettlementAsset() external {
         // Create two orders that can be used for this test.
@@ -778,6 +781,8 @@ contract HyperdriveMatchingEngineTest is HyperdriveTest {
         );
     }
 
+    /// @dev Ensures that order matching fails when the price of the short is
+    ///      higher than the price of the long.
     function test_matchOrders_failure_invalidMatch() external {
         // Create two orders that can be used for this test. The short has a
         // higher price than the long, so these orders don't cross.
@@ -823,20 +828,633 @@ contract HyperdriveMatchingEngineTest is HyperdriveTest {
         );
     }
 
-    // FIXME
-    function test_matchOrders_failure_alreadyCancelled() external {}
+    /// @dev Ensures that order matching fails when either or both of the orders
+    ///      have already been cancelled.
+    function test_matchOrders_failure_alreadyCancelled() external {
+        // Create two orders that can be used for this test.
+        IHyperdriveMatchingEngine.OrderIntent
+            memory longOrder = _createOrderIntent(
+                alice,
+                100_000e18,
+                0,
+                IHyperdriveMatchingEngine.OrderType.OpenLong
+            );
+        longOrder.signature = _signOrderIntent(longOrder, alicePK);
+        IHyperdriveMatchingEngine.OrderIntent
+            memory shortOrder = _createOrderIntent(
+                bob,
+                101_000e18,
+                type(uint256).max,
+                IHyperdriveMatchingEngine.OrderType.OpenShort
+            );
+        shortOrder.signature = _signOrderIntent(shortOrder, bobPK);
 
-    // FIXME
-    function test_matchOrders_failure_invalidSignature() external {}
+        // Ensure that order matching fails when the long order was cancelled.
+        {
+            uint256 snapshotId = vm.snapshot();
+            vm.stopPrank();
+            vm.startPrank(alice);
+            IHyperdriveMatchingEngine.OrderIntent[]
+                memory orders = new IHyperdriveMatchingEngine.OrderIntent[](1);
+            orders[0] = longOrder;
+            matchingEngine.cancelOrders(orders);
+            vm.expectRevert(
+                IHyperdriveMatchingEngine.AlreadyCancelled.selector
+            );
+            matchingEngine.matchOrders(
+                // long order
+                longOrder,
+                // short order
+                shortOrder,
+                // LP amount
+                2_000_000e18,
+                // add liquidity options
+                IHyperdrive.Options({
+                    asBase: true,
+                    destination: address(matchingEngine),
+                    extraData: ""
+                }),
+                // remove liquidity options
+                IHyperdrive.Options({
+                    asBase: true,
+                    destination: address(matchingEngine),
+                    extraData: ""
+                }),
+                // fee recipient
+                celine,
+                true
+            );
+            vm.revertTo(snapshotId);
+        }
 
-    // FIXME
-    function test_matchOrders_failure_invalidDestination() external {}
+        // Ensure that order matching fails when the long order was cancelled.
+        {
+            uint256 snapshotId = vm.snapshot();
+            vm.stopPrank();
+            vm.startPrank(bob);
+            IHyperdriveMatchingEngine.OrderIntent[]
+                memory orders = new IHyperdriveMatchingEngine.OrderIntent[](1);
+            orders[0] = shortOrder;
+            matchingEngine.cancelOrders(orders);
+            vm.expectRevert(
+                IHyperdriveMatchingEngine.AlreadyCancelled.selector
+            );
+            matchingEngine.matchOrders(
+                // long order
+                longOrder,
+                // short order
+                shortOrder,
+                // LP amount
+                2_000_000e18,
+                // add liquidity options
+                IHyperdrive.Options({
+                    asBase: true,
+                    destination: address(matchingEngine),
+                    extraData: ""
+                }),
+                // remove liquidity options
+                IHyperdrive.Options({
+                    asBase: true,
+                    destination: address(matchingEngine),
+                    extraData: ""
+                }),
+                // fee recipient
+                celine,
+                true
+            );
+            vm.revertTo(snapshotId);
+        }
 
-    // FIXME
-    function test_matchOrders_success_longFirst() external {}
+        // Ensure that order matching fails when both orders were cancelled.
+        {
+            uint256 snapshotId = vm.snapshot();
+            vm.stopPrank();
+            vm.startPrank(alice);
+            IHyperdriveMatchingEngine.OrderIntent[]
+                memory orders = new IHyperdriveMatchingEngine.OrderIntent[](1);
+            orders[0] = longOrder;
+            matchingEngine.cancelOrders(orders);
+            vm.startPrank(bob);
+            orders = new IHyperdriveMatchingEngine.OrderIntent[](1);
+            orders[0] = shortOrder;
+            matchingEngine.cancelOrders(orders);
+            vm.expectRevert(
+                IHyperdriveMatchingEngine.AlreadyCancelled.selector
+            );
+            matchingEngine.matchOrders(
+                // long order
+                longOrder,
+                // short order
+                shortOrder,
+                // LP amount
+                2_000_000e18,
+                // add liquidity options
+                IHyperdrive.Options({
+                    asBase: true,
+                    destination: address(matchingEngine),
+                    extraData: ""
+                }),
+                // remove liquidity options
+                IHyperdrive.Options({
+                    asBase: true,
+                    destination: address(matchingEngine),
+                    extraData: ""
+                }),
+                // fee recipient
+                celine,
+                true
+            );
+            vm.revertTo(snapshotId);
+        }
+    }
 
-    // FIXME
-    function test_matchOrders_success_shortFirst() external {}
+    /// @dev Ensures that order matching fails when either or both of the orders
+    ///      have invalid signatures.
+    function test_matchOrders_failure_invalidSignature() external {
+        // Create two orders that can be used for this test.
+        IHyperdriveMatchingEngine.OrderIntent
+            memory longOrder = _createOrderIntent(
+                alice,
+                100_000e18,
+                0,
+                IHyperdriveMatchingEngine.OrderType.OpenLong
+            );
+        longOrder.signature = _signOrderIntent(longOrder, alicePK);
+        IHyperdriveMatchingEngine.OrderIntent
+            memory shortOrder = _createOrderIntent(
+                address(signer),
+                101_000e18,
+                type(uint256).max,
+                IHyperdriveMatchingEngine.OrderType.OpenShort
+            );
+        shortOrder.signature = hex"deadbeef";
+
+        // Ensure that order matching fails when the long order has an invalid
+        // signature.
+        longOrder.signature = _signOrderIntent(longOrder, celinePK);
+        vm.expectRevert(IHyperdriveMatchingEngine.InvalidSignature.selector);
+        matchingEngine.matchOrders(
+            // long order
+            longOrder,
+            // short order
+            shortOrder,
+            // LP amount
+            2_000_000e18,
+            // add liquidity options
+            IHyperdrive.Options({
+                asBase: true,
+                destination: address(matchingEngine),
+                extraData: ""
+            }),
+            // remove liquidity options
+            IHyperdrive.Options({
+                asBase: true,
+                destination: address(matchingEngine),
+                extraData: ""
+            }),
+            // fee recipient
+            celine,
+            true
+        );
+
+        // Ensure that order matching fails when the short order has an invalid
+        // signature.
+        longOrder.signature = _signOrderIntent(longOrder, alicePK);
+        signer.setShouldVerifySignature(false);
+        vm.expectRevert(IHyperdriveMatchingEngine.InvalidSignature.selector);
+        matchingEngine.matchOrders(
+            // long order
+            longOrder,
+            // short order
+            shortOrder,
+            // LP amount
+            2_000_000e18,
+            // add liquidity options
+            IHyperdrive.Options({
+                asBase: true,
+                destination: address(matchingEngine),
+                extraData: ""
+            }),
+            // remove liquidity options
+            IHyperdrive.Options({
+                asBase: true,
+                destination: address(matchingEngine),
+                extraData: ""
+            }),
+            // fee recipient
+            celine,
+            true
+        );
+        signer.setShouldVerifySignature(true);
+
+        // Ensure that order matching fails when both orders have invalid
+        // signatures.
+        longOrder.signature = _signOrderIntent(longOrder, celinePK);
+        signer.setShouldVerifySignature(false);
+        vm.expectRevert(IHyperdriveMatchingEngine.InvalidSignature.selector);
+        matchingEngine.matchOrders(
+            // long order
+            longOrder,
+            // short order
+            shortOrder,
+            // LP amount
+            2_000_000e18,
+            // add liquidity options
+            IHyperdrive.Options({
+                asBase: true,
+                destination: address(matchingEngine),
+                extraData: ""
+            }),
+            // remove liquidity options
+            IHyperdrive.Options({
+                asBase: true,
+                destination: address(matchingEngine),
+                extraData: ""
+            }),
+            // fee recipient
+            celine,
+            true
+        );
+    }
+
+    /// @dev Ensures that order matching fails when either or both of the add or
+    ///      remove liquidity options specify a destination other than the
+    ///      matching engine.
+    function test_matchOrders_failure_invalidDestination() external {
+        // Create two orders that can be used for this test.
+        IHyperdriveMatchingEngine.OrderIntent
+            memory longOrder = _createOrderIntent(
+                alice,
+                100_000e18,
+                0,
+                IHyperdriveMatchingEngine.OrderType.OpenLong
+            );
+        longOrder.signature = _signOrderIntent(longOrder, alicePK);
+        IHyperdriveMatchingEngine.OrderIntent
+            memory shortOrder = _createOrderIntent(
+                bob,
+                101_000e18,
+                type(uint256).max,
+                IHyperdriveMatchingEngine.OrderType.OpenShort
+            );
+        shortOrder.signature = _signOrderIntent(shortOrder, bobPK);
+
+        // Ensure that order matching fails when the add liquidity options
+        // specify a destination other than the matching engine.
+        vm.expectRevert(IHyperdriveMatchingEngine.InvalidDestination.selector);
+        matchingEngine.matchOrders(
+            // long order
+            longOrder,
+            // short order
+            shortOrder,
+            // LP amount
+            2_000_000e18,
+            // add liquidity options
+            IHyperdrive.Options({
+                asBase: true,
+                destination: address(celine),
+                extraData: ""
+            }),
+            // remove liquidity options
+            IHyperdrive.Options({
+                asBase: true,
+                destination: address(matchingEngine),
+                extraData: ""
+            }),
+            // fee recipient
+            celine,
+            true
+        );
+
+        // Ensure that order matching fails when the remove liquidity options
+        // specify a destination other than the matching engine.
+        vm.expectRevert(IHyperdriveMatchingEngine.InvalidDestination.selector);
+        matchingEngine.matchOrders(
+            // long order
+            longOrder,
+            // short order
+            shortOrder,
+            // LP amount
+            2_000_000e18,
+            // add liquidity options
+            IHyperdrive.Options({
+                asBase: true,
+                destination: address(matchingEngine),
+                extraData: ""
+            }),
+            // remove liquidity options
+            IHyperdrive.Options({
+                asBase: true,
+                destination: address(celine),
+                extraData: ""
+            }),
+            // fee recipient
+            celine,
+            true
+        );
+
+        // Ensure that order matching fails when both the add liquidity options
+        // and the remove liquidity options specify a destination other than the
+        // matching engine.
+        vm.expectRevert(IHyperdriveMatchingEngine.InvalidDestination.selector);
+        matchingEngine.matchOrders(
+            // long order
+            longOrder,
+            // short order
+            shortOrder,
+            // LP amount
+            2_000_000e18,
+            // add liquidity options
+            IHyperdrive.Options({
+                asBase: true,
+                destination: address(celine),
+                extraData: ""
+            }),
+            // remove liquidity options
+            IHyperdrive.Options({
+                asBase: true,
+                destination: address(celine),
+                extraData: ""
+            }),
+            // fee recipient
+            celine,
+            true
+        );
+    }
+
+    /// @dev Ensures that orders can be matched and executed with the long first.
+    ///      Both traders should receive a realized rate lower than the starting
+    ///      rate.
+    function test_matchOrders_success_longFirst() external {
+        // Create two orders that can be used for this test.
+        IHyperdriveMatchingEngine.OrderIntent
+            memory longOrder = _createOrderIntent(
+                alice,
+                100_000e18,
+                0,
+                IHyperdriveMatchingEngine.OrderType.OpenLong
+            );
+        longOrder.signature = _signOrderIntent(longOrder, alicePK);
+        IHyperdriveMatchingEngine.OrderIntent
+            memory shortOrder = _createOrderIntent(
+                bob,
+                101_000e18,
+                101_000e18,
+                IHyperdriveMatchingEngine.OrderType.OpenShort
+            );
+        shortOrder.signature = _signOrderIntent(shortOrder, bobPK);
+
+        // Get some data before the trades are matched.
+        uint256 spotRate = hyperdrive.calculateSpotAPR();
+        uint256 aliceBaseBalanceBefore = ERC20(hyperdrive.baseToken())
+            .balanceOf(alice);
+        uint256 aliceLongBalanceBefore = hyperdrive.balanceOf(
+            AssetId.encodeAssetId(
+                AssetId.AssetIdPrefix.Long,
+                hyperdrive.latestCheckpoint()
+            ),
+            alice
+        );
+        uint256 bobBaseBalanceBefore = ERC20(hyperdrive.baseToken()).balanceOf(
+            bob
+        );
+        uint256 bobShortBalanceBefore = hyperdrive.balanceOf(
+            AssetId.encodeAssetId(
+                AssetId.AssetIdPrefix.Short,
+                hyperdrive.latestCheckpoint()
+            ),
+            bob
+        );
+        uint256 celineBaseBalanceBefore = ERC20(hyperdrive.baseToken())
+            .balanceOf(celine);
+
+        // Match the orders.
+        matchingEngine.matchOrders(
+            // long order
+            longOrder,
+            // short order
+            shortOrder,
+            // LP amount
+            2_000_000e18,
+            // add liquidity options
+            IHyperdrive.Options({
+                asBase: true,
+                destination: address(matchingEngine),
+                extraData: ""
+            }),
+            // remove liquidity options
+            IHyperdrive.Options({
+                asBase: true,
+                destination: address(matchingEngine),
+                extraData: ""
+            }),
+            // fee recipient
+            celine,
+            true
+        );
+
+        // Ensure that the long received a rate lower than the spot rate.
+        {
+            uint256 longPaid = aliceBaseBalanceBefore -
+                ERC20(hyperdrive.baseToken()).balanceOf(alice);
+            uint256 longAmount = hyperdrive.balanceOf(
+                AssetId.encodeAssetId(
+                    AssetId.AssetIdPrefix.Long,
+                    hyperdrive.latestCheckpoint() +
+                        hyperdrive.getPoolConfig().positionDuration
+                ),
+                alice
+            ) - aliceLongBalanceBefore;
+            uint256 longFixedRate = HyperdriveUtils
+                .calculateAPRFromRealizedPrice(
+                    longPaid,
+                    longAmount,
+                    hyperdrive.getPoolConfig().positionDuration.divDown(
+                        365 days
+                    )
+                );
+            assertEq(longPaid, longOrder.amount);
+            assertLt(longFixedRate, spotRate);
+        }
+
+        // Ensure that the short received a rate lower than the spot rate.
+        {
+            uint256 shortPaid = bobBaseBalanceBefore -
+                ERC20(hyperdrive.baseToken()).balanceOf(bob);
+            uint256 shortAmount = hyperdrive.balanceOf(
+                AssetId.encodeAssetId(
+                    AssetId.AssetIdPrefix.Short,
+                    hyperdrive.latestCheckpoint() +
+                        hyperdrive.getPoolConfig().positionDuration
+                ),
+                bob
+            ) - bobShortBalanceBefore;
+            uint256 prepaidInterest = shortAmount.mulDown(
+                hyperdrive.getPoolInfo().vaultSharePrice -
+                    hyperdrive
+                        .getCheckpoint(hyperdrive.latestCheckpoint())
+                        .vaultSharePrice
+            );
+            shortPaid -= prepaidInterest;
+            uint256 shortFixedRate = HyperdriveUtils
+                .calculateAPRFromRealizedPrice(
+                    shortAmount -
+                        (shortPaid -
+                            shortAmount.mulDown(
+                                hyperdrive.getPoolConfig().fees.flat
+                            )),
+                    shortAmount,
+                    hyperdrive.getPoolConfig().positionDuration.divDown(
+                        365 days
+                    )
+                );
+            assertEq(shortAmount, shortOrder.amount);
+            assertLt(shortFixedRate, spotRate);
+        }
+
+        // Ensure that the fee recipient receives some fees.
+        assertGt(
+            ERC20(hyperdrive.baseToken()).balanceOf(celine),
+            celineBaseBalanceBefore
+        );
+    }
+
+    /// @dev Ensures that orders can be matched and executed with the short first.
+    ///      Both traders should receive a realized rate higher than the starting
+    ///      rate.
+    function test_matchOrders_success_shortFirst() external {
+        // Create two orders that can be used for this test.
+        IHyperdriveMatchingEngine.OrderIntent
+            memory longOrder = _createOrderIntent(
+                alice,
+                100_000e18,
+                0,
+                IHyperdriveMatchingEngine.OrderType.OpenLong
+            );
+        longOrder.signature = _signOrderIntent(longOrder, alicePK);
+        IHyperdriveMatchingEngine.OrderIntent
+            memory shortOrder = _createOrderIntent(
+                bob,
+                101_000e18,
+                101_000e18,
+                IHyperdriveMatchingEngine.OrderType.OpenShort
+            );
+        shortOrder.signature = _signOrderIntent(shortOrder, bobPK);
+
+        // Get some data before the trades are matched.
+        uint256 spotRate = hyperdrive.calculateSpotAPR();
+        uint256 aliceBaseBalanceBefore = ERC20(hyperdrive.baseToken())
+            .balanceOf(alice);
+        uint256 aliceLongBalanceBefore = hyperdrive.balanceOf(
+            AssetId.encodeAssetId(
+                AssetId.AssetIdPrefix.Long,
+                hyperdrive.latestCheckpoint()
+            ),
+            alice
+        );
+        uint256 bobBaseBalanceBefore = ERC20(hyperdrive.baseToken()).balanceOf(
+            bob
+        );
+        uint256 bobShortBalanceBefore = hyperdrive.balanceOf(
+            AssetId.encodeAssetId(
+                AssetId.AssetIdPrefix.Short,
+                hyperdrive.latestCheckpoint()
+            ),
+            bob
+        );
+        uint256 celineBaseBalanceBefore = ERC20(hyperdrive.baseToken())
+            .balanceOf(celine);
+
+        // Match the orders.
+        matchingEngine.matchOrders(
+            // long order
+            longOrder,
+            // short order
+            shortOrder,
+            // LP amount
+            2_000_000e18,
+            // add liquidity options
+            IHyperdrive.Options({
+                asBase: true,
+                destination: address(matchingEngine),
+                extraData: ""
+            }),
+            // remove liquidity options
+            IHyperdrive.Options({
+                asBase: true,
+                destination: address(matchingEngine),
+                extraData: ""
+            }),
+            // fee recipient
+            celine,
+            false
+        );
+
+        // Ensure that the long received a rate lower than the spot rate.
+        {
+            uint256 longPaid = aliceBaseBalanceBefore -
+                ERC20(hyperdrive.baseToken()).balanceOf(alice);
+            uint256 longAmount = hyperdrive.balanceOf(
+                AssetId.encodeAssetId(
+                    AssetId.AssetIdPrefix.Long,
+                    hyperdrive.latestCheckpoint() +
+                        hyperdrive.getPoolConfig().positionDuration
+                ),
+                alice
+            ) - aliceLongBalanceBefore;
+            uint256 longFixedRate = HyperdriveUtils
+                .calculateAPRFromRealizedPrice(
+                    longPaid,
+                    longAmount,
+                    hyperdrive.getPoolConfig().positionDuration.divDown(
+                        365 days
+                    )
+                );
+            assertEq(longPaid, longOrder.amount);
+            assertGt(longFixedRate, spotRate);
+        }
+
+        // Ensure that the short received a rate lower than the spot rate.
+        {
+            uint256 shortPaid = bobBaseBalanceBefore -
+                ERC20(hyperdrive.baseToken()).balanceOf(bob);
+            uint256 shortAmount = hyperdrive.balanceOf(
+                AssetId.encodeAssetId(
+                    AssetId.AssetIdPrefix.Short,
+                    hyperdrive.latestCheckpoint() +
+                        hyperdrive.getPoolConfig().positionDuration
+                ),
+                bob
+            ) - bobShortBalanceBefore;
+            uint256 prepaidInterest = shortAmount.mulDown(
+                hyperdrive.getPoolInfo().vaultSharePrice -
+                    hyperdrive
+                        .getCheckpoint(hyperdrive.latestCheckpoint())
+                        .vaultSharePrice
+            );
+            shortPaid -= prepaidInterest;
+            uint256 shortFixedRate = HyperdriveUtils
+                .calculateAPRFromRealizedPrice(
+                    shortAmount -
+                        (shortPaid -
+                            shortAmount.mulDown(
+                                hyperdrive.getPoolConfig().fees.flat
+                            )),
+                    shortAmount,
+                    hyperdrive.getPoolConfig().positionDuration.divDown(
+                        365 days
+                    )
+                );
+            assertEq(shortAmount, shortOrder.amount);
+            assertGt(shortFixedRate, spotRate);
+        }
+
+        // Ensure that the fee recipient receives some fees.
+        assertGt(
+            ERC20(hyperdrive.baseToken()).balanceOf(celine),
+            celineBaseBalanceBefore
+        );
+    }
 
     /// @dev Creates an unsigned order intent with default parameters.
     /// @param _trader The trader creating the order.
