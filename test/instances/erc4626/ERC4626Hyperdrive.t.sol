@@ -53,9 +53,8 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
     IHyperdriveFactory internal factory;
 
     function setUp() public override __mainnet_fork(16_685_972) {
-        alice = createUser("alice");
-        bob = createUser("bob");
-
+        // Run the higher-level setup.
+        super.setUp();
         vm.startPrank(deployer);
 
         // Deploy the ERC4626Hyperdrive factory and deployer.

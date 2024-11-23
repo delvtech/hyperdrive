@@ -24,6 +24,10 @@ interface IHyperdriveMatchingEngine is IMorphoFlashLoanCallback {
     /// @notice Thrown when the order type doesn't match the expected type.
     error InvalidOrderType();
 
+    /// @notice Thrown when an address that didn't create an order tries to
+    ///         cancel it.
+    error InvalidSender();
+
     /// @notice Thrown when `asBase = false` is used. This implementation is
     ///         opinionated to keep the implementation simple.
     error InvalidSettlementAsset();
@@ -56,14 +60,37 @@ interface IHyperdriveMatchingEngine is IMorphoFlashLoanCallback {
 
     /// @notice The order intent struct that encodes a trader's desire to trade.
     struct OrderIntent {
+        /// @dev The trader address that will be charged when orders are matched.
+        address trader;
+        /// @dev The Hyperdrive address where the trade will be executed.
         IHyperdrive hyperdrive;
+        /// @dev The amount to be used in the trade. In the case of `OpenLong`,
+        ///      this is the amount of base to deposit, and in the case of
+        ///      `OpenShort`, this is the amount of bonds to short.
         uint256 amount;
+        /// @dev The slippage guard to be used in the trade. In the case of
+        ///      `OpenLong`, this is the minimum output in bonds, and in the
+        ///      case of `OpenShort`, this is the maximum deposit in base.
         uint256 slippageGuard;
+        /// @dev The minimum vault share price. This protects traders against
+        ///      the sudden accrual of negative interest in a yield source.
         uint256 minVaultSharePrice;
+        /// @dev The options that configure how the trade will be settled.
+        ///      `asBase` is required to be true, the `destination` is the
+        ///      address that receives the long or short position that is
+        ///      purchased, and the extra data is configured for the yield
+        ///      source that is being used.
         IHyperdrive.Options options;
+        /// @dev The type of the order. This is either `OpenLong` or `OpenShort`.
         OrderType orderType;
+        /// @dev The signature that demonstrates the source's intent to complete
+        ///      the trade.
         bytes signature;
+        /// @dev The order's expiry timestamp. At or after this timestamp, the
+        ///      order can't be filled.
         uint256 expiry;
+        /// @dev The order's salt. This introduces some randomness which ensures
+        ///      that duplicate orders don't collide.
         bytes32 salt;
     }
 
@@ -102,8 +129,6 @@ interface IHyperdriveMatchingEngine is IMorphoFlashLoanCallback {
 
     /// @notice Directly matches a long and a short order using a flash loan for
     ///         liquidity.
-    /// @param _long The long trader.
-    /// @param _short The short trader.
     /// @param _longOrder The order intent to open a long.
     /// @param _shortOrder The order intent to open a short.
     /// @param _lpAmount The amount to flash borrow and LP.
@@ -114,8 +139,6 @@ interface IHyperdriveMatchingEngine is IMorphoFlashLoanCallback {
     /// @param _isLongFirst A flag indicating whether the long or short should be
     ///        opened first.
     function matchOrders(
-        address _long,
-        address _short,
         OrderIntent calldata _longOrder,
         OrderIntent calldata _shortOrder,
         uint256 _lpAmount,

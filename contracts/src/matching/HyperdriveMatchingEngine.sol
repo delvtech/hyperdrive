@@ -34,7 +34,7 @@ contract HyperdriveMatchingEngine is
     /// @notice The EIP712 typehash of the OrderIntent struct.
     bytes32 public constant ORDER_INTENT_TYPEHASH =
         keccak256(
-            "OrderIntent(address hyperdrive,uint256 amount,uint256 slippageGuard,uint256 minVaultSharePrice,Options options,uint8 orderType,uint256 expiry,bytes32 salt)"
+            "OrderIntent(address trader,address hyperdrive,uint256 amount,uint256 slippageGuard,uint256 minVaultSharePrice,Options options,uint8 orderType,uint256 expiry,bytes32 salt)"
         );
 
     /// @notice The EIP712 typehash of the Options struct.
@@ -73,6 +73,11 @@ contract HyperdriveMatchingEngine is
         // Cancel all of the orders in the batch.
         bytes32[] memory orderHashes = new bytes32[](_orders.length);
         for (uint256 i = 0; i < _orders.length; i++) {
+            // Ensure that the sender is the trader in the order.
+            if (msg.sender != _orders[i].trader) {
+                revert InvalidSender();
+            }
+
             // Ensure that the sender signed each order.
             bytes32 orderHash = hashOrderIntent(_orders[i]);
             if (!verifySignature(orderHash, _orders[i].signature, msg.sender)) {
@@ -94,8 +99,6 @@ contract HyperdriveMatchingEngine is
     ///      will be reentered when the Morpho flash-loan callback is processed.
     ///      `onMorphoFlashLoan` has been marked as non reentrant to ensure that
     ///      the trading logic can't be reentered.
-    /// @param _long The long trader.
-    /// @param _short The short trader.
     /// @param _longOrder The order intent to open a long.
     /// @param _shortOrder The order intent to open a short.
     /// @param _lpAmount The amount to flash borrow and LP.
@@ -106,8 +109,6 @@ contract HyperdriveMatchingEngine is
     /// @param _isLongFirst A flag indicating whether the long or short should
     ///        be opened first.
     function matchOrders(
-        address _long,
-        address _short,
         OrderIntent calldata _longOrder,
         OrderIntent calldata _shortOrder,
         uint256 _lpAmount,
@@ -119,8 +120,6 @@ contract HyperdriveMatchingEngine is
         // Validate the order intents and the add and remove liquidity options
         // in preparation of matching the orders.
         (bytes32 longOrderHash, bytes32 shortOrderHash) = _validateOrders(
-            _long,
-            _short,
             _longOrder,
             _shortOrder,
             _addLiquidityOptions,
@@ -139,8 +138,6 @@ contract HyperdriveMatchingEngine is
             _longOrder.hyperdrive.baseToken(),
             _lpAmount,
             abi.encode(
-                _long,
-                _short,
                 _longOrder,
                 _shortOrder,
                 _addLiquidityOptions,
@@ -155,8 +152,8 @@ contract HyperdriveMatchingEngine is
             _longOrder.hyperdrive,
             longOrderHash,
             shortOrderHash,
-            _long,
-            _short
+            _longOrder.trader,
+            _shortOrder.trader
         );
     }
 
@@ -171,8 +168,6 @@ contract HyperdriveMatchingEngine is
         // Decode the execution parameters. This encodes the information
         // required to execute the LP, long, and short operations.
         (
-            address long,
-            address short,
             OrderIntent memory longOrder,
             OrderIntent memory shortOrder,
             IHyperdrive.Options memory addLiquidityOptions,
@@ -182,8 +177,6 @@ contract HyperdriveMatchingEngine is
         ) = abi.decode(
                 _data,
                 (
-                    address,
-                    address,
                     OrderIntent,
                     OrderIntent,
                     IHyperdrive.Options,
@@ -207,13 +200,13 @@ contract HyperdriveMatchingEngine is
         // If the long should be executed first, execute the long and then the
         // short.
         if (isLongFirst) {
-            _openLong(hyperdrive, baseToken, long, longOrder);
-            _openShort(hyperdrive, baseToken, short, shortOrder);
+            _openLong(hyperdrive, baseToken, longOrder);
+            _openShort(hyperdrive, baseToken, shortOrder);
         }
         // Otherwise, execute the short and then the long.
         else {
-            _openShort(hyperdrive, baseToken, short, shortOrder);
-            _openLong(hyperdrive, baseToken, long, longOrder);
+            _openShort(hyperdrive, baseToken, shortOrder);
+            _openLong(hyperdrive, baseToken, longOrder);
         }
 
         // Remove liquidity. This will repay the flash loan. We revert if there
@@ -253,6 +246,7 @@ contract HyperdriveMatchingEngine is
                 keccak256(
                     abi.encode(
                         ORDER_INTENT_TYPEHASH,
+                        _order.trader,
                         _order.hyperdrive,
                         _order.amount,
                         _order.slippageGuard,
@@ -332,15 +326,17 @@ contract HyperdriveMatchingEngine is
     /// @dev Opens a long position in the Hyperdrive pool.
     /// @param _hyperdrive The Hyperdrive pool.
     /// @param _baseToken The base token of the pool.
-    /// @param _trader The address of the trader opening the long.
     /// @param _order The order containing the trade parameters.
     function _openLong(
         IHyperdrive _hyperdrive,
         ERC20 _baseToken,
-        address _trader,
         OrderIntent memory _order
     ) internal {
-        _baseToken.safeTransferFrom(_trader, address(this), _order.amount);
+        _baseToken.safeTransferFrom(
+            _order.trader,
+            address(this),
+            _order.amount
+        );
         _baseToken.forceApprove(address(_hyperdrive), _order.amount + 1);
         _hyperdrive.openLong(
             _order.amount,
@@ -353,16 +349,14 @@ contract HyperdriveMatchingEngine is
     /// @dev Opens a short position in the Hyperdrive pool.
     /// @param _hyperdrive The Hyperdrive pool.
     /// @param _baseToken The base token of the pool.
-    /// @param _trader The address of the trader opening the short.
     /// @param _order The order containing the trade parameters.
     function _openShort(
         IHyperdrive _hyperdrive,
         ERC20 _baseToken,
-        address _trader,
         OrderIntent memory _order
     ) internal {
         _baseToken.safeTransferFrom(
-            _trader,
+            _order.trader,
             address(this),
             _order.slippageGuard
         );
@@ -374,13 +368,14 @@ contract HyperdriveMatchingEngine is
             _order.options
         );
         if (_order.slippageGuard > shortPaid) {
-            _baseToken.safeTransfer(_trader, _order.slippageGuard - shortPaid);
+            _baseToken.safeTransfer(
+                _order.trader,
+                _order.slippageGuard - shortPaid
+            );
         }
     }
 
     /// @dev Validates orders and returns their hashes.
-    /// @param _long The long trader.
-    /// @param _short The short trader.
     /// @param _longOrder The order intent to open a long.
     /// @param _shortOrder The order intent to open a short.
     /// @param _addLiquidityOptions The options used when adding liquidity.
@@ -388,8 +383,6 @@ contract HyperdriveMatchingEngine is
     /// @return longOrderHash The hash of the long order.
     /// @return shortOrderHash The hash of the short order.
     function _validateOrders(
-        address _long,
-        address _short,
         OrderIntent calldata _longOrder,
         OrderIntent calldata _shortOrder,
         IHyperdrive.Options calldata _addLiquidityOptions,
@@ -405,8 +398,8 @@ contract HyperdriveMatchingEngine is
 
         // Ensure that neither order has expired.
         if (
-            _longOrder.expiry < block.timestamp ||
-            _shortOrder.expiry < block.timestamp
+            _longOrder.expiry <= block.timestamp ||
+            _shortOrder.expiry <= block.timestamp
         ) {
             revert AlreadyExpired();
         }
@@ -433,6 +426,8 @@ contract HyperdriveMatchingEngine is
         // long is willing to buy bonds at a price equal or higher than the
         // short is selling bonds, which ensures that the trade is valid.
         if (
+            _longOrder.slippageGuard != 0 &&
+            _shortOrder.slippageGuard < _shortOrder.amount &&
             _longOrder.amount.divDown(_longOrder.slippageGuard) <=
             (_shortOrder.amount - _shortOrder.slippageGuard).divDown(
                 _shortOrder.amount
@@ -452,8 +447,16 @@ contract HyperdriveMatchingEngine is
 
         // Ensure that the order intents were signed correctly.
         if (
-            !verifySignature(longOrderHash, _longOrder.signature, _long) ||
-            !verifySignature(shortOrderHash, _shortOrder.signature, _short)
+            !verifySignature(
+                longOrderHash,
+                _longOrder.signature,
+                _longOrder.trader
+            ) ||
+            !verifySignature(
+                shortOrderHash,
+                _shortOrder.signature,
+                _shortOrder.trader
+            )
         ) {
             revert InvalidSignature();
         }
