@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.22;
+pragma solidity 0.8.24;
 
 import { stdError } from "forge-std/StdError.sol";
 import { ReentrancyGuard } from "openzeppelin/utils/ReentrancyGuard.sol";

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.22;
+pragma solidity 0.8.24;
 
 import { ReentrancyGuard } from "openzeppelin/utils/ReentrancyGuard.sol";
 import { IERC20 } from "../interfaces/IERC20.sol";

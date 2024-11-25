@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.22;
+pragma solidity 0.8.24;
 
 import { IUniV3Zap } from "../../../contracts/src/interfaces/IUniV3Zap.sol";
 import { UniV3ZapTest } from "./UniV3Zap.t.sol";

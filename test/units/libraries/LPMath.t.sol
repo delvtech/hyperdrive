@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.22;
+pragma solidity 0.8.24;
 
 import { FixedPointMath, ONE } from "../../../contracts/src/libraries/FixedPointMath.sol";
 import { LPMath } from "../../../contracts/src/libraries/LPMath.sol";
