@@ -14,8 +14,6 @@ import { AssetId } from "../libraries/AssetId.sol";
 import { HYPERDRIVE_MATCHING_ENGINE_KIND, VERSION } from "../libraries/Constants.sol";
 import { FixedPointMath } from "../libraries/FixedPointMath.sol";
 
-// TODO: Document the simplifications that were made.
-//
 /// @author DELV
 /// @title HyperdriveMatchingEngine
 /// @notice A matching engine that processes order intents and settles trades on
@@ -31,13 +29,14 @@ contract HyperdriveMatchingEngine is
     using FixedPointMath for uint256;
     using SafeERC20 for ERC20;
 
-    /// @notice The EIP712 typehash of the OrderIntent struct.
+    /// @notice The EIP712 typehash of the `IHyperdriveMatchingEngine.OrderIntent`
+    ///         struct.
     bytes32 public constant ORDER_INTENT_TYPEHASH =
         keccak256(
             "OrderIntent(address trader,address hyperdrive,uint256 amount,uint256 slippageGuard,uint256 minVaultSharePrice,Options options,uint8 orderType,uint256 expiry,bytes32 salt)"
         );
 
-    /// @notice The EIP712 typehash of the Options struct.
+    /// @notice The EIP712 typehash of the `IHyperdrive.Options` struct.
     /// @dev We exclude extra data from the options hashing since it has no
     ///      effect on execution.
     bytes32 public constant OPTIONS_TYPEHASH =
@@ -57,7 +56,7 @@ contract HyperdriveMatchingEngine is
     IMorpho public immutable morpho;
 
     /// @notice A mapping from order hashes to their cancellation status.
-    mapping(bytes32 => bool) public cancels;
+    mapping(bytes32 => bool) public isCancelled;
 
     /// @notice Initializes the matching engine.
     /// @param _name The name of this matching engine.
@@ -85,7 +84,7 @@ contract HyperdriveMatchingEngine is
             }
 
             // Cancel the order.
-            cancels[orderHash] = true;
+            isCancelled[orderHash] = true;
             orderHashes[i] = orderHash;
         }
 
@@ -127,8 +126,8 @@ contract HyperdriveMatchingEngine is
         );
 
         // Cancel the orders so that they can't be used again.
-        cancels[longOrderHash] = true;
-        cancels[shortOrderHash] = true;
+        isCancelled[longOrderHash] = true;
+        isCancelled[shortOrderHash] = true;
 
         // Send off the flash loan call to Morpho. The remaining execution logic
         // will be executed in the `onMorphoFlashLoan` callback.
@@ -235,9 +234,9 @@ contract HyperdriveMatchingEngine is
         baseToken.forceApprove(address(morpho), lpAmount);
     }
 
-    /// @notice Hashes an order intent according to EIP-712
-    /// @param _order The order intent to hash
-    /// @return The hash of the order intent
+    /// @notice Hashes an order intent according to EIP-712.
+    /// @param _order The order intent to hash.
+    /// @return The hash of the order intent.
     function hashOrderIntent(
         OrderIntent calldata _order
     ) public view returns (bytes32) {
@@ -419,7 +418,7 @@ contract HyperdriveMatchingEngine is
             revert InvalidSettlementAsset();
         }
 
-        // Ensure that the order's cross. We can calculate a worst-case price
+        // Ensure that the orders cross. We can calculate a worst-case price
         // for the long and short using the `amount` and `slippageGuard` fields.
         // In order for the orders to cross, the price of the long should be
         // equal to or higher than the price of the short. This implies that the
@@ -428,7 +427,7 @@ contract HyperdriveMatchingEngine is
         if (
             _longOrder.slippageGuard != 0 &&
             _shortOrder.slippageGuard < _shortOrder.amount &&
-            _longOrder.amount.divDown(_longOrder.slippageGuard) <=
+            _longOrder.amount.divDown(_longOrder.slippageGuard) <
             (_shortOrder.amount - _shortOrder.slippageGuard).divDown(
                 _shortOrder.amount
             )
@@ -436,12 +435,12 @@ contract HyperdriveMatchingEngine is
             revert InvalidMatch();
         }
 
-        // Hash both orders
+        // Hash both orders.
         longOrderHash = hashOrderIntent(_longOrder);
         shortOrderHash = hashOrderIntent(_shortOrder);
 
         // Ensure that neither order has been cancelled.
-        if (cancels[longOrderHash] || cancels[shortOrderHash]) {
+        if (isCancelled[longOrderHash] || isCancelled[shortOrderHash]) {
             revert AlreadyCancelled();
         }
 
@@ -461,7 +460,8 @@ contract HyperdriveMatchingEngine is
             revert InvalidSignature();
         }
 
-        // Ensure that the destination of the add/remove liquidity options is this contract.
+        // Ensure that the destination of the add/remove liquidity options is
+        // this contract.
         if (
             _addLiquidityOptions.destination != address(this) ||
             _removeLiquidityOptions.destination != address(this)

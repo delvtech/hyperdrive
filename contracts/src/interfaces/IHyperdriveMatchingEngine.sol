@@ -40,10 +40,10 @@ interface IHyperdriveMatchingEngine is IMorphoFlashLoanCallback {
     ///         Hyperdrive instance.
     error MismatchedHyperdrive();
 
-    /// @notice Emitted when orders are cancelled
+    /// @notice Emitted when orders are cancelled.
     event OrdersCancelled(address indexed trader, bytes32[] orderHashes);
 
-    /// @notice Emitted when orders are matched
+    /// @notice Emitted when orders are matched.
     event OrdersMatched(
         IHyperdrive indexed hyperdrive,
         bytes32 indexed longOrderHash,
@@ -110,16 +110,17 @@ interface IHyperdriveMatchingEngine is IMorphoFlashLoanCallback {
     /// @return The Morpho contract address.
     function morpho() external view returns (IMorpho);
 
-    /// @notice Check if an order has been cancelled.
-    /// @param orderHash The hash of the order to check.
-    /// @return True if the order was cancelled.
-    function cancels(bytes32 orderHash) external view returns (bool);
+    /// @notice Returns whether or not an order has been cancelled.
+    /// @param orderHash The hash of the order.
+    /// @return True if the order was cancelled and false otherwise.
+    function isCancelled(bytes32 orderHash) external view returns (bool);
 
-    /// @notice Get the EIP712 typehash for the OrderIntent struct.
+    /// @notice Get the EIP712 typehash for the
+    ///         `IHyperdriveMatchingEngine.OrderIntent` struct.
     /// @return The typehash.
     function ORDER_INTENT_TYPEHASH() external view returns (bytes32);
 
-    /// @notice Get the EIP712 typehash for the Options struct.
+    /// @notice Get the EIP712 typehash for the `IHyperdrive.Options` struct.
     /// @return The typehash.
     function OPTIONS_TYPEHASH() external view returns (bytes32);
 

@@ -85,7 +85,9 @@ contract EIP1271Signer {
     }
 }
 
-// FIXME: Fully Natspec this whole test suite.
+/// @dev This test suite provides coverage for the different paths through the
+///      matching engine's code. It uses the normal test harness with a mocked
+///      out EIP1271 signer and flash loaner to test all of the different cases.
 contract HyperdriveMatchingEngineTest is HyperdriveTest {
     using FixedPointMath for uint256;
     using HyperdriveUtils for IHyperdrive;
@@ -261,7 +263,7 @@ contract HyperdriveMatchingEngineTest is HyperdriveTest {
 
         // Ensure that the order was cancelled.
         assertTrue(
-            matchingEngine.cancels(matchingEngine.hashOrderIntent(order))
+            matchingEngine.isCancelled(matchingEngine.hashOrderIntent(order))
         );
     }
 
@@ -289,7 +291,7 @@ contract HyperdriveMatchingEngineTest is HyperdriveTest {
 
         // Ensure that the order was cancelled.
         assertTrue(
-            matchingEngine.cancels(matchingEngine.hashOrderIntent(order))
+            matchingEngine.isCancelled(matchingEngine.hashOrderIntent(order))
         );
     }
 
@@ -332,7 +334,7 @@ contract HyperdriveMatchingEngineTest is HyperdriveTest {
             // Ensure that the orders were cancelled.
             for (uint256 i = 0; i < orders.length; i++) {
                 assertTrue(
-                    matchingEngine.cancels(
+                    matchingEngine.isCancelled(
                         matchingEngine.hashOrderIntent(orders[i])
                     )
                 );
@@ -375,7 +377,7 @@ contract HyperdriveMatchingEngineTest is HyperdriveTest {
             // Ensure that the orders were cancelled.
             for (uint256 i = 0; i < orders.length; i++) {
                 assertTrue(
-                    matchingEngine.cancels(
+                    matchingEngine.isCancelled(
                         matchingEngine.hashOrderIntent(orders[i])
                     )
                 );
