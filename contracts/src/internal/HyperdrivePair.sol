@@ -27,9 +27,6 @@ abstract contract HyperdrivePair is
     using SafeCast for uint256;
     using SafeCast for int256;
 
-    // FIXME: Is there anything weird here about needing the flat fee for the
-    //        short prepaid up front? Same thing with prepaid variable interest.
-    //
     /// @dev Mints a pair of long and short positions that directly match each
     ///      other. The amount of long and short positions that are created is
     ///      equal to the base value of the deposit. These positions are sent to
@@ -63,19 +60,6 @@ abstract contract HyperdrivePair is
             _options.extraData
         );
 
-        // FIXME: We should probably just have a different fee schedule instead
-        //        of re-using the flat fee.
-        //
-        // The governance fee is twice the governance fee paid on the flat fee
-        // since a long and short are both minted.
-        uint256 governanceFee = 2 *
-            sharesDeposited.mulDown(_flatFee).mulDown(_governanceLPFee);
-        _governanceFeesAccrued += governanceFee;
-
-        // The amount of bonds that will be minted is equal to the amount of
-        // base deposited minus the governance fee.
-        bondAmount = (sharesDeposited - governanceFee).mulDown(vaultSharePrice);
-
         // Enforce the minimum vault share price.
         if (vaultSharePrice < _minVaultSharePrice) {
             revert IHyperdrive.MinimumSharePrice();
@@ -83,16 +67,25 @@ abstract contract HyperdrivePair is
 
         // Perform a checkpoint.
         uint256 latestCheckpoint = _latestCheckpoint();
-        _applyCheckpoint(
+        uint256 openVaultSharePrice = _applyCheckpoint(
             latestCheckpoint,
             vaultSharePrice,
             LPMath.SHARE_PROCEEDS_MAX_ITERATIONS,
             true
         );
 
+        // Calculate the bond amount and governance fee from the shares
+        // deposited.
+        uint256 governanceFee;
+        (bondAmount, governanceFee) = _calculateMint(
+            sharesDeposited,
+            vaultSharePrice,
+            openVaultSharePrice
+        );
+
         // Apply the state changes caused by creating the pair.
         maturityTime = latestCheckpoint + _positionDuration;
-        _applyMint(maturityTime, bondAmount);
+        _applyMint(maturityTime, bondAmount, governanceFee);
 
         // Mint bonds equal in value to the base deposited.
         uint256 longAssetId = AssetId.encodeAssetId(
@@ -107,83 +100,86 @@ abstract contract HyperdrivePair is
         _mint(shortAssetId, _options.shortDestination, bondAmount);
 
         // Emit an Mint event.
+        uint256 bondAmount_ = bondAmount; // avoid stack-too-deep
+        uint256 amount = _amount; // avoid stack-too-deep
+        IHyperdrive.PairOptions calldata options = _options; // avoid stack-too-deep
         emit Mint(
-            _options.longDestination,
-            _options.shortDestination,
+            options.longDestination,
+            options.shortDestination,
             maturityTime,
             longAssetId,
             shortAssetId,
-            _amount,
+            amount,
             vaultSharePrice,
-            _options.asBase,
-            bondAmount,
-            _options.extraData
+            options.asBase,
+            bondAmount_,
+            options.extraData
         );
 
         return (maturityTime, bondAmount);
     }
 
-    // FIXME: Add Natspec.
-    function _burn(
-        uint256 _maturityTime,
-        uint256 _bondAmount,
-        IHyperdrive.Options calldata _options
-    )
-        internal
-        returns (uint256 maturityTime, uint256 longAmount, uint256 shortAmount)
-    {
-        // FIXME: This function should take in a long and a short and send the
-        //        underlying capital to the owner.
+    // // FIXME: Add Natspec.
+    // function _burn(
+    //     uint256 _maturityTime,
+    //     uint256 _bondAmount,
+    //     IHyperdrive.Options calldata _options
+    // )
+    //     internal
+    //     returns (uint256 maturityTime, uint256 longAmount, uint256 shortAmount)
+    // {
+    //     // FIXME: This function should take in a long and a short and send the
+    //     //        underlying capital to the owner.
 
-        // Check that the provided options are valid.
-        _checkOptions(_options);
+    //     // Check that the provided options are valid.
+    //     _checkOptions(_options);
 
-        // Ensure that the bond amount is greater than or equal to the minimum
-        // transaction amount.
-        if (_bondAmount < _minimumTransactionAmount) {
-            revert IHyperdrive.MinimumTransactionAmount();
-        }
+    //     // Ensure that the bond amount is greater than or equal to the minimum
+    //     // transaction amount.
+    //     if (_bondAmount < _minimumTransactionAmount) {
+    //         revert IHyperdrive.MinimumTransactionAmount();
+    //     }
 
-        // If the short hasn't matured, we checkpoint the latest checkpoint.
-        // Otherwise, we perform a checkpoint at the time the short matured.
-        // This ensures the short and all of the other positions in the
-        // checkpoint are closed.
-        uint256 vaultSharePrice = _pricePerVaultShare();
-        if (block.timestamp < _maturityTime) {
-            _applyCheckpoint(
-                _latestCheckpoint(),
-                vaultSharePrice,
-                LPMath.SHARE_PROCEEDS_MAX_ITERATIONS,
-                true
-            );
-        } else {
-            _applyCheckpoint(
-                _maturityTime,
-                vaultSharePrice,
-                LPMath.SHARE_PROCEEDS_MAX_ITERATIONS,
-                true
-            );
-        }
+    //     // If the short hasn't matured, we checkpoint the latest checkpoint.
+    //     // Otherwise, we perform a checkpoint at the time the short matured.
+    //     // This ensures the short and all of the other positions in the
+    //     // checkpoint are closed.
+    //     uint256 vaultSharePrice = _pricePerVaultShare();
+    //     if (block.timestamp < _maturityTime) {
+    //         _applyCheckpoint(
+    //             _latestCheckpoint(),
+    //             vaultSharePrice,
+    //             LPMath.SHARE_PROCEEDS_MAX_ITERATIONS,
+    //             true
+    //         );
+    //     } else {
+    //         _applyCheckpoint(
+    //             _maturityTime,
+    //             vaultSharePrice,
+    //             LPMath.SHARE_PROCEEDS_MAX_ITERATIONS,
+    //             true
+    //         );
+    //     }
 
-        // Burn the longs and shorts that are being closed.
-        _burn(
-            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, _maturityTime),
-            msg.sender,
-            _bondAmount
-        );
-        _burn(
-            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Short, _maturityTime),
-            msg.sender,
-            _bondAmount
-        );
+    //     // Burn the longs and shorts that are being closed.
+    //     _burn(
+    //         AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, _maturityTime),
+    //         msg.sender,
+    //         _bondAmount
+    //     );
+    //     _burn(
+    //         AssetId.encodeAssetId(AssetId.AssetIdPrefix.Short, _maturityTime),
+    //         msg.sender,
+    //         _bondAmount
+    //     );
 
-        // FIXME: We need to do the following things to update the states:
-        //
-        // 1. [ ] Update the longs and shorts outstanding.
-        // 2. [ ] Get the amount of base owed to the longs and shorts.
-        // 3. [ ] Assess the governance fees.
-        // 4. [ ] Withdraw the proceeds to the destination.
-    }
+    //     // FIXME: We need to do the following things to update the states:
+    //     //
+    //     // 1. [ ] Update the longs and shorts outstanding.
+    //     // 2. [ ] Get the amount of base owed to the longs and shorts.
+    //     // 3. [ ] Assess the governance fees.
+    //     // 4. [ ] Withdraw the proceeds to the destination.
+    // }
 
     /// @dev Applies state changes to create a pair of matched long and short
     ///      positions. This operation leaves the pool's solvency and idle
@@ -203,7 +199,17 @@ abstract contract HyperdrivePair is
     /// @param _maturityTime The maturity time of the pair of long and short
     ///        positions
     /// @param _bondAmount The amount of bonds created.
-    function _applyMint(uint256 _maturityTime, uint256 _bondAmount) internal {
+    /// @param _governanceFee The governance fee calculated from the bond amount.
+    function _applyMint(
+        uint256 _maturityTime,
+        uint256 _bondAmount,
+        uint256 _governanceFee
+    ) internal {
+        // Update the amount of governance fees accrued. Since the long and
+        // short both pay the governance fee, the governance fees accrued
+        // increases by twice the governance fee.
+        _governanceFeesAccrued += 2 * _governanceFee;
+
         // Update the average maturity time of longs and short positions and the
         // amount of long and short positions outstanding. Everything else
         // remains constant.
@@ -229,5 +235,56 @@ abstract contract HyperdrivePair is
             .toUint128();
         _marketState.longsOutstanding += _bondAmount.toUint128();
         _marketState.shortsOutstanding += _bondAmount.toUint128();
+    }
+
+    /// @dev Calculates the amount of bonds that can be minted and the governance
+    ///      fee from the amount of vault shares that were deposited.
+    /// @param _sharesDeposited The amount of vault shares that were deposited.
+    /// @param _vaultSharePrice The vault share price.
+    /// @param _openVaultSharePrice The vault share price at the beginning of
+    ///        the checkpoint.
+    function _calculateMint(
+        uint256 _sharesDeposited,
+        uint256 _vaultSharePrice,
+        uint256 _openVaultSharePrice
+    ) internal view returns (uint256, uint256) {
+        // In order for a certain amount of bonds to be minted, there needs to
+        // be enough base to pay the prepaid interest that has accrued since the
+        // start of the checkpoint, to pay out the face value of the bond at
+        // maturity, for the short to pay the flat fee at maturity, and for the
+        // long and short to both pay the governance fee during the mint. We can
+        // work back from this understanding to get the amount of bonds from the
+        // amount of shares deposited.
+        //
+        // sharesDeposited * vaultSharePrice = (
+        //    bondAmount + bondAmount * (c - c0) / c0 + bondAmount * flatFee +
+        //    2 * bondAmount * flatFee * governanceFee
+        // )
+        //
+        // This implies that
+        //
+        // bondAmount = shareDeposited * vaultSharePrice / (
+        //     1 + (c - c0) / c0 + flatFee + 2 * flatFee * governanceFee
+        // )
+        //
+        // NOTE: We round down to underestimate the bond amount.
+        uint256 bondAmount = _sharesDeposited.mulDivDown(
+            _vaultSharePrice,
+            // NOTE: Round up to overestimate the denominator. This
+            // underestimates the bond amount.
+            (ONE +
+                (_vaultSharePrice - _openVaultSharePrice).divUp(
+                    _openVaultSharePrice
+                ) +
+                _flatFee +
+                2 *
+                _flatFee.mulUp(_governanceLPFee))
+        );
+        // FIXME: What should the rounding be here?
+        uint256 governanceFee = bondAmount.mulDown(_flatFee).mulDown(
+            _governanceLPFee
+        );
+
+        return (bondAmount, governanceFee);
     }
 }

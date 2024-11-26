@@ -8,6 +8,7 @@ import { HyperdriveCheckpoint } from "../internal/HyperdriveCheckpoint.sol";
 import { HyperdriveLong } from "../internal/HyperdriveLong.sol";
 import { HyperdriveLP } from "../internal/HyperdriveLP.sol";
 import { HyperdriveMultiToken } from "../internal/HyperdriveMultiToken.sol";
+import { HyperdrivePair } from "../internal/HyperdrivePair.sol";
 import { HyperdriveShort } from "../internal/HyperdriveShort.sol";
 import { HyperdriveStorage } from "../internal/HyperdriveStorage.sol";
 
@@ -23,6 +24,7 @@ abstract contract HyperdriveTarget2 is
     HyperdriveLP,
     HyperdriveLong,
     HyperdriveShort,
+    HyperdrivePair,
     HyperdriveCheckpoint
 {
     /// @notice Instantiates target2.

@@ -10,6 +10,7 @@ import { HyperdriveCheckpoint } from "../internal/HyperdriveCheckpoint.sol";
 import { HyperdriveLong } from "../internal/HyperdriveLong.sol";
 import { HyperdriveLP } from "../internal/HyperdriveLP.sol";
 import { HyperdriveMultiToken } from "../internal/HyperdriveMultiToken.sol";
+import { HyperdrivePair } from "../internal/HyperdrivePair.sol";
 import { HyperdriveShort } from "../internal/HyperdriveShort.sol";
 import { HyperdriveStorage } from "../internal/HyperdriveStorage.sol";
 import { AssetId } from "../libraries/AssetId.sol";
@@ -30,6 +31,7 @@ abstract contract HyperdriveTarget0 is
     HyperdriveLP,
     HyperdriveLong,
     HyperdriveShort,
+    HyperdrivePair,
     HyperdriveCheckpoint
 {
     using FixedPointMath for uint256;

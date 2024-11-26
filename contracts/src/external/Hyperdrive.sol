@@ -244,6 +244,17 @@ abstract contract Hyperdrive is
         _delegate(target4);
     }
 
+    /// Pairs ///
+
+    /// @inheritdoc IHyperdriveCore
+    function mint(
+        uint256,
+        uint256,
+        IHyperdrive.PairOptions calldata
+    ) external returns (uint256, uint256) {
+        _delegate(target4);
+    }
+
     /// Checkpoints ///
 
     /// @inheritdoc IHyperdriveCore

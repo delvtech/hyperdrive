@@ -8,6 +8,7 @@ import { HyperdriveCheckpoint } from "../internal/HyperdriveCheckpoint.sol";
 import { HyperdriveLong } from "../internal/HyperdriveLong.sol";
 import { HyperdriveLP } from "../internal/HyperdriveLP.sol";
 import { HyperdriveMultiToken } from "../internal/HyperdriveMultiToken.sol";
+import { HyperdrivePair } from "../internal/HyperdrivePair.sol";
 import { HyperdriveShort } from "../internal/HyperdriveShort.sol";
 import { HyperdriveStorage } from "../internal/HyperdriveStorage.sol";
 
@@ -23,6 +24,7 @@ abstract contract HyperdriveTarget4 is
     HyperdriveLP,
     HyperdriveLong,
     HyperdriveShort,
+    HyperdrivePair,
     HyperdriveCheckpoint
 {
     /// @notice Instantiates target4.
@@ -84,6 +86,28 @@ abstract contract HyperdriveTarget4 is
                 _minOutputPerShare,
                 _options
             );
+    }
+
+    /// Pairs ///
+
+    // FIXME: Where does this fit?
+    //
+    /// @notice Mints a pair of long and short positions that directly match
+    ///         each other. The amount of long and short positions that are
+    ///         created is equal to the base value of the deposit. These
+    ///         positions are sent to the provided destinations.
+    /// @param _amount The amount of capital provided to open the long. The
+    ///        units of this quantity are either base or vault shares, depending
+    ///        on the value of `_options.asBase`.
+    /// @param _options The pair options that configure how the trade is settled.
+    /// @return maturityTime The maturity time of the new long and short positions.
+    /// @return bondAmount The bond amount of the new long and short positoins.
+    function mint(
+        uint256 _amount,
+        uint256 _minVaultSharePrice,
+        IHyperdrive.PairOptions calldata _options
+    ) external returns (uint256 maturityTime, uint256 bondAmount) {
+        return _mint(_amount, _minVaultSharePrice, _options);
     }
 
     /// Checkpoints ///
