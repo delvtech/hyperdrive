@@ -251,7 +251,7 @@ abstract contract Hyperdrive is
         uint256,
         uint256,
         IHyperdrive.PairOptions calldata
-    ) external returns (uint256, uint256) {
+    ) external payable returns (uint256, uint256) {
         _delegate(target4);
     }
 
