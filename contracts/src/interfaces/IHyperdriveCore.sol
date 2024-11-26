@@ -178,7 +178,7 @@ interface IHyperdriveCore is IMultiTokenCore {
         uint256 _amount,
         uint256 _minVaultSharePrice,
         IHyperdrive.PairOptions calldata _options
-    ) external returns (uint256 maturityTime, uint256 bondAmount);
+    ) external payable returns (uint256 maturityTime, uint256 bondAmount);
 
     /// Checkpoints ///
 

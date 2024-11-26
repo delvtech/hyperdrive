@@ -27,6 +27,9 @@ abstract contract HyperdrivePair is
     using SafeCast for uint256;
     using SafeCast for int256;
 
+    // FIXME: Do we need a `minOutput` parameter here? It feels kind of paranoid,
+    // but it's probably a good idea with things like prepaid interest.
+    //
     /// @dev Mints a pair of long and short positions that directly match each
     ///      other. The amount of long and short positions that are created is
     ///      equal to the base value of the deposit. These positions are sent to
@@ -59,6 +62,21 @@ abstract contract HyperdrivePair is
             _options.asBase,
             _options.extraData
         );
+
+        // Enforce the minimum transaction amount.
+        //
+        // NOTE: We use the value that is returned from the deposit to check
+        // against the minimum transaction amount because in the event of
+        // slippage on the deposit, we want the inputs to the state updates to
+        // respect the minimum transaction amount requirements.
+        //
+        // NOTE: Round down to underestimate the base deposit. This makes the
+        //       minimum transaction amount check more conservative.
+        if (
+            sharesDeposited.mulDown(vaultSharePrice) < _minimumTransactionAmount
+        ) {
+            revert IHyperdrive.MinimumTransactionAmount();
+        }
 
         // Enforce the minimum vault share price.
         if (vaultSharePrice < _minVaultSharePrice) {
