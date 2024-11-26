@@ -6,19 +6,32 @@ import { IERC20 } from "../../contracts/src/interfaces/IERC20.sol";
 
 contract BaseTest is Test {
     address internal alice;
+    uint256 internal alicePK;
     address internal bob;
+    uint256 internal bobPK;
     address internal celine;
+    uint256 internal celinePK;
     address internal dan;
+    uint256 internal danPK;
     address internal eve;
+    uint256 internal evePK;
 
     address internal minter;
+    uint256 internal minterPK;
     address internal deployer;
+    uint256 internal deployerPK;
     address internal feeCollector;
+    uint256 internal feeCollectorPK;
     address internal sweepCollector;
+    uint256 internal sweepCollectorPK;
     address internal governance;
+    uint256 internal governancePK;
     address internal pauser;
+    uint256 internal pauserPK;
     address internal registrar;
+    uint256 internal registrarPK;
     address internal rewardSource;
+    uint256 internal rewardSourcePK;
 
     error WhaleBalanceExceeded();
     error WhaleIsContract();
@@ -35,20 +48,20 @@ contract BaseTest is Test {
     bool isForked;
 
     function setUp() public virtual {
-        alice = createUser("alice");
-        bob = createUser("bob");
-        celine = createUser("celine");
-        dan = createUser("dan");
-        eve = createUser("eve");
+        (alice, alicePK) = createUser("alice");
+        (bob, bobPK) = createUser("bob");
+        (celine, celinePK) = createUser("celine");
+        (dan, danPK) = createUser("dan");
+        (eve, evePK) = createUser("eve");
 
-        deployer = createUser("deployer");
-        minter = createUser("minter");
-        feeCollector = createUser("feeCollector");
-        sweepCollector = createUser("sweepCollector");
-        governance = createUser("governance");
-        pauser = createUser("pauser");
-        registrar = createUser("registrar");
-        rewardSource = createUser("rewardSource");
+        (deployer, deployerPK) = createUser("deployer");
+        (minter, minterPK) = createUser("minter");
+        (feeCollector, feeCollectorPK) = createUser("feeCollector");
+        (sweepCollector, sweepCollectorPK) = createUser("sweepCollector");
+        (governance, governancePK) = createUser("governance");
+        (pauser, pauserPK) = createUser("pauser");
+        (registrar, registrarPK) = createUser("registrar");
+        (rewardSource, rewardSourcePK) = createUser("rewardSource");
 
         __init__ = block.timestamp;
     }
@@ -108,10 +121,11 @@ contract BaseTest is Test {
     }
 
     // creates a user
-    function createUser(string memory name) public returns (address _user) {
-        _user = address(uint160(uint256(keccak256(abi.encode(name)))));
-        vm.label(_user, name);
-        vm.deal(_user, 10000 ether);
+    function createUser(
+        string memory _name
+    ) public returns (address user, uint256 privateKey) {
+        (user, privateKey) = makeAddrAndKey(_name);
+        vm.deal(user, 10000 ether);
     }
 
     function whaleTransfer(
