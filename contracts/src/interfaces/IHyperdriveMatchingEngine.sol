@@ -79,7 +79,10 @@ interface IHyperdriveMatchingEngine is IMorphoFlashLoanCallback {
         ///      `asBase` is required to be true, the `destination` is the
         ///      address that receives the long or short position that is
         ///      purchased, and the extra data is configured for the yield
-        ///      source that is being used.
+        ///      source that is being used. Since the extra data isn't included
+        ///      in the order's hash, it can be updated between the order being
+        ///      signed and executed. This is helpful for applications like DFB
+        ///      that rely on the extra data field to record metadata in events.
         IHyperdrive.Options options;
         /// @dev The type of the order. This is either `OpenLong` or `OpenShort`.
         OrderType orderType;
