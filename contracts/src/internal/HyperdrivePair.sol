@@ -27,6 +27,9 @@ abstract contract HyperdrivePair is
     using SafeCast for uint256;
     using SafeCast for int256;
 
+    // FIXME: Is there anything weird here about needing the flat fee for the
+    //        short prepaid up front? Same thing with prepaid variable interest.
+    //
     /// @dev Mints a pair of long and short positions that directly match each
     ///      other. The amount of long and short positions that are created is
     ///      equal to the base value of the deposit. These positions are sent to
@@ -60,6 +63,9 @@ abstract contract HyperdrivePair is
             _options.extraData
         );
 
+        // FIXME: We should probably just have a different fee schedule instead
+        //        of re-using the flat fee.
+        //
         // The governance fee is twice the governance fee paid on the flat fee
         // since a long and short are both minted.
         uint256 governanceFee = 2 *
@@ -117,13 +123,67 @@ abstract contract HyperdrivePair is
         return (maturityTime, bondAmount);
     }
 
-    // FIXME
-    // function _redeemPair(
-    //     uint256 _amount,
-    //     IHyperdrive.Options calldata _options
-    // ) internal returns (uint256 maturityTime, uint256 longAmount, uint256 shortAmount) {
-    //     // FIXME
-    // }
+    // FIXME: Add Natspec.
+    function _burn(
+        uint256 _maturityTime,
+        uint256 _bondAmount,
+        IHyperdrive.Options calldata _options
+    )
+        internal
+        returns (uint256 maturityTime, uint256 longAmount, uint256 shortAmount)
+    {
+        // FIXME: This function should take in a long and a short and send the
+        //        underlying capital to the owner.
+
+        // Check that the provided options are valid.
+        _checkOptions(_options);
+
+        // Ensure that the bond amount is greater than or equal to the minimum
+        // transaction amount.
+        if (_bondAmount < _minimumTransactionAmount) {
+            revert IHyperdrive.MinimumTransactionAmount();
+        }
+
+        // If the short hasn't matured, we checkpoint the latest checkpoint.
+        // Otherwise, we perform a checkpoint at the time the short matured.
+        // This ensures the short and all of the other positions in the
+        // checkpoint are closed.
+        uint256 vaultSharePrice = _pricePerVaultShare();
+        if (block.timestamp < _maturityTime) {
+            _applyCheckpoint(
+                _latestCheckpoint(),
+                vaultSharePrice,
+                LPMath.SHARE_PROCEEDS_MAX_ITERATIONS,
+                true
+            );
+        } else {
+            _applyCheckpoint(
+                _maturityTime,
+                vaultSharePrice,
+                LPMath.SHARE_PROCEEDS_MAX_ITERATIONS,
+                true
+            );
+        }
+
+        // Burn the longs and shorts that are being closed.
+        _burn(
+            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, _maturityTime),
+            msg.sender,
+            _bondAmount
+        );
+        _burn(
+            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Short, _maturityTime),
+            msg.sender,
+            _bondAmount
+        );
+
+        // FIXME: We need to do the following things to update the states:
+        //
+        // 1. [ ] Update the longs and shorts outstanding.
+        // 2. [ ] Get the amount of base owed to the longs and shorts.
+        // 3. [ ] Assess the governance fees.
+        // 4. [ ] Withdraw the proceeds to the destination.
+    }
 
     /// @dev Applies state changes to create a pair of matched long and short
     ///      positions. This operation leaves the pool's solvency and idle
