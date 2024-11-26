@@ -208,8 +208,7 @@ contract HyperdriveMatchingEngine is
             _openLong(hyperdrive, baseToken, longOrder);
         }
 
-        // Remove liquidity. This will repay the flash loan. We revert if there
-        // are any withdrawal shares.
+        // Remove liquidity. This will repay the flash loan.
         (uint256 proceeds, uint256 withdrawalShares) = hyperdrive
             .removeLiquidity(lpShares, 0, removeLiquidityOptions);
 
