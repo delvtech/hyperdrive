@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.24;
+pragma solidity ^0.8.20;
 
 import { ILiquidityPool } from "../../../contracts/src/interfaces/ILiquidityPool.sol";
 import { IEETH } from "../../../contracts/src/interfaces/IEETH.sol";
