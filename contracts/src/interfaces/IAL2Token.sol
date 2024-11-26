@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.22;
+pragma solidity 0.8.24;
 
 import { IAToken as IAToken_ } from "aave/interfaces/IAToken.sol";
 import { IL2Pool } from "./IAave.sol";

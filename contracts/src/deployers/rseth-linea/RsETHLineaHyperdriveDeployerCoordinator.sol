@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.22;
+pragma solidity 0.8.24;
 
 import { RsETHLineaConversions } from "../../instances/rseth-linea/RsETHLineaConversions.sol";
 import { IERC20 } from "../../interfaces/IERC20.sol";

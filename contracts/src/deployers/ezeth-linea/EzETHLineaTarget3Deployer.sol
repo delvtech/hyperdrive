@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.22;
+pragma solidity 0.8.24;
 
 import { EzETHLineaTarget3 } from "../../instances/ezeth-linea/EzETHLineaTarget3.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
