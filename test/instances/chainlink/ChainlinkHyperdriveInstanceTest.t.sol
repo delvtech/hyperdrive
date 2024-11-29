@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.22;
+pragma solidity ^0.8.20;
 
 import { stdStorage, StdStorage } from "forge-std/Test.sol";
 import { ChainlinkHyperdriveCoreDeployer } from "../../../contracts/src/deployers/chainlink/ChainlinkHyperdriveCoreDeployer.sol";

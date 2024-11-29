@@ -25,6 +25,9 @@ string constant HYPERDRIVE_CHECKPOINT_SUBREWARDER_KIND = "HyperdriveCheckpointSu
 /// @dev The kind of the Hyperdrive factory.
 string constant HYPERDRIVE_FACTORY_KIND = "HyperdriveFactory";
 
+/// @dev The kind of the Hyperdrive matching engine.
+string constant HYPERDRIVE_MATCHING_ENGINE_KIND = "HyperdriveMatchingEngine";
+
 /// @dev The kind of the Hyperdrive registry.
 string constant HYPERDRIVE_REGISTRY_KIND = "HyperdriveRegistry";
 

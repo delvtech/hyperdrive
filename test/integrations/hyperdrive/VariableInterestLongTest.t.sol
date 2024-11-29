@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.22;
+pragma solidity ^0.8.20;
 
 import { FixedPointMath } from "../../../contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMath } from "../../../contracts/src/libraries/HyperdriveMath.sol";

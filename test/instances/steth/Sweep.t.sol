@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.22;
+pragma solidity ^0.8.20;
 
 import { HyperdriveFactory } from "../../../contracts/src/factory/HyperdriveFactory.sol";
 import { StETHHyperdrive } from "../../../contracts/src/instances/steth/StETHHyperdrive.sol";

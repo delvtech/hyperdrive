@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.22;
+pragma solidity 0.8.24;
 
 import { IGauge } from "aerodrome/interfaces/IGauge.sol";
 import { AerodromeLpTarget3 } from "../../instances/aerodrome-lp/AerodromeLpTarget3.sol";

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.22;
+pragma solidity ^0.8.20;
 
 import { console2 as console } from "forge-std/console2.sol";
 import { IHyperdrive } from "../../../contracts/src/interfaces/IHyperdrive.sol";

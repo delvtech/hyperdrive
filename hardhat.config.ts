@@ -8,14 +8,14 @@ import "./tasks";
 
 const config: HardhatUserConfig = {
     solidity: {
-        version: "0.8.22",
+        version: "0.8.24",
         settings: {
             viaIR: false,
             optimizer: {
                 enabled: true,
                 runs: 13000,
             },
-            evmVersion: "paris",
+            evmVersion: "cancun",
             metadata: {
                 useLiteralContent: true,
             },
