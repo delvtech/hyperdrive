@@ -63,6 +63,8 @@ contract MorphoBlue_cbBTC_USDC_Mainnet_HyperdriveTest is
                 shouldAccrueInterest: true,
                 // The base test tolerances.
                 closeLongWithBaseTolerance: 2,
+                closeShortWithBaseUpperBoundTolerance: 10,
+                closeShortWithBaseTolerance: 100,
                 roundTripLpInstantaneousWithBaseTolerance: 1e3,
                 roundTripLpWithdrawalSharesWithBaseTolerance: 1e5,
                 roundTripLongInstantaneousWithBaseUpperBoundTolerance: 100,
