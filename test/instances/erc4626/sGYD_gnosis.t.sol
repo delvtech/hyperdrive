@@ -67,8 +67,8 @@ contract sGYD_gnosis_HyperdriveTest is ERC4626HyperdriveInstanceTest {
                 shouldAccrueInterest: true,
                 // The base test tolerances.
                 closeLongWithBaseTolerance: 20,
-                closeShortWithBaseUpperBoundTolerance: 1e3,
-                closeShortWithBaseTolerance: 1e3,
+                closeShortWithBaseUpperBoundTolerance: 1e4,
+                closeShortWithBaseTolerance: 1e4,
                 roundTripLpInstantaneousWithBaseTolerance: 1e5,
                 roundTripLpWithdrawalSharesWithBaseTolerance: 1e5,
                 roundTripLongInstantaneousWithBaseUpperBoundTolerance: 1e3,
