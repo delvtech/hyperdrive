@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.22;
+pragma solidity ^0.8.20;
 
 import { ERC4626HyperdriveCoreDeployer } from "../../../contracts/src/deployers/erc4626/ERC4626HyperdriveCoreDeployer.sol";
 import { ERC4626HyperdriveDeployerCoordinator } from "../../../contracts/src/deployers/erc4626/ERC4626HyperdriveDeployerCoordinator.sol";
@@ -2855,8 +2855,8 @@ contract HyperdriveFactoryBaseTest is HyperdriveTest {
     IHyperdriveFactory internal factory;
 
     function setUp() public virtual override __mainnet_fork(16_685_972) {
-        alice = createUser("alice");
-        bob = createUser("bob");
+        (alice, ) = createUser("alice");
+        (bob, ) = createUser("bob");
 
         vm.startPrank(deployer);
 
@@ -3087,8 +3087,8 @@ contract ERC4626FactoryMultiDeployTest is HyperdriveFactoryBaseTest {
     }
 
     function test_hyperdriveFactoryDeploy_multiDeploy_multiPool() external {
-        address charlie = createUser("charlie"); // External user 1
-        address dan = createUser("dan"); // External user 2
+        (address charlie, ) = createUser("charlie"); // External user 1
+        (address dan, ) = createUser("dan"); // External user 2
 
         vm.startPrank(charlie);
 
@@ -3328,7 +3328,7 @@ contract ERC4626InstanceGetterTest is HyperdriveFactoryBaseTest {
     function testFuzz_hyperdriveFactory_getNumberOfInstances(
         uint256 numberOfInstances
     ) external {
-        address charlie = createUser("charlie");
+        (address charlie, ) = createUser("charlie");
 
         numberOfInstances = _bound(numberOfInstances, 1, 10);
 
@@ -3342,7 +3342,7 @@ contract ERC4626InstanceGetterTest is HyperdriveFactoryBaseTest {
     function testFuzz_hyperdriveFactory_getInstanceAtIndex(
         uint256 numberOfInstances
     ) external {
-        address charlie = createUser("charlie");
+        (address charlie, ) = createUser("charlie");
 
         numberOfInstances = _bound(numberOfInstances, 1, 10);
 
@@ -3377,7 +3377,7 @@ contract ERC4626InstanceGetterTest is HyperdriveFactoryBaseTest {
         uint256 startingIndex,
         uint256 endingIndex
     ) external {
-        address charlie = createUser("charlie");
+        (address charlie, ) = createUser("charlie");
 
         numberOfInstances = _bound(numberOfInstances, 1, 10);
         startingIndex = _bound(startingIndex, 0, numberOfInstances - 1);

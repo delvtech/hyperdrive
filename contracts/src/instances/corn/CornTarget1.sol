@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.22;
+pragma solidity 0.8.24;
 
 import { HyperdriveTarget1 } from "../../external/HyperdriveTarget1.sol";
 import { ICornSilo } from "../../interfaces/ICornSilo.sol";

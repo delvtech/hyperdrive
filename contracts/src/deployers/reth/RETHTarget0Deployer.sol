@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.22;
+pragma solidity 0.8.24;
 
 import { RETHTarget0 } from "../../instances/reth/RETHTarget0.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";

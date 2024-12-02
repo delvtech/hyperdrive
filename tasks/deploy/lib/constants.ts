@@ -44,6 +44,8 @@ export const RSETH_POOL_LINEA =
 // │ Mainnet Addresses                                       │
 // ╰─────────────────────────────────────────────────────────╯
 
+export const CBBTC_ADDRESS_MAINNET =
+    "0xcbB7C0000aB88B473b1f5aFd9ef808440eed33Bf" as Address;
 export const CORN_SILO_ADDRESS_MAINNET =
     "0x8bc93498b861fd98277c3b51d240e7E56E48F23c" as Address;
 
@@ -106,6 +108,9 @@ export const USDS_ADDRESS_MAINNET =
 
 export const WSTETH_ADDRESS_MAINNET =
     "0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0" as Address;
+
+export const WBTC_ADDRESS_MAINNET =
+    "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599" as Address;
 
 // ╭─────────────────────────────────────────────────────────╮
 // │ Mainnet Whales                                          │

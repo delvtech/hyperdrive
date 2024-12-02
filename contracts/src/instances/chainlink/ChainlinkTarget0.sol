@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.22;
+pragma solidity 0.8.24;
 
 import { HyperdriveTarget0 } from "../../external/HyperdriveTarget0.sol";
 import { IChainlinkAggregatorV3 } from "../../interfaces/IChainlinkAggregatorV3.sol";

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.22;
+pragma solidity ^0.8.20;
 
 import { ERC4626HyperdriveCoreDeployer } from "../../../contracts/src/deployers/erc4626/ERC4626HyperdriveCoreDeployer.sol";
 import { ERC4626HyperdriveDeployerCoordinator } from "../../../contracts/src/deployers/erc4626/ERC4626HyperdriveDeployerCoordinator.sol";
@@ -53,9 +53,8 @@ contract ERC4626HyperdriveTest is HyperdriveTest {
     IHyperdriveFactory internal factory;
 
     function setUp() public override __mainnet_fork(16_685_972) {
-        alice = createUser("alice");
-        bob = createUser("bob");
-
+        // Run the higher-level setup.
+        super.setUp();
         vm.startPrank(deployer);
 
         // Deploy the ERC4626Hyperdrive factory and deployer.
