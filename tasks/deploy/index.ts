@@ -7,4 +7,5 @@ export * from "./instance";
 export * from "./lib";
 export * from "./registry";
 export * from "./registry-create2-info";
+export * from "./uni-v3-zap";
 export * from "./verify";
