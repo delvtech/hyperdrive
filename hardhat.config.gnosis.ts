@@ -10,6 +10,7 @@ import {
     GNOSIS_CHAINLINK_COORDINATOR,
     GNOSIS_ERC4626_COORDINATOR,
     GNOSIS_FACTORY,
+    GNOSIS_SGYD_182DAY,
     GNOSIS_SXDAI_182DAY,
     GNOSIS_WSTETH_182DAY,
 } from "./tasks/deploy/config/gnosis";
@@ -30,7 +31,11 @@ const config: HardhatUserConfig = {
                     GNOSIS_CHAINLINK_COORDINATOR,
                     GNOSIS_ERC4626_COORDINATOR,
                 ],
-                instances: [GNOSIS_WSTETH_182DAY, GNOSIS_SXDAI_182DAY],
+                instances: [
+                    GNOSIS_WSTETH_182DAY,
+                    GNOSIS_SXDAI_182DAY,
+                    GNOSIS_SGYD_182DAY,
+                ],
                 checkpointRewarders: [],
                 checkpointSubrewarders: [],
             },

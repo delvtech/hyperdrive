@@ -17,6 +17,7 @@ export * from "./morpho-blue-wsteth-usda-182day";
 export * from "./morpho-blue-wsteth-usdc-182day";
 export * from "./reth-182day";
 export * from "./reth-coordinator";
+export * from "./sgyd-182day";
 export * from "./staking-usds-coordinator";
 export * from "./staking-usds-sky-182day";
 export * from "./steth-182day";

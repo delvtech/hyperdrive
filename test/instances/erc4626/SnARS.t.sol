@@ -78,6 +78,8 @@ contract SnARSHyperdriveTest is ERC4626HyperdriveInstanceTest {
                 //
                 // The base test tolerances.
                 closeLongWithBaseTolerance: 0,
+                closeShortWithBaseUpperBoundTolerance: 0,
+                closeShortWithBaseTolerance: 0,
                 roundTripLpInstantaneousWithBaseTolerance: 0,
                 roundTripLpWithdrawalSharesWithBaseTolerance: 0,
                 roundTripLongInstantaneousWithBaseUpperBoundTolerance: 0,
