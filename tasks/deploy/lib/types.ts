@@ -224,6 +224,10 @@ export type HyperdriveConfig = {
         CoordinatorPrefix<ContractName>
     >[];
     instances: HyperdriveInstanceConfig<InstancePrefix<ContractName>>[];
+    hyperdriveMatchingEngine?: {
+        name: string;
+        morpho: Address;
+    };
     uniV3Zap?: {
         name: string;
         swapRouter: Address;

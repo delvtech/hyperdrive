@@ -69,6 +69,14 @@ HyperdriveDeployBaseTask(
             } as DeployInstanceParams);
         }
 
+        // deploy the HyperdriveMatchingEngine contract.
+        if (hyperdriveDeploy.hyperdriveMatchingEngine) {
+            await run("deploy:hyperdrive-matching-engine", {
+                name: hyperdriveDeploy.hyperdriveMatchingEngine.name,
+                swapRouter: hyperdriveDeploy.hyperdriveMatchingEngine.morpho,
+            });
+        }
+
         // deploy the UniV3Zap contract.
         if (hyperdriveDeploy.uniV3Zap) {
             await run("deploy:uni-v3-zap", {

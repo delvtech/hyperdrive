@@ -55,6 +55,10 @@ const config: HardhatUserConfig = {
                 ],
                 checkpointRewarders: [],
                 checkpointSubrewarders: [],
+                hyperdriveMatchingEngine: {
+                    name: "DELV Hyperdrive Matching Engine",
+                    morpho: "0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb", // Morpho
+                },
                 uniV3Zap: {
                     name: "DELV UniV3 Zap",
                     swapRouter: "0xE592427A0AEce92De3Edee1F18E0157C05861564", // Uniswap V3 SwapRouter
