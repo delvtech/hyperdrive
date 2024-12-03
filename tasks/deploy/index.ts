@@ -3,6 +3,7 @@ export * from "./checkpoint-subrewarder";
 export * from "./coordinator";
 export * from "./factory";
 export * from "./hyperdrive";
+export * from "./hyperdrive-matching-engine";
 export * from "./instance";
 export * from "./lib";
 export * from "./registry";

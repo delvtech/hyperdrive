@@ -73,7 +73,7 @@ HyperdriveDeployBaseTask(
         if (hyperdriveDeploy.hyperdriveMatchingEngine) {
             await run("deploy:hyperdrive-matching-engine", {
                 name: hyperdriveDeploy.hyperdriveMatchingEngine.name,
-                swapRouter: hyperdriveDeploy.hyperdriveMatchingEngine.morpho,
+                morpho: hyperdriveDeploy.hyperdriveMatchingEngine.morpho,
             });
         }
 

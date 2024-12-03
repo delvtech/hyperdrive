@@ -11,9 +11,9 @@ import {
     CREATE_X_FACTORY,
     CREATE_X_FACTORY_DEPLOYER,
     CREATE_X_PRESIGNED_TRANSACTION,
+    HYPERDRIVE_MATCHING_ENGINE_SALT,
     HyperdriveDeployBaseTask,
     HyperdriveDeployNamedTaskParams,
-    UNI_V3_ZAP_SALT,
 } from "./lib";
 
 // Extend params to include the additional constructor arguments
@@ -69,7 +69,7 @@ HyperdriveDeployBaseTask(
             CREATE_X_FACTORY,
         );
         let tx = await createXDeployer.write.deployCreate3([
-            UNI_V3_ZAP_SALT,
+            HYPERDRIVE_MATCHING_ENGINE_SALT,
             creationCode,
         ]);
         let pc = await viem.getPublicClient();
