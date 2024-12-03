@@ -3,6 +3,13 @@ import { Address } from "viem";
 export const ETH_ADDRESS =
     "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE" as Address;
 
+// FIXME: This is a stand-in. Actually calculate an address for this contract.
+//
+// The salt for the Create 3 deployment of the Hyperdrive Registry. This will
+// generate the address "0x6668310631Ad5a5ac92dC9549353a5BaaE16C666".
+export const UNI_V3_ZAP_SALT =
+    "0x01f4fa8cb977b40332a83c000000000000000000000000000000000000000000" as `0x${string}`;
+
 // The salt for the Create 3 deployment of the Hyperdrive Registry. This will
 // generate the address "0x6668310631Ad5a5ac92dC9549353a5BaaE16C666".
 export const REGISTRY_SALT =

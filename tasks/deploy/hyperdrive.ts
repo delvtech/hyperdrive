@@ -68,5 +68,14 @@ HyperdriveDeployBaseTask(
                 ...rest,
             } as DeployInstanceParams);
         }
+
+        // deploy the UniV3Zap contract.
+        if (hyperdriveDeploy.uniV3Zap) {
+            await run("deploy:uni-v3-zap", {
+                name: hyperdriveDeploy.uniV3Zap.name,
+                swapRouter: hyperdriveDeploy.uniV3Zap.swapRouter,
+                weth: hyperdriveDeploy.uniV3Zap.weth,
+            });
+        }
     },
 );

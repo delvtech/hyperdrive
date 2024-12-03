@@ -224,4 +224,9 @@ export type HyperdriveConfig = {
         CoordinatorPrefix<ContractName>
     >[];
     instances: HyperdriveInstanceConfig<InstancePrefix<ContractName>>[];
+    uniV3Zap?: {
+        name: string;
+        swapRouter: Address;
+        weth: Address;
+    };
 };

@@ -55,6 +55,11 @@ const config: HardhatUserConfig = {
                 ],
                 checkpointRewarders: [],
                 checkpointSubrewarders: [],
+                uniV3Zap: {
+                    name: "DELV UniV3 Zap",
+                    swapRouter: "0xE592427A0AEce92De3Edee1F18E0157C05861564", // Uniswap V3 SwapRouter
+                    weth: "0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2", // WETH on mainnet
+                },
             },
         },
     },
