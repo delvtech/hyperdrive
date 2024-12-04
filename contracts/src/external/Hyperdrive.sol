@@ -250,6 +250,7 @@ abstract contract Hyperdrive is
     function mint(
         uint256,
         uint256,
+        uint256,
         IHyperdrive.PairOptions calldata
     ) external payable returns (uint256, uint256) {
         _delegate(target4);

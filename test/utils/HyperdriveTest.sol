@@ -876,9 +876,9 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
             return
                 hyperdrive.mint{ value: overrides.depositAmount }(
                     baseAmount,
+                    overrides.minSlippage, // min output
                     overrides.minSharePrice, // min vault share price
                     IHyperdrive.PairOptions({
-                        // FIXME: It might be good to test with both.
                         longDestination: overrides.destination,
                         shortDestination: overrides.destination,
                         asBase: overrides.asBase,
@@ -891,9 +891,9 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
             return
                 hyperdrive.mint(
                     baseAmount,
+                    overrides.minSlippage, // min output
                     overrides.minSharePrice, // min vault share price
                     IHyperdrive.PairOptions({
-                        // FIXME: It might be good to test with both.
                         longDestination: overrides.destination,
                         shortDestination: overrides.destination,
                         asBase: overrides.asBase,
@@ -916,8 +916,7 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
                     destination: trader,
                     depositAmount: baseAmount,
                     minSharePrice: 0, // min vault share price of 0
-                    // FIXME: Should this be unused?
-                    minSlippage: 0, // unused
+                    minSlippage: 0, // min output of 0
                     maxSlippage: type(uint256).max, // unused
                     extraData: new bytes(0) // unused
                 })
@@ -938,8 +937,7 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
                     destination: trader,
                     depositAmount: amount,
                     minSharePrice: 0, // min vault share price of 0
-                    // FIXME: Should this be unused?
-                    minSlippage: 0, // unused
+                    minSlippage: 0, // min output of 0
                     maxSlippage: type(uint256).max, // unused
                     extraData: new bytes(0) // unused
                 })

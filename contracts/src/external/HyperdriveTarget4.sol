@@ -99,15 +99,21 @@ abstract contract HyperdriveTarget4 is
     /// @param _amount The amount of capital provided to open the long. The
     ///        units of this quantity are either base or vault shares, depending
     ///        on the value of `_options.asBase`.
+    /// @param _minOutput The minimum number of bonds to receive.
+    /// @param _minVaultSharePrice The minimum vault share price at which to
+    ///        mint the bonds. This allows traders to protect themselves from
+    ///        opening a long in a checkpoint where negative interest has
+    ///        accrued.
     /// @param _options The pair options that configure how the trade is settled.
     /// @return maturityTime The maturity time of the new long and short positions.
     /// @return bondAmount The bond amount of the new long and short positoins.
     function mint(
         uint256 _amount,
+        uint256 _minOutput,
         uint256 _minVaultSharePrice,
         IHyperdrive.PairOptions calldata _options
     ) external payable returns (uint256 maturityTime, uint256 bondAmount) {
-        return _mint(_amount, _minVaultSharePrice, _options);
+        return _mint(_amount, _minOutput, _minVaultSharePrice, _options);
     }
 
     /// Checkpoints ///

@@ -5,7 +5,6 @@ import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveEvents } from "../interfaces/IHyperdriveEvents.sol";
 import { AssetId } from "../libraries/AssetId.sol";
 import { FixedPointMath, ONE } from "../libraries/FixedPointMath.sol";
-import { HyperdriveMath } from "../libraries/HyperdriveMath.sol";
 import { LPMath } from "../libraries/LPMath.sol";
 import { SafeCast } from "../libraries/SafeCast.sol";
 import { HyperdriveBase } from "./HyperdriveLP.sol";
@@ -27,9 +26,6 @@ abstract contract HyperdrivePair is
     using SafeCast for uint256;
     using SafeCast for int256;
 
-    // FIXME: Do we need a `minOutput` parameter here? It feels kind of paranoid,
-    // but it's probably a good idea with things like prepaid interest.
-    //
     /// @dev Mints a pair of long and short positions that directly match each
     ///      other. The amount of long and short positions that are created is
     ///      equal to the base value of the deposit. These positions are sent to
@@ -37,11 +33,17 @@ abstract contract HyperdrivePair is
     /// @param _amount The amount of capital provided to open the long. The
     ///        units of this quantity are either base or vault shares, depending
     ///        on the value of `_options.asBase`.
+    /// @param _minOutput The minimum number of bonds to receive.
+    /// @param _minVaultSharePrice The minimum vault share price at which to
+    ///        mint the bonds. This allows traders to protect themselves from
+    ///        opening a long in a checkpoint where negative interest has
+    ///        accrued.
     /// @param _options The pair options that configure how the trade is settled.
     /// @return maturityTime The maturity time of the new long and short positions.
     /// @return bondAmount The bond amount of the new long and short positoins.
     function _mint(
         uint256 _amount,
+        uint256 _minOutput,
         uint256 _minVaultSharePrice,
         IHyperdrive.PairOptions calldata _options
     )
@@ -100,6 +102,11 @@ abstract contract HyperdrivePair is
             vaultSharePrice,
             openVaultSharePrice
         );
+
+        // Enforce the minimum user outputs.
+        if (bondAmount < _minOutput) {
+            revert IHyperdrive.OutputLimit();
+        }
 
         // Apply the state changes caused by creating the pair.
         maturityTime = latestCheckpoint + _positionDuration;
@@ -298,8 +305,15 @@ abstract contract HyperdrivePair is
                 2 *
                 _flatFee.mulUp(_governanceLPFee))
         );
-        // FIXME: What should the rounding be here?
-        uint256 governanceFee = bondAmount.mulDown(_flatFee).mulDown(
+
+        // The governance fee that will be paid on both the long and the short
+        // sides of the trade is given by:
+        //
+        // governanceFee = bondAmount * flatFee * governanceLPFee
+        //
+        // NOTE: Round the flat fee calculation up and the governance fee
+        // calculation down to match the rounding used in the other flows.
+        uint256 governanceFee = bondAmount.mulUp(_flatFee).mulDown(
             _governanceLPFee
         );
 

@@ -4,8 +4,7 @@ pragma solidity 0.8.22;
 import { VmSafe } from "forge-std/Vm.sol";
 import { IHyperdrive } from "../../../contracts/src/interfaces/IHyperdrive.sol";
 import { AssetId } from "../../../contracts/src/libraries/AssetId.sol";
-import { FixedPointMath, ONE } from "../../../contracts/src/libraries/FixedPointMath.sol";
-import { HyperdriveMath } from "../../../contracts/src/libraries/HyperdriveMath.sol";
+import { FixedPointMath } from "../../../contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveTest, HyperdriveUtils } from "../../utils/HyperdriveTest.sol";
 import { Lib } from "../../utils/Lib.sol";
 
@@ -17,6 +16,7 @@ contract MintTest is HyperdriveTest {
 
     /// @dev Sets up the harness and deploys and initializes a pool with fees.
     function setUp() public override {
+        // Run the higher level setup function.
         super.setUp();
 
         // Start recording event logs.
@@ -42,6 +42,7 @@ contract MintTest is HyperdriveTest {
         hyperdrive.mint(
             0,
             0,
+            0,
             IHyperdrive.PairOptions({
                 longDestination: bob,
                 shortDestination: bob,
@@ -64,7 +65,31 @@ contract MintTest is HyperdriveTest {
         vm.expectRevert(IHyperdrive.MinimumSharePrice.selector);
         hyperdrive.mint(
             basePaid,
+            0,
             minVaultSharePrice,
+            IHyperdrive.PairOptions({
+                longDestination: bob,
+                shortDestination: bob,
+                asBase: true,
+                extraData: new bytes(0)
+            })
+        );
+    }
+
+    /// @dev Ensures that minting fails when the bond proceeds is lower than
+    ///      the minimum output.
+    function test_mint_failure_minOutput() external {
+        vm.stopPrank();
+        vm.startPrank(bob);
+        uint256 basePaid = 10e18;
+        baseToken.mint(bob, basePaid);
+        baseToken.approve(address(hyperdrive), basePaid);
+        uint256 minOutput = 15e18;
+        vm.expectRevert(IHyperdrive.OutputLimit.selector);
+        hyperdrive.mint(
+            basePaid,
+            minOutput,
+            0,
             IHyperdrive.PairOptions({
                 longDestination: bob,
                 shortDestination: bob,
@@ -84,6 +109,7 @@ contract MintTest is HyperdriveTest {
         vm.expectRevert(IHyperdrive.NotPayable.selector);
         hyperdrive.mint{ value: 1 }(
             basePaid,
+            0,
             0,
             IHyperdrive.PairOptions({
                 longDestination: bob,
@@ -106,6 +132,7 @@ contract MintTest is HyperdriveTest {
         hyperdrive.mint(
             basePaid,
             0,
+            0,
             IHyperdrive.PairOptions({
                 longDestination: address(0),
                 shortDestination: bob,
@@ -126,6 +153,7 @@ contract MintTest is HyperdriveTest {
         vm.expectRevert(IHyperdrive.RestrictedZeroAddress.selector);
         hyperdrive.mint(
             basePaid,
+            0,
             0,
             IHyperdrive.PairOptions({
                 longDestination: bob,
@@ -148,6 +176,7 @@ contract MintTest is HyperdriveTest {
         hyperdrive.mint(
             basePaid,
             0,
+            0,
             IHyperdrive.PairOptions({
                 longDestination: bob,
                 shortDestination: bob,
@@ -158,8 +187,6 @@ contract MintTest is HyperdriveTest {
         pause(false);
     }
 
-    // FIXME: This case would be better if there was actually pre-paid interest.
-    //
     /// @dev Ensures that minting performs correctly when it succeeds.
     function test_mint_success() external {
         // Mint some base tokens to Alice and approve Hyperdrive.
@@ -309,6 +336,7 @@ contract MintTest is HyperdriveTest {
         vm.startPrank(alice);
         (uint256 maturityTime, uint256 bondAmount) = hyperdrive.mint(
             _testCase.amount,
+            0,
             0,
             IHyperdrive.PairOptions({
                 longDestination: _testCase.long,
