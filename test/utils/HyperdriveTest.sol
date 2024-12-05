@@ -859,6 +859,93 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
             );
     }
 
+    function mint(
+        address trader,
+        uint256 baseAmount,
+        DepositOverrides memory overrides
+    ) internal returns (uint256 maturityTime, uint256 bondAmount) {
+        vm.stopPrank();
+        vm.startPrank(trader);
+
+        // Mint the bonds.
+        hyperdrive.getPoolConfig();
+        if (
+            address(hyperdrive.getPoolConfig().baseToken) == address(ETH) &&
+            overrides.asBase
+        ) {
+            return
+                hyperdrive.mint{ value: overrides.depositAmount }(
+                    baseAmount,
+                    overrides.minSharePrice, // min vault share price
+                    IHyperdrive.PairOptions({
+                        // FIXME: It might be good to test with both.
+                        longDestination: overrides.destination,
+                        shortDestination: overrides.destination,
+                        asBase: overrides.asBase,
+                        extraData: overrides.extraData
+                    })
+                );
+        } else {
+            baseToken.mint(baseAmount);
+            baseToken.approve(address(hyperdrive), baseAmount);
+            return
+                hyperdrive.mint(
+                    baseAmount,
+                    overrides.minSharePrice, // min vault share price
+                    IHyperdrive.PairOptions({
+                        // FIXME: It might be good to test with both.
+                        longDestination: overrides.destination,
+                        shortDestination: overrides.destination,
+                        asBase: overrides.asBase,
+                        extraData: overrides.extraData
+                    })
+                );
+        }
+    }
+
+    function mint(
+        address trader,
+        uint256 baseAmount
+    ) internal returns (uint256 maturityTime, uint256 bondAmount) {
+        return
+            mint(
+                trader,
+                baseAmount,
+                DepositOverrides({
+                    asBase: true,
+                    destination: trader,
+                    depositAmount: baseAmount,
+                    minSharePrice: 0, // min vault share price of 0
+                    // FIXME: Should this be unused?
+                    minSlippage: 0, // unused
+                    maxSlippage: type(uint256).max, // unused
+                    extraData: new bytes(0) // unused
+                })
+            );
+    }
+
+    function mint(
+        address trader,
+        uint256 amount,
+        bool asBase
+    ) internal returns (uint256 maturityTime, uint256 bondAmount) {
+        return
+            mint(
+                trader,
+                amount,
+                DepositOverrides({
+                    asBase: asBase,
+                    destination: trader,
+                    depositAmount: amount,
+                    minSharePrice: 0, // min vault share price of 0
+                    // FIXME: Should this be unused?
+                    minSlippage: 0, // unused
+                    maxSlippage: type(uint256).max, // unused
+                    extraData: new bytes(0) // unused
+                })
+            );
+    }
+
     /// Utils ///
 
     function advanceTime(uint256 time, int256 variableRate) internal virtual {

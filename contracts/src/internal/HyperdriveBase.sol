@@ -29,16 +29,20 @@ abstract contract HyperdriveBase is IHyperdriveEvents, HyperdriveStorage {
     /// @dev Process a deposit in either base or vault shares.
     /// @param _amount The amount of capital to deposit. The units of this
     ///        quantity are either base or vault shares, depending on the value
-    ///        of `_options.asBase`.
-    /// @param _options The options that configure how the deposit is
-    ///        settled. In particular, the currency used in the deposit is
-    ///        specified here. Aside from those options, yield sources can
-    ///        choose to implement additional options.
+    ///        of `_asBase`.
+    /// @param _asBase A flag indicating if the deposit should be made in base
+    ///        or in vault shares.
+    /// @param _extraData Additional data that can be used to implement custom
+    ///        logic in implementation contracts. By convention, the last 32
+    ///        bytes of extra data are ignored by instances and "passed through"
+    ///        to the event. This can be used to pass metadata through
+    ///        transactions.
     /// @return sharesMinted The shares created by this deposit.
     /// @return vaultSharePrice The vault share price.
     function _deposit(
         uint256 _amount,
-        IHyperdrive.Options calldata _options
+        bool _asBase,
+        bytes calldata _extraData
     ) internal returns (uint256 sharesMinted, uint256 vaultSharePrice) {
         // WARN: This logic doesn't account for slippage in the conversion
         // from base to shares. If deposits to the yield source incur
@@ -50,19 +54,16 @@ abstract contract HyperdriveBase is IHyperdriveEvents, HyperdriveStorage {
 
         // Deposit with either base or shares depending on the provided options.
         uint256 refund;
-        if (_options.asBase) {
+        if (_asBase) {
             // Process the deposit in base.
-            (sharesMinted, refund) = _depositWithBase(
-                _amount,
-                _options.extraData
-            );
+            (sharesMinted, refund) = _depositWithBase(_amount, _extraData);
         } else {
             // The refund is equal to the full message value since ETH will
             // never be a shares asset.
             refund = msg.value;
 
             // Process the deposit in shares.
-            _depositWithShares(_amount, _options.extraData);
+            _depositWithShares(_amount, _extraData);
         }
 
         // Calculate the vault share price.
@@ -194,6 +195,23 @@ abstract contract HyperdriveBase is IHyperdriveEvents, HyperdriveStorage {
         IHyperdrive.Options calldata _options
     ) internal pure virtual {
         if (_options.destination == address(0)) {
+            revert IHyperdrive.RestrictedZeroAddress();
+        }
+    }
+
+    /// @dev A yield source dependent check that verifies that the provided
+    ///      pair options are valid. The default check is that the destinations
+    ///      are non-zero to prevent users from accidentally transferring funds
+    ///      to the zero address. Custom integrations can override this to
+    ///      implement additional checks.
+    /// @param _options The provided options for the transaction.
+    function _checkPairOptions(
+        IHyperdrive.PairOptions calldata _options
+    ) internal pure virtual {
+        if (
+            _options.longDestination == address(0) ||
+            _options.shortDestination == address(0)
+        ) {
             revert IHyperdrive.RestrictedZeroAddress();
         }
     }
