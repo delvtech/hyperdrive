@@ -1,19 +1,12 @@
 import { subtask } from "hardhat/config";
-import {
-    Address,
-    decodeEventLog,
-    encodeDeployData,
-    encodePacked,
-    parseEther,
-} from "viem";
+import { Address, decodeEventLog, encodeDeployData, encodePacked } from "viem";
 import { CREATEX_ABI } from "../../lib/createx/interface/src/lib/constants";
 import {
     CREATE_X_FACTORY,
-    CREATE_X_FACTORY_DEPLOYER,
-    CREATE_X_PRESIGNED_TRANSACTION,
     HYPERDRIVE_MATCHING_ENGINE_SALT,
     HyperdriveDeployBaseTask,
     HyperdriveDeployNamedTaskParams,
+    deployCreateX,
 } from "./lib";
 
 // Extend params to include the additional constructor arguments
@@ -28,23 +21,13 @@ HyperdriveDeployBaseTask(
         "deploys the HyperdriveMatchingEngine contract to the configured chain",
     ),
 ).setAction(
-    async (
-        { name, morpho }: DeployHyperdriveMatchingEngineParams,
-        { hyperdriveDeploy, artifacts, viem, network },
-    ) => {
+    async ({ name, morpho }: DeployHyperdriveMatchingEngineParams, hre) => {
         console.log("\nRunning deploy:hyperdrive-matching-engine ...");
+        const { hyperdriveDeploy, artifacts, viem, network } = hre;
 
-        if (network.name == "anvil") {
-            let tc = await viem.getTestClient();
-            await tc.setBalance({
-                value: parseEther("1"),
-                address: CREATE_X_FACTORY_DEPLOYER,
-            });
-            let wc = await viem.getWalletClient(CREATE_X_FACTORY_DEPLOYER);
-            await wc.sendRawTransaction({
-                serializedTransaction: CREATE_X_PRESIGNED_TRANSACTION,
-            });
-        }
+        // If the network is anvil, we need to deploy the CREATEX factory if it
+        // hasn't been deployed before.
+        await deployCreateX(hre);
 
         // Skip if the zap is already deployed
         if (!!hyperdriveDeploy.deployments.byNameSafe(name)) {
@@ -72,7 +55,6 @@ HyperdriveDeployBaseTask(
             HYPERDRIVE_MATCHING_ENGINE_SALT,
             creationCode,
         ]);
-        let pc = await viem.getPublicClient();
         let { logs } = await pc.waitForTransactionReceipt({ hash: tx });
         const decodedLog = decodeEventLog({
             abi: CREATEX_ABI,
