@@ -189,12 +189,6 @@ abstract contract HyperdriveLP is
         // Check that the provided options are valid.
         _checkOptions(_options);
 
-        // Ensure that the contribution is greater than or equal to the minimum
-        // transaction amount.
-        if (_contribution < _minimumTransactionAmount) {
-            revert IHyperdrive.MinimumTransactionAmount();
-        }
-
         // Enforce the slippage guard.
         uint256 apr = HyperdriveMath.calculateSpotAPR(
             _effectiveShareReserves(),
@@ -212,6 +206,17 @@ abstract contract HyperdriveLP is
             _contribution,
             _options
         );
+
+        // Ensure that the contribution amount in base is greater than or equal
+        // to the minimum transaction amount.
+        {
+            uint256 baseContribution = shareContribution.mulDown(
+                vaultSharePrice
+            );
+            if (baseContribution < _minimumTransactionAmount) {
+                revert IHyperdrive.MinimumTransactionAmount();
+            }
+        }
 
         // Perform a checkpoint.
         uint256 latestCheckpoint = _latestCheckpoint();
@@ -309,7 +314,16 @@ abstract contract HyperdriveLP is
             );
 
             // Ensure that enough lp shares are minted so that they can be redeemed.
-            if (lpShares < _minimumTransactionAmount) {
+            //
+            // NOTE: We convert the LP shares quantity to base using the LP
+            // share price and the vault share price since the minimum
+            // transaction amount is measured in base.
+            uint256 lpShares_ = lpShares; // avoid stack-too-deep
+            if (
+                lpShares_
+                    .mulDivDown(startingPresentValue, lpTotalSupply)
+                    .mulDown(vaultSharePrice) < _minimumTransactionAmount
+            ) {
                 revert IHyperdrive.MinimumTransactionAmount();
             }
         }
@@ -338,7 +352,7 @@ abstract contract HyperdriveLP is
         // and price discovery worsened after adding liquidity, we revert to
         // avoid dangerous pool states.
         uint256 latestCheckpoint_ = latestCheckpoint; // avoid stack-too-deep
-        uint256 lpShares_ = lpShares; // avoid stack-too-deep
+        uint256 lpShares__ = lpShares; // avoid stack-too-deep
         IHyperdrive.Options calldata options = _options; // avoid stack-too-deep
         uint256 vaultSharePrice_ = vaultSharePrice; // avoid stack-too-deep
         int256 solvencyAfterMaxLongAfter;
@@ -366,7 +380,7 @@ abstract contract HyperdriveLP is
             : startingPresentValue.mulDivDown(vaultSharePrice_, lpTotalSupply);
         emit AddLiquidity(
             options.destination,
-            lpShares_,
+            lpShares__,
             contribution,
             vaultSharePrice_,
             options.asBase,
@@ -404,12 +418,24 @@ abstract contract HyperdriveLP is
 
         // Ensure that the amount of LP shares to remove is greater than or
         // equal to the minimum transaction amount.
-        if (_lpShares < _minimumTransactionAmount) {
-            revert IHyperdrive.MinimumTransactionAmount();
+        //
+        // NOTE: We convert the LP shares quantity to base using the LP
+        // share price since the minimum transaction amount is measured in
+        // base.
+        uint256 vaultSharePrice = _pricePerVaultShare();
+        {
+            (uint256 lpSharePrice_, bool success) = _calculateLPSharePriceSafe(
+                vaultSharePrice
+            );
+            if (
+                !success ||
+                _lpShares.mulDown(lpSharePrice_) < _minimumTransactionAmount
+            ) {
+                revert IHyperdrive.MinimumTransactionAmount();
+            }
         }
 
         // Perform a checkpoint.
-        uint256 vaultSharePrice = _pricePerVaultShare();
         _applyCheckpoint(
             _latestCheckpoint(),
             vaultSharePrice,
