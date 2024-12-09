@@ -4,6 +4,7 @@ pragma solidity 0.8.22;
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { ECDSA } from "openzeppelin/utils/cryptography/ECDSA.sol";
 import { EIP712 } from "openzeppelin/utils/cryptography/EIP712.sol";
+import { IERC1271 } from "openzeppelin/interfaces/IERC1271.sol";
 
 contract HyperdriveMatchingEngine is EIP712 {
     using ECDSA for bytes32;
@@ -25,21 +26,20 @@ contract HyperdriveMatchingEngine is EIP712 {
     mapping(bytes32 => uint256) public orderFills;    // Order hash => filled amount
     mapping(bytes32 => bool) public orderCancelled;   // Order hash => cancelled status
 
-    constructor() EIP712("HyperdriveMatchingEngine", "1.0.0") {}
+    constructor() EIP712("HyperdriveMatchingEngine", "2.0.0") {}
 
     /// @notice Validates an order's signature and status
     function _validateOrder(Order calldata order) internal view returns (bytes32) {
         bytes32 orderHash = _hashOrder(order);
-        
+    
         // Check expiry
         require(block.timestamp <= order.expiry, "Order expired");
-        
+    
         // Check if cancelled
         require(!orderCancelled[orderHash], "Order cancelled");
         
-        // Verify signature
-        address signer = _recoverSigner(orderHash, order.signature);
-        require(signer == order.trader, "Invalid signature");
+        // Verify signature using the more comprehensive verification method
+        require(verifySignature(orderHash, order.signature, order.trader), "Invalid signature");
 
         return orderHash;
     }
@@ -105,8 +105,27 @@ contract HyperdriveMatchingEngine is EIP712 {
         )));
     }
 
-    function _recoverSigner(bytes32 hash, bytes memory signature) internal pure returns (address) {
-        return hash.recover(signature);
+    /// @notice Verifies a signature for a known signer
+    /// @param _hash The EIP-712 hash of the order
+    /// @param _signature The signature bytes
+    /// @param _signer The expected signer
+    /// @return A flag indicating whether signature verification was successful
+    function verifySignature(
+        bytes32 _hash,
+        bytes calldata _signature,
+        address _signer
+    ) public view returns (bool) {
+        // For contracts, use EIP-1271 signatures
+        if (_signer.code.length > 0) {
+            try IERC1271(_signer).isValidSignature(_hash, _signature) returns (bytes4 magicValue) {
+                return magicValue == IERC1271.isValidSignature.selector;
+            } catch {
+                return false;
+            }
+        }
+    
+        // For EOAs, verify the ECDSA signature
+        return ECDSA.recover(_hash, _signature) == _signer;
     }
 
     function _areOrdersCompatible(Order calldata order1, Order calldata order2) internal pure returns (bool) {
