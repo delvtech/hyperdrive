@@ -57,6 +57,8 @@ contract AerodromeLp_AERO_USDC_Hyperdrive is AerodromeLpHyperdriveInstanceTest {
                 shouldAccrueInterest: false,
                 // The base test tolerances.
                 closeLongWithBaseTolerance: 0,
+                closeShortWithBaseUpperBoundTolerance: 10,
+                closeShortWithBaseTolerance: 100,
                 roundTripLpInstantaneousWithBaseTolerance: 0,
                 roundTripLpWithdrawalSharesWithBaseTolerance: 10,
                 roundTripLongInstantaneousWithBaseUpperBoundTolerance: 100,

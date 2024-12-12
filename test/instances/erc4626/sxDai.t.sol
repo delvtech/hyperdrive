@@ -2,18 +2,9 @@
 pragma solidity ^0.8.20;
 
 import { stdStorage, StdStorage } from "forge-std/Test.sol";
-import { ERC4626HyperdriveCoreDeployer } from "../../../contracts/src/deployers/erc4626/ERC4626HyperdriveCoreDeployer.sol";
-import { ERC4626HyperdriveDeployerCoordinator } from "../../../contracts/src/deployers/erc4626/ERC4626HyperdriveDeployerCoordinator.sol";
-import { ERC4626Target0Deployer } from "../../../contracts/src/deployers/erc4626/ERC4626Target0Deployer.sol";
-import { ERC4626Target1Deployer } from "../../../contracts/src/deployers/erc4626/ERC4626Target1Deployer.sol";
-import { ERC4626Target2Deployer } from "../../../contracts/src/deployers/erc4626/ERC4626Target2Deployer.sol";
-import { ERC4626Target3Deployer } from "../../../contracts/src/deployers/erc4626/ERC4626Target3Deployer.sol";
-import { ERC4626Target4Deployer } from "../../../contracts/src/deployers/erc4626/ERC4626Target4Deployer.sol";
-import { ERC4626Conversions } from "../../../contracts/src/instances/erc4626/ERC4626Conversions.sol";
 import { IERC20 } from "../../../contracts/src/interfaces/IERC20.sol";
 import { IERC4626 } from "../../../contracts/src/interfaces/IERC4626.sol";
 import { IHyperdrive } from "../../../contracts/src/interfaces/IHyperdrive.sol";
-import { FixedPointMath } from "../../../contracts/src/libraries/FixedPointMath.sol";
 import { InstanceTest } from "../../utils/InstanceTest.sol";
 import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
 import { InstanceTest } from "../../utils/InstanceTest.sol";
@@ -72,6 +63,8 @@ contract sxDaiHyperdriveTest is ERC4626HyperdriveInstanceTest {
                 shouldAccrueInterest: true,
                 // The base test tolerances.
                 closeLongWithBaseTolerance: 20,
+                closeShortWithBaseUpperBoundTolerance: 10,
+                closeShortWithBaseTolerance: 100,
                 roundTripLpInstantaneousWithBaseTolerance: 1e5,
                 roundTripLpWithdrawalSharesWithBaseTolerance: 1e5,
                 roundTripLongInstantaneousWithBaseUpperBoundTolerance: 1e3,
