@@ -112,6 +112,12 @@ export const WSTETH_ADDRESS_MAINNET =
 export const WBTC_ADDRESS_MAINNET =
     "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599" as Address;
 
+export const SCRVUSD_ADDRESS_MAINNET =
+    "0x0655977FEb2f289A4aB78af67BAB0d17aAb84367" as Address;
+
+export const CRVUSD_ADDRESS_MAINNET =
+    "0xf939E0A03FB07F59A73314E73794Be0E57ac1b4E" as Address;
+
 // ╭─────────────────────────────────────────────────────────╮
 // │ Mainnet Whales                                          │
 // ╰─────────────────────────────────────────────────────────╯
