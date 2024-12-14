@@ -60,6 +60,11 @@ interface_templates = [
     TemplatePathInfo("interfaces/IYieldSource.sol.jinja", "", "interfaces"),
 ]
 
+test_templates = [
+    TemplatePathInfo("tests/Test.t.sol.jinja", "Test", "test"),
+    TemplatePathInfo("tests/InstanceTest.t.sol.jinja", "InstanceTest", "test"),
+]
+
 
 def get_templates(env: Environment) -> list[TemplateInfo]:
     """Returns a list of template files for generating customized Hyperdrive instances.
@@ -76,7 +81,7 @@ def get_templates(env: Environment) -> list[TemplateInfo]:
     """
 
     # Gather the template file strings and return a list of TemplateInfo's.
-    path_infos = deployer_templates + instance_templates + interface_templates
+    path_infos = deployer_templates + instance_templates + interface_templates + test_templates
     return [TemplateInfo(template=env.get_template(path_info.path), path_info=path_info) for path_info in path_infos]
 
 
@@ -102,11 +107,18 @@ def write_templates_to_files(templates: list[TemplateInfo], output_path: Path, t
 
         # Prepend 'I' to the file name if it is an interface file
         is_interface_file = file_info.template.path_info.folder == "interfaces"
+        is_test_file = file_info.template.path_info.folder == "test"
         if is_interface_file:
             contract_file_name = "I" + contract_file_name
             # NOTE: don't place interface files in a subfolder
             contract_file_path = Path(
                 os.path.join(output_path, file_info.template.path_info.folder, contract_file_name)
+            )
+        # Put test files in test/instances
+        elif is_test_file:
+            # NOTE: don't place interface files in a subfolder
+            contract_file_path = Path(
+                os.path.join(file_info.template.path_info.folder, "instances", contract_file_name)
             )
         else:
             contract_file_path = Path(
