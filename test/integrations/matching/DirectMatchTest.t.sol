@@ -236,6 +236,8 @@ contract DirectMatchTest is HyperdriveTest {
         IHyperdriveMatchingEngine.OrderIntent
             memory longOrder = IHyperdriveMatchingEngine.OrderIntent({
                 trader: LP,
+                counterparty: HEDGER,
+                feeRecipient: LP,
                 hyperdrive: hyperdrive,
                 amount: 2_440_000e6,
                 slippageGuard: 2_499_999e6,
@@ -255,6 +257,8 @@ contract DirectMatchTest is HyperdriveTest {
         IHyperdriveMatchingEngine.OrderIntent
             memory shortOrder = IHyperdriveMatchingEngine.OrderIntent({
                 trader: HEDGER,
+                counterparty: LP,
+                feeRecipient: LP,
                 hyperdrive: hyperdrive,
                 amount: 2_500_000e6,
                 slippageGuard: 65_000e6,
@@ -315,6 +319,8 @@ contract DirectMatchTest is HyperdriveTest {
         // Create two more orders and sign them.
         longOrder = IHyperdriveMatchingEngine.OrderIntent({
             trader: LP,
+            counterparty: HEDGER,
+            feeRecipient: LP,
             hyperdrive: hyperdrive,
             amount: 2_440_000e6,
             slippageGuard: 2_499_999e6,
@@ -333,6 +339,8 @@ contract DirectMatchTest is HyperdriveTest {
         });
         shortOrder = IHyperdriveMatchingEngine.OrderIntent({
             trader: HEDGER,
+            counterparty: LP,
+            feeRecipient: LP,
             hyperdrive: hyperdrive,
             amount: 2_500_000e6,
             slippageGuard: 65_000e6,
