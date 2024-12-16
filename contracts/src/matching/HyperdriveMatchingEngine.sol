@@ -33,7 +33,7 @@ contract HyperdriveMatchingEngine is
     ///         struct.
     bytes32 public constant ORDER_INTENT_TYPEHASH =
         keccak256(
-            "OrderIntent(address trader,address hyperdrive,uint256 amount,uint256 slippageGuard,uint256 minVaultSharePrice,Options options,uint8 orderType,uint256 expiry,bytes32 salt)"
+            "OrderIntent(address trader,address counterparty,address feeRecipient,address hyperdrive,uint256 amount,uint256 slippageGuard,uint256 minVaultSharePrice,Options options,uint8 orderType,uint256 expiry,bytes32 salt)"
         );
 
     /// @notice The EIP712 typehash of the `IHyperdrive.Options` struct.
@@ -130,7 +130,8 @@ contract HyperdriveMatchingEngine is
             _longOrder,
             _shortOrder,
             _addLiquidityOptions,
-            _removeLiquidityOptions
+            _removeLiquidityOptions,
+            _feeRecipient
         );
 
         // Cancel the orders so that they can't be used again.
@@ -256,6 +257,8 @@ contract HyperdriveMatchingEngine is
                     abi.encode(
                         ORDER_INTENT_TYPEHASH,
                         _order.trader,
+                        _order.counterparty,
+                        _order.feeRecipient,
                         _order.hyperdrive,
                         _order.amount,
                         _order.slippageGuard,
@@ -389,13 +392,15 @@ contract HyperdriveMatchingEngine is
     /// @param _shortOrder The order intent to open a short.
     /// @param _addLiquidityOptions The options used when adding liquidity.
     /// @param _removeLiquidityOptions The options used when removing liquidity.
+    /// @param _feeRecipient The fee recipient of the match.
     /// @return longOrderHash The hash of the long order.
     /// @return shortOrderHash The hash of the short order.
     function _validateOrders(
         OrderIntent calldata _longOrder,
         OrderIntent calldata _shortOrder,
         IHyperdrive.Options calldata _addLiquidityOptions,
-        IHyperdrive.Options calldata _removeLiquidityOptions
+        IHyperdrive.Options calldata _removeLiquidityOptions,
+        address _feeRecipient
     ) internal view returns (bytes32 longOrderHash, bytes32 shortOrderHash) {
         // Ensure that the long and short orders are the correct type.
         if (
@@ -403,6 +408,26 @@ contract HyperdriveMatchingEngine is
             _shortOrder.orderType != OrderType.OpenShort
         ) {
             revert InvalidOrderType();
+        }
+
+        // Ensure that the counterparties are compatible.
+        if (
+            (_longOrder.counterparty != address(0) &&
+                _longOrder.counterparty != _shortOrder.trader) ||
+            (_shortOrder.counterparty != address(0) &&
+                _shortOrder.counterparty != _longOrder.trader)
+        ) {
+            revert InvalidCounterparty();
+        }
+
+        // Ensure that the fee recipients are compatible.
+        if (
+            (_longOrder.feeRecipient != address(0) &&
+                _longOrder.feeRecipient != _feeRecipient) ||
+            (_shortOrder.feeRecipient != address(0) &&
+                _shortOrder.feeRecipient != _feeRecipient)
+        ) {
+            revert InvalidFeeRecipient();
         }
 
         // Ensure that neither order has expired.
