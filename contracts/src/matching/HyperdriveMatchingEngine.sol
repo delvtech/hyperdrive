@@ -66,6 +66,14 @@ contract HyperdriveMatchingEngine is
         morpho = _morpho;
     }
 
+    /// @dev Ensures that the caller is Morpho.
+    modifier onlyMorpho() {
+        if (msg.sender != address(morpho)) {
+            revert SenderNotMorpho();
+        }
+        _;
+    }
+
     /// @notice Allows a trader to cancel a list of their orders.
     /// @param _orders The orders to cancel.
     function cancelOrders(OrderIntent[] calldata _orders) external {
@@ -157,13 +165,16 @@ contract HyperdriveMatchingEngine is
     }
 
     /// @notice Callback called when a flash loan occurs.
+    /// @dev This can only be called by Morpho. This ensures that the flow goes
+    ///      through `matchOrders`, which is required to verify that the
+    ///      validation checks are performed.
     /// @dev The callback is called only if data is not empty.
     /// @param _lpAmount The amount of assets that were flash loaned.
     /// @param _data Arbitrary data passed to the `flashLoan` function.
     function onMorphoFlashLoan(
         uint256 _lpAmount,
         bytes calldata _data
-    ) external nonReentrant {
+    ) external onlyMorpho nonReentrant {
         // Decode the execution parameters. This encodes the information
         // required to execute the LP, long, and short operations.
         (
