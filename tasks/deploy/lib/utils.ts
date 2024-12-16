@@ -28,7 +28,7 @@ export async function deployCreateX(hre: HardhatRuntimeEnvironment) {
     let bytecode = await pc.getBytecode({
         address: CREATE_X_FACTORY as Address,
     });
-    if (hre.network.name == "anvil" && bytecode!.length == 2) {
+    if (hre.network.name == "anvil" && !bytecode) {
         let tc = await hre.viem.getTestClient();
         await tc.setBalance({
             value: parseEther("1"),
