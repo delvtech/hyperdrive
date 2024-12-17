@@ -76,7 +76,9 @@ contract HyperdriveMatchingEngine is
 
     /// @notice Allows a trader to cancel a list of their orders.
     /// @param _orders The orders to cancel.
-    function cancelOrders(OrderIntent[] calldata _orders) external {
+    function cancelOrders(
+        OrderIntent[] calldata _orders
+    ) external nonReentrant {
         // Cancel all of the orders in the batch.
         bytes32[] memory orderHashes = new bytes32[](_orders.length);
         for (uint256 i = 0; i < _orders.length; i++) {
