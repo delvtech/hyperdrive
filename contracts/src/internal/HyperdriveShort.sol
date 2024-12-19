@@ -129,7 +129,7 @@ abstract contract HyperdriveShort is IHyperdriveEvents, HyperdriveLP {
         if (_maxDeposit < deposit) {
             revert IHyperdrive.OutputLimit();
         }
-        _deposit(deposit, _options);
+        _deposit(deposit, _options.asBase, _options.extraData);
 
         // Apply the state updates caused by opening the short.
         // Note: Updating the state using the result using the
