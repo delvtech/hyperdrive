@@ -6,11 +6,19 @@ import "./IERC20.sol";
 interface IPSM {
     // convertToBase = USDS in, SUSDS out
     // convertToShares = SUSDS in, USDS out
-    function previewSwapExactIn(address assetIn, address assetOut, uint256 amountIn) external view returns (uint256);
+    function previewSwapExactIn(
+        address assetIn,
+        address assetOut,
+        uint256 amountIn
+    ) external view returns (uint256);
 
     // convertToBase = USDS in, SUSDS out
     // convertToShares = SUSDS in, USDS out
-    function previewSwapExactOut(address assetIn, address assetOut, uint256 amountOut) external view returns (uint256);
+    function previewSwapExactOut(
+        address assetIn,
+        address assetOut,
+        uint256 amountOut
+    ) external view returns (uint256);
 
     function rateProvider() external view returns (address);
 
@@ -29,8 +37,7 @@ interface IPSM {
         uint256 minAmountOut,
         address receiver,
         uint256 referralCode
-    )
-        external returns (uint256 amountOut);
+    ) external returns (uint256 amountOut);
 
     function swapExactOut(
         address assetIn,
@@ -39,6 +46,5 @@ interface IPSM {
         uint256 maxAmountIn,
         address receiver,
         uint256 referralCode
-    )
-        external returns (uint256 amountIn);
+    ) external returns (uint256 amountIn);
 }
