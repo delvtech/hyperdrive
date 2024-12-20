@@ -4,27 +4,26 @@ pragma solidity 0.8.24;
 import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
 import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { IERC4626 } from "../../interfaces/IERC4626.sol";
-import { ISavingsUSDSBase } from "../../interfaces/ISavingsUSDSBase.sol";
 import { IPSM } from "../../interfaces/IPSM.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { HyperdriveBase } from "../../internal/HyperdriveBase.sol";
-import { SavingsUSDSBaseConversions } from "../../instances/savings-usds-base/SavingsUSDSBaseConversions.sol";
+import { SavingsUSDSL2Conversions } from "../../instances/savings-usds-l2/SavingsUSDSL2Conversions.sol";
 
 /// @author DELV
-/// @title SavingsUSDSBaseBase
-/// @notice The base contract for the SavingsUSDSBase Hyperdrive implementation.
+/// @title SavingsUSDSL2Base
+/// @notice The base contract for the SavingsUSDSL2 Hyperdrive implementation.
 /// @dev This Hyperdrive implementation is designed to work with standard
-///      SavingsUSDSBase vaults. Non-standard implementations may not work correctly
+///      SavingsUSDSL2 vaults. Non-standard implementations may not work correctly
 ///      and should be carefully checked.
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-abstract contract SavingsUSDSBaseBase is HyperdriveBase {
+abstract contract SavingsUSDSL2Base is HyperdriveBase {
     using SafeERC20 for ERC20;
 
     IPSM internal immutable _PSM;
 
-    /// @notice instantiates the SavingsUSDSBaseBase contract.
+    /// @notice instantiates the SavingsUSDSL2Base contract.
     /// @param __PSM The PSM contract.
     constructor(IPSM __PSM) {
         // Initialize the PSM immutable.
@@ -42,6 +41,12 @@ abstract contract SavingsUSDSBaseBase is HyperdriveBase {
         uint256 _baseAmount,
         bytes calldata // unused
     ) internal override returns (uint256, uint256) {
+        if (_baseAmount == 0) {
+            // The PSM swap function will revert if the amount is 0,
+            // but the output would just be 0 anyway.
+            return (0, 0);
+        }
+
         // Take custody of the deposit in base.
         ERC20(address(_baseToken)).safeTransferFrom(
             msg.sender,
@@ -55,11 +60,11 @@ abstract contract SavingsUSDSBaseBase is HyperdriveBase {
         // the vault ends with an approval of 1 wei. This makes future
         // approvals cheaper by keeping the storage slot warm.
         ERC20(address(_baseToken)).forceApprove(
-            address(_vaultSharesToken),
+            address(_PSM),
             _baseAmount + 1
         );
 
-        // Depositing amounts ot swapping USDS for SUSDS in the PSM.
+        // Depositing amounts to swapping USDS for SUSDS in the PSM.
         uint256 sharesMinted = _PSM.swapExactIn(
             address(_baseToken),
             address(_vaultSharesToken),
@@ -97,17 +102,26 @@ abstract contract SavingsUSDSBaseBase is HyperdriveBase {
         address _destination,
         bytes calldata // unused
     ) internal override returns (uint256 amountWithdrawn) {
+        if (_shareAmount <= 1) {
+            // The PSM swap function will revert if the amount to swap is 0,
+            // but the output would just be 0 anyway.
+            return 0;
+        }
+        ERC20(address(_vaultSharesToken)).forceApprove(
+            address(_PSM),
+            _shareAmount
+        );
         // Withdrawing amounts to swapping SUSDS back for USDS in the PSM.
         amountWithdrawn = _PSM.swapExactOut(
             address(_vaultSharesToken),
             address(_baseToken),
+            _convertToBase(_shareAmount) - 1, // minus 1 because the PSM swap function rounds up.
             _shareAmount,
-            _shareAmount + 1,
             _destination,
             0
         );
 
-        return amountWithdrawn;
+        return _convertToBase(amountWithdrawn);
     }
 
     /// @dev Process a withdrawal in vault shares and send the proceeds to the
@@ -129,7 +143,7 @@ abstract contract SavingsUSDSBaseBase is HyperdriveBase {
     function _convertToBase(
         uint256 _shareAmount
     ) internal view override returns (uint256) {
-        return SavingsUSDSBaseConversions.convertToBase(_PSM, _shareAmount);
+        return SavingsUSDSL2Conversions.convertToBase(_PSM, _shareAmount);
     }
 
     /// @dev Convert an amount of base to an amount of vault shares.
@@ -138,7 +152,7 @@ abstract contract SavingsUSDSBaseBase is HyperdriveBase {
     function _convertToShares(
         uint256 _baseAmount
     ) internal view override returns (uint256) {
-        return SavingsUSDSBaseConversions.convertToShares(_PSM, _baseAmount);
+        return SavingsUSDSL2Conversions.convertToShares(_PSM, _baseAmount);
     }
 
     /// @dev Gets the total amount of shares held by the pool in the yield

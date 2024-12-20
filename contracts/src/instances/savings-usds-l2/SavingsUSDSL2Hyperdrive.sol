@@ -8,7 +8,7 @@ import { IERC20 } from "../../interfaces/IERC20.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { IHyperdriveAdminController } from "../../interfaces/IHyperdriveAdminController.sol";
 import { IPSM } from "../../interfaces/IPSM.sol";
-import { SavingsUSDSBaseBase } from "./SavingsUSDSBaseBase.sol";
+import { SavingsUSDSL2Base } from "./SavingsUSDSL2Base.sol";
 
 ///      ______  __                           _________      _____
 ///      ___  / / /____  ___________________________  /_________(_)__   ______
@@ -51,15 +51,15 @@ import { SavingsUSDSBaseBase } from "./SavingsUSDSBaseBase.sol";
 /// SSSSSSSS                                                                SSSSSSSS
 ///
 /// @author DELV
-/// @title SavingsUSDSBaseHyperdrive
-/// @notice A Hyperdrive instance that uses a SavingsUSDSBase vault as the yield source.
+/// @title SavingsUSDSL2Hyperdrive
+/// @notice A Hyperdrive instance that uses a SavingsUSDSL2 vault as the yield source.
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-contract SavingsUSDSBaseHyperdrive is Hyperdrive, SavingsUSDSBaseBase {
+contract SavingsUSDSL2Hyperdrive is Hyperdrive, SavingsUSDSL2Base {
     using SafeERC20 for ERC20;
 
-    /// @notice Instantiates Hyperdrive with a SavingsUSDSBase vault as the yield source.
+    /// @notice Instantiates Hyperdrive with a SavingsUSDSL2 vault as the yield source.
     /// @param __name The pool's name.
     /// @param _config The configuration of the Hyperdrive pool.
     /// @param __adminController The admin controller that will specify the
@@ -91,7 +91,7 @@ contract SavingsUSDSBaseHyperdrive is Hyperdrive, SavingsUSDSBaseBase {
             _target3,
             _target4
         )
-        SavingsUSDSBaseBase(_PSM)
+        SavingsUSDSL2Base(_PSM)
     {
         // Approve the base token with 1 wei. This ensures that all of the
         // subsequent approvals will be writing to a dirty storage slot.

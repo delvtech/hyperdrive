@@ -3,29 +3,27 @@ pragma solidity 0.8.24;
 
 import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
 import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
-import { SavingsUSDSBaseConversions } from "../../instances/savings-usds-base/SavingsUSDSBaseConversions.sol";
-import { ISavingsUSDSBase } from "../../interfaces/ISavingsUSDSBase.sol";
+import { SavingsUSDSL2Conversions } from "../../instances/savings-usds-l2/SavingsUSDSL2Conversions.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
-import { ISavingsUSDSBaseHyperdrive } from "../../interfaces/ISavingsUSDSBaseHyperdrive.sol";
 import { IPSM } from "../../interfaces/IPSM.sol";
 import { IHyperdriveDeployerCoordinator } from "../../interfaces/IHyperdriveDeployerCoordinator.sol";
-import { SAVINGS_USDS_BASE_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND } from "../../libraries/Constants.sol";
+import { SAVINGS_USDS_L2_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND } from "../../libraries/Constants.sol";
 import { ONE } from "../../libraries/FixedPointMath.sol";
 import { HyperdriveDeployerCoordinator } from "../HyperdriveDeployerCoordinator.sol";
 
 /// @author DELV
-/// @title SavingsUSDSBaseHyperdriveDeployerCoordinator
-/// @notice The deployer coordinator for the SavingsUSDSBaseHyperdrive
+/// @title SavingsUSDSL2HyperdriveDeployerCoordinator
+/// @notice The deployer coordinator for the SavingsUSDSL2Hyperdrive
 ///         implementation.
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-contract SavingsUSDSBaseHyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
+contract SavingsUSDSL2HyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
     using SafeERC20 for ERC20;
 
     /// @notice The deployer coordinator's kind.
     string public constant override kind =
-        SAVINGS_USDS_BASE_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND;
+        SAVINGS_USDS_L2_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND;
     
     /// @notice The PSM contract.
     IPSM public immutable PSM;
@@ -107,7 +105,7 @@ contract SavingsUSDSBaseHyperdriveDeployerCoordinator is HyperdriveDeployerCoord
     function convertToBase(
         uint256 _shareAmount
     ) public view returns (uint256) {
-        return SavingsUSDSBaseConversions.convertToBase(PSM, _shareAmount);
+        return SavingsUSDSL2Conversions.convertToBase(PSM, _shareAmount);
     }
 
     /// @notice Convert an amount of base to an amount of vault shares.
@@ -116,7 +114,7 @@ contract SavingsUSDSBaseHyperdriveDeployerCoordinator is HyperdriveDeployerCoord
     function convertToShares(
         uint256 _baseAmount
     ) public view returns (uint256) {
-        return SavingsUSDSBaseConversions.convertToShares(PSM, _baseAmount);
+        return SavingsUSDSL2Conversions.convertToShares(PSM, _baseAmount);
     }
 
 
@@ -140,12 +138,12 @@ contract SavingsUSDSBaseHyperdriveDeployerCoordinator is HyperdriveDeployerCoord
         super._checkPoolConfig(_deployConfig, _extraData);
 
         // Ensure that the vault shares token address is properly configured.
-        if (address(_deployConfig.vaultSharesToken) != PSM.susds()) {
+        if (address(_deployConfig.vaultSharesToken) != address(PSM.susds())) {
             revert IHyperdriveDeployerCoordinator.InvalidVaultSharesToken();
         }
 
         // Ensure that the base token address is properly configured.
-        if (address(_deployConfig.baseToken) != PSM.usds()) {
+        if (address(_deployConfig.baseToken) != address(PSM.usds())) {
             revert IHyperdriveDeployerCoordinator.InvalidBaseToken();
         }
 

@@ -73,8 +73,8 @@ string constant RSETH_LINEA_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND = "RsETHLineaHy
 /// @dev The kind of the StETHHyperdrive deployer coordinator.
 string constant STETH_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND = "StETHHyperdriveDeployerCoordinator";
 
-/// @dev The kind of the SavingsUSDSBaseHyperdrive deployer coordinator.
-string constant SAVINGS_USDS_BASE_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND = "SavingsUSDSBaseHyperdriveDeployerCoordinator";
+/// @dev The kind of the SavingsUSDSL2Hyperdrive deployer coordinator.
+string constant SAVINGS_USDS_L2_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND = "SavingsUSDSL2HyperdriveDeployerCoordinator";
 
 /// @dev The kind of the StakingUSDSHyperdrive deployer coordinator.
 string constant STAKING_USDS_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND = "StakingUSDSHyperdriveDeployerCoordinator";
@@ -124,8 +124,8 @@ string constant RSETH_LINEA_HYPERDRIVE_KIND = "RsETHLineaHyperdrive";
 /// @dev The kind of StETHHyperdrive.
 string constant STETH_HYPERDRIVE_KIND = "StETHHyperdrive";
 
-/// @dev The kind of the SavingsUSDSBaseHyperdrive.
-string constant SAVINGS_USDS_BASE_HYPERDRIVE_KIND = "SavingsUSDSBaseHyperdrive";
+/// @dev The kind of the SavingsUSDSL2Hyperdrive.
+string constant SAVINGS_USDS_L2_HYPERDRIVE_KIND = "SavingsUSDSL2Hyperdrive";
 
 /// @dev The kind of StakingUSDSHyperdrive.
 string constant STAKING_USDS_HYPERDRIVE_KIND = "StakingUSDSHyperdrive";

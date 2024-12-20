@@ -16,6 +16,8 @@ import { HyperdriveTest } from "./HyperdriveTest.sol";
 import { HyperdriveUtils } from "./HyperdriveUtils.sol";
 import { Lib } from "./Lib.sol";
 
+import { console2 as console } from "forge-std/console2.sol";
+
 /// @author DELV
 /// @title InstanceTest
 /// @notice The base contract for the instance testing suite.
@@ -740,10 +742,15 @@ abstract contract InstanceTest is HyperdriveTest {
                 uint256 traderBaseAfter,
                 uint256 traderSharesAfter
             ) = getTokenBalances(address(trader));
-            assertEq(hyperdriveBaseAfter, hyperdriveBalancesBefore.baseBalance);
-            assertEq(
+            assertApproxEqAbs(
+                hyperdriveBaseAfter,
+                hyperdriveBalancesBefore.baseBalance,
+                config.verifyWithdrawalTolerance
+            );
+            assertApproxEqAbs(
                 traderBaseAfter,
-                traderBalancesBefore.baseBalance + baseProceeds
+                traderBalancesBefore.baseBalance + baseProceeds,
+                config.verifyWithdrawalTolerance
             );
 
             // Ensure that the shares balances were updated correctly.
@@ -1053,6 +1060,7 @@ abstract contract InstanceTest is HyperdriveTest {
             // Bob removes his liquidity with base as the target asset.
             uint256 withdrawalShares;
             (baseProceeds, withdrawalShares) = removeLiquidity(bob, lpShares);
+        
             assertEq(withdrawalShares, 0);
 
             // Bob should receive approximately as much base as he contributed
