@@ -19,8 +19,6 @@ import { InstanceTest } from "../../utils/InstanceTest.sol";
 import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
 import { Lib } from "../../utils/Lib.sol";
 
-import { console2 as console } from "forge-std/console2.sol";
-
 contract SavingsUSDSL2HyperdriveInstanceTest is InstanceTest {
     using FixedPointMath for uint256;
     using HyperdriveUtils for uint256;

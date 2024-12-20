@@ -7,7 +7,6 @@ import { IHyperdrive } from "../../../contracts/src/interfaces/IHyperdrive.sol";
 import { IPSM } from "../../../contracts/src/interfaces/IPSM.sol";
 import { SavingsUSDSL2HyperdriveInstanceTest } from "./SavingsUSDSL2HyperdriveInstanceTest.t.sol";
 import { Strings } from "@openzeppelin/contracts/utils/Strings.sol";
-import { console2 as console } from "../../../lib/forge-std/src/console2.sol";
 
 contract SavingsUSDS_L2_Base_Hyperdrive is SavingsUSDSL2HyperdriveInstanceTest {
     using stdStorage for StdStorage;
