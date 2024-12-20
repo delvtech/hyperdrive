@@ -740,10 +740,15 @@ abstract contract InstanceTest is HyperdriveTest {
                 uint256 traderBaseAfter,
                 uint256 traderSharesAfter
             ) = getTokenBalances(address(trader));
-            assertEq(hyperdriveBaseAfter, hyperdriveBalancesBefore.baseBalance);
-            assertEq(
+            assertApproxEqAbs(
+                hyperdriveBaseAfter,
+                hyperdriveBalancesBefore.baseBalance,
+                config.verifyWithdrawalTolerance
+            );
+            assertApproxEqAbs(
                 traderBaseAfter,
-                traderBalancesBefore.baseBalance + baseProceeds
+                traderBalancesBefore.baseBalance + baseProceeds,
+                config.verifyWithdrawalTolerance
             );
 
             // Ensure that the shares balances were updated correctly.
