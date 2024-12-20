@@ -1458,6 +1458,58 @@ contract HyperdriveMatchingEngineTest is HyperdriveTest {
         );
     }
 
+    /// @dev Ensures that `onMorphoFlashLoan` can't be called by an address
+    ///      other than Morpho.
+    function test_onMorphoFlashLoan_failure_senderNotMorpho() external {
+        // Create two orders that can be used for this test.
+        IHyperdriveMatchingEngine.OrderIntent
+            memory longOrder = _createOrderIntent(
+                alice,
+                100_000e18,
+                0,
+                IHyperdriveMatchingEngine.OrderType.OpenLong
+            );
+        longOrder.signature = _signOrderIntent(longOrder, alicePK);
+        IHyperdriveMatchingEngine.OrderIntent
+            memory shortOrder = _createOrderIntent(
+                bob,
+                101_000e18,
+                101_000e18,
+                IHyperdriveMatchingEngine.OrderType.OpenShort
+            );
+        shortOrder.signature = _signOrderIntent(shortOrder, bobPK);
+
+        // Alice shouldn't be able to call `onMorphoFlashLoan`.
+        vm.stopPrank();
+        vm.startPrank(alice);
+        vm.expectRevert(IHyperdriveMatchingEngine.SenderNotMorpho.selector);
+        matchingEngine.onMorphoFlashLoan(
+            100_000e18,
+            abi.encode(
+                // long order
+                longOrder,
+                // short order
+                shortOrder,
+                // add liquidity options
+                IHyperdrive.Options({
+                    asBase: true,
+                    destination: address(matchingEngine),
+                    extraData: ""
+                }),
+                // remove liquidity options
+                IHyperdrive.Options({
+                    asBase: true,
+                    destination: address(matchingEngine),
+                    extraData: ""
+                }),
+                // fee recipient
+                alice,
+                // is long first
+                false
+            )
+        );
+    }
+
     /// @dev Creates an unsigned order intent with default parameters.
     /// @param _trader The trader creating the order.
     /// @param _amount The amount that should be traded. This is the base

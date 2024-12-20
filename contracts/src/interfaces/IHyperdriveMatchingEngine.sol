@@ -40,6 +40,10 @@ interface IHyperdriveMatchingEngine is IMorphoFlashLoanCallback {
     ///         Hyperdrive instance.
     error MismatchedHyperdrive();
 
+    /// @notice Thrown when the `onMorphoFlashLoan` function is called by an
+    ///         address other than Morpho.
+    error SenderNotMorpho();
+
     /// @notice Emitted when orders are cancelled.
     event OrdersCancelled(address indexed trader, bytes32[] orderHashes);
 
