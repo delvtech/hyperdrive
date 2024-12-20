@@ -52,14 +52,14 @@ contract HyperdriveMatchingEngine is
         name = _name;
     }
 
-    /// @notice Matches a long order with a short order
+    /// @notice Matches a long order with a short order using Hyperdrive's mint function
     /// @param _longOrder The order intent to open a long position
     /// @param _shortOrder The order intent to open a short position
     /// @param _lpAmount Unused in this version, kept for interface compatibility
     /// @param _addLiquidityOptions Unused in this version, kept for interface compatibility
     /// @param _removeLiquidityOptions Unused in this version, kept for interface compatibility
     /// @param _feeRecipient The address that receives any excess fees
-    /// @param _isLongFirst Flag indicating whether to execute long or short first
+    /// @param _isLongFirst Unused in this version as both positions are created atomically
     function matchOrders(
         OrderIntent calldata _longOrder,
         OrderIntent calldata _shortOrder,
@@ -85,13 +85,41 @@ contract HyperdriveMatchingEngine is
         IHyperdrive hyperdrive = _longOrder.hyperdrive;
         ERC20 baseToken = ERC20(hyperdrive.baseToken());
 
-        // Execute orders in specified order
-        if (_isLongFirst) {
-            _handleLongOrder(hyperdrive, baseToken, _longOrder);
-            _handleShortOrder(hyperdrive, baseToken, _shortOrder);
-        } else {
-            _handleShortOrder(hyperdrive, baseToken, _shortOrder);
-            _handleLongOrder(hyperdrive, baseToken, _longOrder);
+        // Calculate the matching amount (minimum of long and short amounts)
+        uint256 matchAmount = _longOrder.amount < _shortOrder.amount ? 
+            _longOrder.amount : _shortOrder.amount;
+
+        // Transfer base tokens from long trader
+        baseToken.safeTransferFrom(
+            _longOrder.trader,
+            address(this),
+            matchAmount
+        );
+        
+        // Approve Hyperdrive to use base tokens
+        baseToken.forceApprove(address(hyperdrive), matchAmount);
+
+        // Create PairOptions for mint
+        IHyperdrive.PairOptions memory pairOptions = IHyperdrive.PairOptions({
+            longDestination: _longOrder.options.destination,  // Long position goes to long trader
+            shortDestination: _shortOrder.options.destination, // Short position goes to short trader
+            asBase: true,  // We only support base token settlement
+            extraData: "" // No extra data needed
+        });
+
+        // Use Hyperdrive's mint function to create matching long and short positions
+        (uint256 maturityTime, uint256 bondAmount) = hyperdrive.mint(
+            matchAmount,
+            _shortOrder.minVaultSharePrice, // Use short order's min vault share price
+            pairOptions
+        );
+
+        // Verify slippage constraints for both orders
+        if (bondAmount < _longOrder.slippageGuard) {
+            revert OutputLimit();
+        }
+        if (matchAmount > _shortOrder.slippageGuard) {
+            revert OutputLimit();
         }
 
         emit OrdersMatched(
@@ -183,64 +211,6 @@ contract HyperdriveMatchingEngine is
 
         // For EOAs, verify ECDSA signature
         return ECDSA.recover(_hash, _signature) == _signer;
-    }
-
-    /// @dev Handles the execution of a long order
-    /// @param _hyperdrive The Hyperdrive contract
-    /// @param _baseToken The base token being traded
-    /// @param _order The long order to execute
-    function _handleLongOrder(
-        IHyperdrive _hyperdrive,
-        ERC20 _baseToken,
-        OrderIntent memory _order
-    ) internal {
-        _baseToken.safeTransferFrom(
-            _order.trader,
-            address(this),
-            _order.amount
-        );
-        
-        _baseToken.forceApprove(address(_hyperdrive), _order.amount);
-        
-        _hyperdrive.openLong(
-            _order.amount,
-            _order.slippageGuard,
-            _order.minVaultSharePrice,
-            _order.options
-        );
-    }
-
-    /// @dev Handles the execution of a short order
-    /// @param _hyperdrive The Hyperdrive contract
-    /// @param _baseToken The base token being traded
-    /// @param _order The short order to execute
-    function _handleShortOrder(
-        IHyperdrive _hyperdrive,
-        ERC20 _baseToken,
-        OrderIntent memory _order
-    ) internal {
-        _baseToken.safeTransferFrom(
-            _order.trader,
-            address(this),
-            _order.slippageGuard
-        );
-        
-        _baseToken.forceApprove(address(_hyperdrive), _order.slippageGuard);
-        
-        (, uint256 shortPaid) = _hyperdrive.openShort(
-            _order.amount,
-            _order.slippageGuard,
-            _order.minVaultSharePrice,
-            _order.options
-        );
-
-        // Refund excess collateral if any
-        if (_order.slippageGuard > shortPaid) {
-            _baseToken.safeTransfer(
-                _order.trader,
-                _order.slippageGuard - shortPaid
-            );
-        }
     }
 
     /// @dev Validates orders before matching
