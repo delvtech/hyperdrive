@@ -3,7 +3,6 @@ pragma solidity 0.8.24;
 
 import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
 import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
-import { IERC4626 } from "../../interfaces/IERC4626.sol";
 import { IPSM } from "../../interfaces/IPSM.sol";
 import { IHyperdrive } from "../../interfaces/IHyperdrive.sol";
 import { HyperdriveBase } from "../../internal/HyperdriveBase.sol";
@@ -59,10 +58,7 @@ abstract contract SavingsUSDSL2Base is HyperdriveBase {
         // NOTE: We increase the required approval amount by 1 wei so that
         // the vault ends with an approval of 1 wei. This makes future
         // approvals cheaper by keeping the storage slot warm.
-        ERC20(address(_baseToken)).forceApprove(
-            address(_PSM),
-            _baseAmount + 1
-        );
+        ERC20(address(_baseToken)).forceApprove(address(_PSM), _baseAmount + 1);
 
         // Depositing amounts to swapping USDS for SUSDS in the PSM.
         uint256 sharesMinted = _PSM.swapExactIn(
@@ -75,7 +71,6 @@ abstract contract SavingsUSDSL2Base is HyperdriveBase {
         );
 
         return (sharesMinted, 0);
-
     }
 
     /// @dev Process a deposit in vault shares.
@@ -134,7 +129,10 @@ abstract contract SavingsUSDSL2Base is HyperdriveBase {
         bytes calldata // unused
     ) internal override {
         // Transfer vault shares to the destination.
-        ERC20(address(_vaultSharesToken)).safeTransfer(_destination, _shareAmount);
+        ERC20(address(_vaultSharesToken)).safeTransfer(
+            _destination,
+            _shareAmount
+        );
     }
 
     /// @dev Convert an amount of vault shares to an amount of base.
@@ -166,7 +164,6 @@ abstract contract SavingsUSDSL2Base is HyperdriveBase {
     {
         return _vaultSharesToken.balanceOf(address(this));
     }
-
 
     /// @dev We override the message value check since this integration is
     ///      not payable.

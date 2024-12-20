@@ -156,7 +156,7 @@ contract SavingsUSDSL2HyperdriveInstanceTest is InstanceTest {
         vm.store(
             address(rateProvider),
             bytes32(uint256(1)),
-            bytes32((uint256(block.timestamp) << 216) | chi << 96 | ssr)
+            bytes32((uint256(block.timestamp) << 216) | (chi << 96) | ssr)
         );
     }
 

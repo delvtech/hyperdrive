@@ -14,12 +14,14 @@ contract SavingsUSDS_L2_Base_Hyperdrive is SavingsUSDSL2HyperdriveInstanceTest {
     using Strings for uint256;
 
     /// @dev The PSM contract on Base.
-    IPSM internal immutable _PSM = 
+    IPSM internal immutable _PSM =
         IPSM(address(0x1601843c5E9bC251A3272907010AFa41Fa18347E));
 
     /// @dev The tokens on Base.
-    IERC20 internal immutable USDS = IERC20(address(0x820C137fa70C8691f0e44Dc420a5e53c168921Dc));
-    IERC20 internal immutable SUSDS = IERC20(address(0x5875eEE11Cf8398102FdAd704C9E96607675467a));
+    IERC20 internal immutable USDS =
+        IERC20(address(0x820C137fa70C8691f0e44Dc420a5e53c168921Dc));
+    IERC20 internal immutable SUSDS =
+        IERC20(address(0x5875eEE11Cf8398102FdAd704C9E96607675467a));
 
     /// @dev Whale accounts on Base.
     /// there are no whales, using the PSM module itself

@@ -23,10 +23,11 @@ library SavingsUSDSL2Conversions {
     ) internal view returns (uint256) {
         /// Sky's internal accounting uses RAY units (1e27), so we want to
         /// ensure that we're using the same precision.
-        return _shareAmount.mulDivDown(
-            IRateProvider(_PSM.rateProvider()).getConversionRate(),
-            1e27
-        );
+        return
+            _shareAmount.mulDivDown(
+                IRateProvider(_PSM.rateProvider()).getConversionRate(),
+                1e27
+            );
     }
 
     /// @dev Convert an amount of base to an amount of vault shares.
@@ -39,10 +40,11 @@ library SavingsUSDSL2Conversions {
     ) internal view returns (uint256) {
         /// Sky's internal accounting uses RAY units (1e27), so we want to
         /// ensure that we're using the same precision.
-        return _baseAmount.mulDivDown(
-            1e27,
-            IRateProvider(_PSM.rateProvider()).getConversionRate()
-        );
+        return
+            _baseAmount.mulDivDown(
+                1e27,
+                IRateProvider(_PSM.rateProvider()).getConversionRate()
+            );
         // return _PSM.previewSwapExactIn(
         //     address(_PSM.usds()),
         //     address(_PSM.susds()),

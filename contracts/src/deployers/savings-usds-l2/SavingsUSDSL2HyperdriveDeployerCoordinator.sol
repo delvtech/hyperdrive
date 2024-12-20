@@ -18,13 +18,15 @@ import { HyperdriveDeployerCoordinator } from "../HyperdriveDeployerCoordinator.
 /// @custom:disclaimer The language used in this code is for coding convenience
 ///                    only, and is not intended to, and does not, have any
 ///                    particular legal or regulatory significance.
-contract SavingsUSDSL2HyperdriveDeployerCoordinator is HyperdriveDeployerCoordinator {
+contract SavingsUSDSL2HyperdriveDeployerCoordinator is
+    HyperdriveDeployerCoordinator
+{
     using SafeERC20 for ERC20;
 
     /// @notice The deployer coordinator's kind.
     string public constant override kind =
         SAVINGS_USDS_L2_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND;
-    
+
     /// @notice The PSM contract.
     IPSM public immutable PSM;
 
@@ -78,7 +80,6 @@ contract SavingsUSDSL2HyperdriveDeployerCoordinator is HyperdriveDeployerCoordin
         address _lp,
         uint256 _contribution,
         IHyperdrive.Options memory _options
-
     ) internal override returns (uint256 value) {
         // If base is the deposit asset, the initialization will be paid in the
         // base token.
@@ -102,9 +103,7 @@ contract SavingsUSDSL2HyperdriveDeployerCoordinator is HyperdriveDeployerCoordin
     /// @notice Convert an amount of vault shares to an amount of base.
     /// @param _shareAmount The vault shares amount.
     /// @return The base amount.
-    function convertToBase(
-        uint256 _shareAmount
-    ) public view returns (uint256) {
+    function convertToBase(uint256 _shareAmount) public view returns (uint256) {
         return SavingsUSDSL2Conversions.convertToBase(PSM, _shareAmount);
     }
 
@@ -117,7 +116,6 @@ contract SavingsUSDSL2HyperdriveDeployerCoordinator is HyperdriveDeployerCoordin
         return SavingsUSDSL2Conversions.convertToShares(PSM, _baseAmount);
     }
 
-
     /// @dev We override the message value check since this integration is
     ///      not payable.
     function _checkMessageValue() internal view override {
@@ -125,7 +123,6 @@ contract SavingsUSDSL2HyperdriveDeployerCoordinator is HyperdriveDeployerCoordin
             revert IHyperdriveDeployerCoordinator.NotPayable();
         }
     }
-
 
     /// @notice Checks the pool configuration to ensure that it is valid.
     /// @param _deployConfig The deploy configuration of the Hyperdrive pool.
