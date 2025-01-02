@@ -402,8 +402,11 @@ contract MintTest is HyperdriveTest {
             _testCase.governanceFeesAccruedBefore +
                 2 *
                 bondAmount
-                    .mulDown(hyperdrive.getPoolConfig().fees.flat)
-                    .mulDown(hyperdrive.getPoolConfig().fees.governanceLP)
+                    .mulUp(hyperdrive.getPoolConfig().fees.flat)
+                    .mulDivDown(
+                        hyperdrive.getPoolConfig().fees.governanceLP,
+                        hyperdrive.getPoolInfo().vaultSharePrice
+                    )
         );
 
         // Ensure that the base amount is the bond amount plus the prepaid

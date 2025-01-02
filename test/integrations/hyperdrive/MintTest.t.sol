@@ -158,7 +158,7 @@ contract MintTest is HyperdriveTest {
                 bondAmount.mulUp(hyperdrive.getPoolConfig().fees.flat).mulDown(
                     ONE - hyperdrive.calculateTimeRemaining(maturityTime)
                 ),
-            1e6
+            1e7
         );
 
         // Ensure that the spot price didn't change.
@@ -183,7 +183,7 @@ contract MintTest is HyperdriveTest {
                     .mulDown(
                         ONE - hyperdrive.getPoolConfig().fees.governanceLP
                     ),
-            1e6
+            1e7
         );
         assertLe(hyperdrive.idle(), baseToken.balanceOf(address(hyperdrive)));
     }

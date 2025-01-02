@@ -10,7 +10,15 @@ import { SafeCast } from "../libraries/SafeCast.sol";
 import { HyperdriveBase } from "./HyperdriveLP.sol";
 import { HyperdriveMultiToken } from "./HyperdriveMultiToken.sol";
 
-// FIXME: Update the comments to use standard notation.
+// FIXME: There are several remaining todos:
+//
+// - [ ] Handle negative interest.
+// - [ ] Handle zombie interest.
+// - [ ] Consider distributing excess idle. This will be necessary depending on
+//       how negative interest is handled.
+// - [ ] Test negative interest.
+// - [ ] Test zombie interest.
+// - [ ] Update the comments to use standard notation.
 //
 /// @author DELV
 /// @title HyperdrivePair
@@ -163,9 +171,9 @@ abstract contract HyperdrivePair is
     /// @param _bondAmount The amount of longs and shorts to close.
     /// @param _minOutput The minimum amount of proceeds to receive.
     /// @param _options The options that configure how the trade is settled.
-    /// @return The proceeds the user receives. The units of this quantity are
-    ///         either base or vault shares, depending on the value of
-    ///         `_options.asBase`.
+    /// @return proceeds The proceeds the user receives. The units of this
+    ///         quantity are either base or vault shares, depending on the value
+    ///         of `_options.asBase`.
     function _burn(
         uint256 _maturityTime,
         uint256 _bondAmount,
@@ -181,11 +189,9 @@ abstract contract HyperdrivePair is
             revert IHyperdrive.MinimumTransactionAmount();
         }
 
-        // FIXME: Update the comments.
-        //
-        // If the short hasn't matured, we checkpoint the latest checkpoint.
-        // Otherwise, we perform a checkpoint at the time the short matured.
-        // This ensures the short and all of the other positions in the
+        // If the pair hasn't matured, we checkpoint the latest checkpoint.
+        // Otherwise, we perform a checkpoint at the time the pair matured.
+        // This ensures the pair and all of the other positions in the
         // checkpoint are closed.
         uint256 vaultSharePrice = _pricePerVaultShare();
         if (block.timestamp < _maturityTime) {
@@ -226,7 +232,7 @@ abstract contract HyperdrivePair is
 
         // Apply the state changes caused by burning the offsetting longs and
         // shorts.
-        _applyBurn(maturityTime, bondAmount, governanceFee);
+        _applyBurn(_maturityTime, _bondAmount, governanceFee);
 
         // Withdraw the profit to the trader.
         proceeds = _withdraw(shareProceeds, vaultSharePrice, _options);
@@ -247,8 +253,6 @@ abstract contract HyperdrivePair is
         return proceeds;
     }
 
-    // FIXME: How does this work with negative interest?
-    //
     /// @dev Applies state changes to create a pair of matched long and short
     ///      positions. This operation leaves the pool's solvency and idle
     ///      capital unchanged because the positions fully net out. Specifically:
@@ -366,8 +370,6 @@ abstract contract HyperdrivePair is
         _marketState.shortsOutstanding -= _bondAmount.toUint128();
     }
 
-    // FIXME: How does this work with negative interest?
-    //
     /// @dev Calculates the amount of bonds that can be minted and the governance
     ///      fee from the amount of vault shares that were deposited.
     /// @param _sharesDeposited The amount of vault shares that were deposited.
@@ -388,7 +390,7 @@ abstract contract HyperdrivePair is
         // amount of shares deposited.
         //
         // sharesDeposited * vaultSharePrice = (
-        //    bondAmount + bondAmount * (c - c0) / c0 + bondAmount * flatFee +
+        //    bondAmount + bondAmount * (max(c, c0) - c0) / c0 + bondAmount * flatFee +
         //    2 * bondAmount * flatFee * governanceFee
         // )
         //
@@ -401,30 +403,29 @@ abstract contract HyperdrivePair is
         // NOTE: We round down to underestimate the bond amount.
         uint256 bondAmount = _sharesDeposited.mulDivDown(
             _vaultSharePrice,
-            // FIXME: What should we do if `_vaultSharePrice < _openVaultSharePrice`?
-            //
             // NOTE: Round up to overestimate the denominator. This
             // underestimates the bond amount.
             (ONE +
-                (_vaultSharePrice - _openVaultSharePrice).divUp(
-                    _openVaultSharePrice
-                ) +
+                // NOTE: If negative interest has accrued and the open vault
+                // share price is greater than the vault share price, we clamp
+                // the vault share price to the open vault share price.
+                (_vaultSharePrice.max(_openVaultSharePrice) -
+                    _openVaultSharePrice).divUp(_openVaultSharePrice) +
                 _flatFee +
                 2 *
                 _flatFee.mulUp(_governanceLPFee))
         );
 
-        // FIXME: We normally do these calculations in shares. This seems wrong.
-        //
         // The governance fee that will be paid on both the long and the short
-        // sides of the trade is given by:
+        // sides of the trade in shares is given by:
         //
-        // governanceFee = bondAmount * flatFee * governanceLPFee
+        // governanceFee = bondAmount * flatFee * governanceLPFee / vaultSharePrice
         //
         // NOTE: Round the flat fee calculation up and the governance fee
         // calculation down to match the rounding used in the other flows.
-        uint256 governanceFee = bondAmount.mulUp(_flatFee).mulDown(
-            _governanceLPFee
+        uint256 governanceFee = bondAmount.mulUp(_flatFee).mulDivDown(
+            _governanceLPFee,
+            _vaultSharePrice
         );
 
         return (bondAmount, governanceFee);
@@ -458,7 +459,7 @@ abstract contract HyperdrivePair is
         // calculation down to match the rounding used in the other flows.
         uint256 governanceFee = _bondAmount.mulUp(_flatFee).mulDivDown(
             _governanceLPFee,
-            _vaultSharesPrice
+            _vaultSharePrice
         );
 
         // FIXME: Double check this accounting.
@@ -477,7 +478,6 @@ abstract contract HyperdrivePair is
         uint256 closeVaultSharePrice = block.timestamp < _maturityTime
             ? _vaultSharePrice
             : _checkpoints[_maturityTime].vaultSharePrice;
-        uint256 flatFee = _bondAmount.mulDivUp(_flatFee, _vaultSharePrice);
         uint256 shareProceeds = _bondAmount.mulDivDown(
             closeVaultSharePrice,
             _vaultSharePrice.mulDown(openVaultSharePrice)
