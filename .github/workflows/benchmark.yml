@@ -38,7 +38,7 @@ jobs:
 
       # Run the gas benchmark and stores the output to a json file.
       - name: Run benchmark
-        run: python -u python/gas_benchmarks.py benchmarks.json
+        run: python python/gas_benchmarks.py benchmarks.json
 
       # Load the benchmarks cache. We use a different cache key for every run
       # because Github Actions caches are currently immutable. By specifying the

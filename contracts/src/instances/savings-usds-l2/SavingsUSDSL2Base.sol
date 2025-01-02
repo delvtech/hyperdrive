@@ -118,17 +118,6 @@ abstract contract SavingsUSDSL2Base is HyperdriveBase {
         );
 
         return amountWithdrawn;
-
-        // amountWithdrawn = _PSM.swapExactOut(
-        //     address(_vaultSharesToken),
-        //     address(_baseToken),
-        //     _convertToBase(_shareAmount) - 1, // minus 1 because the PSM swap function rounds up.
-        //     _shareAmount,
-        //     _destination,
-        //     0
-        // );
-
-        // return _convertToBase(amountWithdrawn);
     }
 
     /// @dev Process a withdrawal in vault shares and send the proceeds to the
