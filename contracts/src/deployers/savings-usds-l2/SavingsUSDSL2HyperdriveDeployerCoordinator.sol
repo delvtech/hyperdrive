@@ -27,9 +27,6 @@ contract SavingsUSDSL2HyperdriveDeployerCoordinator is
     string public constant override kind =
         SAVINGS_USDS_L2_HYPERDRIVE_DEPLOYER_COORDINATOR_KIND;
 
-    /// @notice The PSM contract.
-    IPSM public immutable PSM;
-
     /// @notice Instantiates the deployer coordinator.
     /// @param _name The deployer coordinator's name.
     /// @param _factory The factory that this deployer will be registered with.
@@ -39,7 +36,6 @@ contract SavingsUSDSL2HyperdriveDeployerCoordinator is
     /// @param _target2Deployer The target2 deployer.
     /// @param _target3Deployer The target3 deployer.
     /// @param _target4Deployer The target4 deployer.
-    /// @param _PSM the PSM contract.
     constructor(
         string memory _name,
         address _factory,
@@ -48,8 +44,7 @@ contract SavingsUSDSL2HyperdriveDeployerCoordinator is
         address _target1Deployer,
         address _target2Deployer,
         address _target3Deployer,
-        address _target4Deployer,
-        IPSM _PSM
+        address _target4Deployer
     )
         HyperdriveDeployerCoordinator(
             _name,
@@ -61,9 +56,7 @@ contract SavingsUSDSL2HyperdriveDeployerCoordinator is
             _target3Deployer,
             _target4Deployer
         )
-    {
-        PSM = _PSM;
-    }
+    {}
 
     /// @dev Prepares the coordinator for initialization by drawing funds from
     ///      the LP, if necessary.
@@ -103,17 +96,21 @@ contract SavingsUSDSL2HyperdriveDeployerCoordinator is
     /// @notice Convert an amount of vault shares to an amount of base.
     /// @param _shareAmount The vault shares amount.
     /// @return The base amount.
-    function convertToBase(uint256 _shareAmount) public view returns (uint256) {
-        return SavingsUSDSL2Conversions.convertToBase(PSM, _shareAmount);
+    function convertToBase(
+        IPSM _PSM,
+        uint256 _shareAmount
+    ) public view returns (uint256) {
+        return SavingsUSDSL2Conversions.convertToBase(_PSM, _shareAmount);
     }
 
     /// @notice Convert an amount of base to an amount of vault shares.
     /// @param _baseAmount The base amount.
     /// @return The vault shares amount.
     function convertToShares(
+        IPSM _PSM,
         uint256 _baseAmount
     ) public view returns (uint256) {
-        return SavingsUSDSL2Conversions.convertToShares(PSM, _baseAmount);
+        return SavingsUSDSL2Conversions.convertToShares(_PSM, _baseAmount);
     }
 
     /// @dev We override the message value check since this integration is
@@ -126,11 +123,16 @@ contract SavingsUSDSL2HyperdriveDeployerCoordinator is
 
     /// @notice Checks the pool configuration to ensure that it is valid.
     /// @param _deployConfig The deploy configuration of the Hyperdrive pool.
-    /// @param _extraData The empty extra data.
+    /// @param _extraData The extra data containing the PSM address.
     function _checkPoolConfig(
         IHyperdrive.PoolDeployConfig memory _deployConfig,
         bytes memory _extraData
     ) internal view override {
+        // The Sky PSM contract. This is where the base token will be
+        // swapped for shares.
+        require(_extraData.length >= 20, "Invalid _extraData length");
+        IPSM PSM = abi.decode(_extraData, (IPSM));
+
         // Perform the default checks.
         super._checkPoolConfig(_deployConfig, _extraData);
 
@@ -146,8 +148,7 @@ contract SavingsUSDSL2HyperdriveDeployerCoordinator is
 
         // Ensure that the minimum share reserves are equal to 1e15. This value
         // has been tested to prevent arithmetic overflows in the
-        // `_updateLiquidity` function when the share reserves are as high as
-        // 200 million.
+        // `_updateLiquidity` function.
         if (_deployConfig.minimumShareReserves != 1e15) {
             revert IHyperdriveDeployerCoordinator.InvalidMinimumShareReserves();
         }
@@ -164,8 +165,10 @@ contract SavingsUSDSL2HyperdriveDeployerCoordinator is
     /// @return The initial vault share price of the Hyperdrive pool.
     function _getInitialVaultSharePrice(
         IHyperdrive.PoolDeployConfig memory, // unused _deployConfig
-        bytes memory // unused _extraData
+        bytes memory _extraData
     ) internal view override returns (uint256) {
-        return convertToBase(ONE);
+        require(_extraData.length >= 20, "Invalid _extraData length");
+        IPSM _PSM = abi.decode(_extraData, (IPSM));
+        return convertToBase(_PSM, ONE);
     }
 }

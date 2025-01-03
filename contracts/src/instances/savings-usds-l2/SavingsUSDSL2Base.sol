@@ -40,12 +40,6 @@ abstract contract SavingsUSDSL2Base is HyperdriveBase {
         uint256 _baseAmount,
         bytes calldata // unused
     ) internal override returns (uint256, uint256) {
-        if (_baseAmount == 0) {
-            // The PSM swap function will revert if the amount is 0,
-            // but the output would just be 0 anyway.
-            return (0, 0);
-        }
-
         // Take custody of the deposit in base.
         ERC20(address(_baseToken)).safeTransferFrom(
             msg.sender,
@@ -65,7 +59,7 @@ abstract contract SavingsUSDSL2Base is HyperdriveBase {
             address(_baseToken),
             address(_vaultSharesToken),
             _baseAmount,
-            _convertToShares(_baseAmount) - 1,
+            _convertToShares(_baseAmount),
             address(this),
             0
         );
@@ -97,17 +91,11 @@ abstract contract SavingsUSDSL2Base is HyperdriveBase {
         address _destination,
         bytes calldata // unused
     ) internal override returns (uint256 amountWithdrawn) {
-        if (_shareAmount <= 1) {
-            // The PSM swap function will revert if the amount to swap is 0,
-            // but the output would just be 0 anyway.
-            return 0;
-        }
+        // Withdrawing amounts to swapping SUSDS back for USDS in the PSM.
         ERC20(address(_vaultSharesToken)).forceApprove(
             address(_PSM),
             _shareAmount
         );
-
-        // Withdrawing amounts to swapping SUSDS back for USDS in the PSM.
         amountWithdrawn = _PSM.swapExactIn(
             address(_vaultSharesToken),
             address(_baseToken),

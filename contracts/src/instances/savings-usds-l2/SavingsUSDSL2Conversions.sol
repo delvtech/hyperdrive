@@ -45,10 +45,5 @@ library SavingsUSDSL2Conversions {
                 1e27,
                 IRateProvider(_PSM.rateProvider()).getConversionRate()
             );
-        // return _PSM.previewSwapExactIn(
-        //     address(_PSM.usds()),
-        //     address(_PSM.susds()),
-        //     _baseAmount
-        // );
     }
 }

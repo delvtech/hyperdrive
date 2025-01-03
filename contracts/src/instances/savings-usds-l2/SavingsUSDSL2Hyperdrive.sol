@@ -91,10 +91,5 @@ contract SavingsUSDSL2Hyperdrive is Hyperdrive, SavingsUSDSL2Base {
             _target4
         )
         SavingsUSDSL2Base(_PSM)
-    {
-        // Approve the base token with 1 wei. This ensures that all of the
-        // subsequent approvals will be writing to a dirty storage slot.
-        ERC20(address(_config.baseToken)).forceApprove(address(this), 1);
-        ERC20(address(_config.vaultSharesToken)).forceApprove(address(this), 1);
-    }
+    {}
 }

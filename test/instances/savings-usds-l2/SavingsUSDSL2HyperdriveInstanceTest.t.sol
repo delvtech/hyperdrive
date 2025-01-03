@@ -30,7 +30,7 @@ contract SavingsUSDSL2HyperdriveInstanceTest is InstanceTest {
     uint256 internal constant RAY = 1e27;
 
     /// @dev The PSM contract.
-    IPSM public immutable PSM;
+    IPSM internal PSM;
 
     /// @notice Instantiates the instance testing suite with the configuration.
     /// @param _config The instance test configuration.
@@ -85,8 +85,7 @@ contract SavingsUSDSL2HyperdriveInstanceTest is InstanceTest {
                     address(new SavingsUSDSL2Target1Deployer()),
                     address(new SavingsUSDSL2Target2Deployer()),
                     address(new SavingsUSDSL2Target3Deployer()),
-                    address(new SavingsUSDSL2Target4Deployer()),
-                    PSM
+                    address(new SavingsUSDSL2Target4Deployer())
                 )
             );
     }
@@ -135,17 +134,9 @@ contract SavingsUSDSL2HyperdriveInstanceTest is InstanceTest {
         uint256 ssr = rateProvider.getSSR();
         chi = (_rpow(ssr, block.timestamp - rho) * chi) / RAY;
 
-        // console.log("chi: ", chi);
-        // console.log("rho: ", rho);
-        // console.log("ssr: ", ssr);
-        // console.log("timeDelta: ", timeDelta);
-        // console.log("variableRate: ", variableRate);
-
         // Accrue interest in the SUSDS market. This amounts to manually
         // updating the chi value, which is the exchange rate.
         (chi, ) = chi.calculateInterest(variableRate, timeDelta);
-
-        // console.log("chi after: ", chi);
 
         // Advance the time.
         vm.warp(block.timestamp + timeDelta);
