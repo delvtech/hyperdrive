@@ -101,7 +101,33 @@ contract CloseShortTest is HyperdriveTest {
         );
     }
 
-    function test_close_short_failure_invalid_timestamp() external {
+    function test_close_short_failure_zero_maturity() external {
+        // Initialize the pool with a large amount of capital.
+        uint256 fixedRate = 0.05e18;
+        uint256 contribution = 500_000_000e18;
+        initialize(alice, fixedRate, contribution);
+
+        // Open a short position.
+        uint256 bondAmount = 30e18;
+        openShort(bob, bondAmount);
+
+        // Attempt to use a zero timestamp.
+        vm.stopPrank();
+        vm.startPrank(alice);
+        vm.expectRevert(stdError.arithmeticError);
+        hyperdrive.closeShort(
+            0,
+            bondAmount,
+            0,
+            IHyperdrive.Options({
+                destination: alice,
+                asBase: true,
+                extraData: new bytes(0)
+            })
+        );
+    }
+
+    function test_close_short_failure_invalid_maturity() external {
         // Initialize the pool with a large amount of capital.
         uint256 apr = 0.05e18;
         uint256 contribution = 500_000_000e18;

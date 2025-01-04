@@ -106,19 +106,19 @@ contract CloseLongTest is HyperdriveTest {
         // Initialize the pool with a large amount of capital.
         uint256 fixedRate = 0.05e18;
         uint256 contribution = 500_000_000e18;
-        uint256 lpShares = initialize(alice, fixedRate, contribution);
+        initialize(alice, fixedRate, contribution);
 
         // Open a long position.
         uint256 baseAmount = 30e18;
-        openLong(bob, baseAmount);
+        (, uint256 bondAmount) = openLong(bob, baseAmount);
 
-        // Attempt to use a timestamp greater than the maximum range.
+        // Attempt to use a zero timestamp.
         vm.stopPrank();
         vm.startPrank(alice);
         vm.expectRevert(stdError.arithmeticError);
         hyperdrive.closeLong(
             0,
-            lpShares,
+            bondAmount,
             0,
             IHyperdrive.Options({
                 destination: alice,
@@ -128,7 +128,7 @@ contract CloseLongTest is HyperdriveTest {
         );
     }
 
-    function test_close_long_failure_invalid_timestamp() external {
+    function test_close_long_failure_invalid_maturity() external {
         // Initialize the pool with a large amount of capital.
         uint256 fixedRate = 0.05e18;
         uint256 contribution = 500_000_000e18;

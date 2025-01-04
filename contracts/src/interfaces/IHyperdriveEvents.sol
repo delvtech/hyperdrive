@@ -119,6 +119,7 @@ interface IHyperdriveEvents is IMultiTokenEvents {
     /// @notice Emitted when a pair of long and short positions are burned.
     event Burn(
         address indexed trader,
+        address indexed destination,
         uint256 indexed maturityTime,
         uint256 longAssetId,
         uint256 shortAssetId,

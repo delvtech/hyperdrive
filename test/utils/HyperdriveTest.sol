@@ -944,6 +944,68 @@ contract HyperdriveTest is IHyperdriveEvents, BaseTest {
             );
     }
 
+    function burn(
+        address trader,
+        uint256 maturityTime,
+        uint256 bondAmount,
+        WithdrawalOverrides memory overrides
+    ) internal returns (uint256 baseAmount) {
+        vm.stopPrank();
+        vm.startPrank(trader);
+
+        // Burn the bonds.
+        return
+            hyperdrive.burn(
+                maturityTime,
+                bondAmount,
+                overrides.minSlippage, // min base proceeds
+                IHyperdrive.Options({
+                    destination: overrides.destination,
+                    asBase: overrides.asBase,
+                    extraData: overrides.extraData
+                })
+            );
+    }
+
+    function burn(
+        address trader,
+        uint256 maturityTime,
+        uint256 bondAmount
+    ) internal returns (uint256 baseAmount) {
+        return
+            burn(
+                trader,
+                maturityTime,
+                bondAmount,
+                WithdrawalOverrides({
+                    asBase: true,
+                    destination: trader,
+                    minSlippage: 0, // min base proceeds of 0
+                    extraData: new bytes(0) // unused
+                })
+            );
+    }
+
+    function burn(
+        address trader,
+        uint256 maturityTime,
+        uint256 bondAmount,
+        bool asBase
+    ) internal returns (uint256 baseAmount) {
+        return
+            burn(
+                trader,
+                maturityTime,
+                bondAmount,
+                WithdrawalOverrides({
+                    asBase: asBase,
+                    destination: trader,
+                    minSlippage: 0, // min base proceeds of 0
+                    extraData: new bytes(0) // unused
+                })
+            );
+    }
+
     /// Utils ///
 
     function advanceTime(uint256 time, int256 variableRate) internal virtual {

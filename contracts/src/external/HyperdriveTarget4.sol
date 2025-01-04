@@ -116,6 +116,27 @@ abstract contract HyperdriveTarget4 is
         return _mint(_amount, _minOutput, _minVaultSharePrice, _options);
     }
 
+    // FIXME: Where does this fit?
+    //
+    /// @dev Burns a pair of long and short positions that directly match each
+    ///      other. The capital underlying these positions is released to the
+    ///      trader burning the positions.
+    /// @param _maturityTime The maturity time of the long and short positions.
+    /// @param _bondAmount The amount of longs and shorts to close.
+    /// @param _minOutput The minimum amount of proceeds to receive.
+    /// @param _options The options that configure how the trade is settled.
+    /// @return proceeds The proceeds the user receives. The units of this
+    ///         quantity are either base or vault shares, depending on the value
+    ///         of `_options.asBase`.
+    function burn(
+        uint256 _maturityTime,
+        uint256 _bondAmount,
+        uint256 _minOutput,
+        IHyperdrive.Options calldata _options
+    ) external returns (uint256 proceeds) {
+        return _burn(_maturityTime, _bondAmount, _minOutput, _options);
+    }
+
     /// Checkpoints ///
 
     /// @notice Allows anyone to mint a new checkpoint.

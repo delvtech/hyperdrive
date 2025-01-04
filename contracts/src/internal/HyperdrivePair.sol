@@ -140,6 +140,8 @@ abstract contract HyperdrivePair is IHyperdriveEvents, HyperdriveLP {
         return (maturityTime, bondAmount);
     }
 
+    // FIXME: Document the update to the flat fee logic.
+    //
     /// @dev Burns a pair of long and short positions that directly match each
     ///      other. The capital underlying these positions is released to the
     ///      trader burning the positions.
@@ -200,11 +202,11 @@ abstract contract HyperdrivePair is IHyperdriveEvents, HyperdriveLP {
 
         // Calculate the proceeds of burning the bonds with the specified
         // maturity.
-        (uint256 shareProceeds, uint256 governanceFee) = _calculateBurn(
-            _maturityTime,
-            _bondAmount,
-            vaultSharePrice
-        );
+        (
+            uint256 shareProceeds,
+            uint256 flatFee,
+            uint256 governanceFee
+        ) = _calculateBurn(_maturityTime, _bondAmount, vaultSharePrice);
 
         // If the positions haven't matured, apply the accounting updates that
         // result from closing the pair to the reserves.
@@ -213,11 +215,17 @@ abstract contract HyperdrivePair is IHyperdriveEvents, HyperdriveLP {
             // shorts.
             //
             // NOTE: Since the spot price doesn't change, we don't update the
-            // weighted average spot price in this transaction. Similarly, since
-            // idle doesn't change, we don't distribute excess idle here. It's
-            // possible that a small amount of interest has accrued, but this
-            // doesn't warrant the extra gas expenditure.
-            _applyBurn(_maturityTime, _bondAmount, governanceFee);
+            // weighted average spot price in this transaction.
+            _applyBurn(_maturityTime, _bondAmount, flatFee, governanceFee);
+
+            // Distribute the excess idle to the withdrawal pool. If the
+            // distribute excess idle calculation fails, we revert to avoid
+            // putting the system in an unhealthy state after the trade is
+            // processed.
+            bool success = _distributeExcessIdleSafe(vaultSharePrice);
+            if (!success) {
+                revert IHyperdrive.DistributeExcessIdleFailed();
+            }
         } else {
             // Apply the zombie close to the state and adjust the share proceeds
             // to account for negative interest that might have accrued to the
@@ -244,16 +252,19 @@ abstract contract HyperdrivePair is IHyperdriveEvents, HyperdriveLP {
         }
 
         // Emit a Burn event.
+        uint256 bondAmount = _bondAmount; // avoid stack-too-deep
+        IHyperdrive.Options calldata options = _options; // avoid stack-too-deep
         emit Burn(
             msg.sender,
+            options.destination,
             _maturityTime,
             longAssetId,
             shortAssetId,
             proceeds,
             vaultSharePrice,
-            _options.asBase,
-            _bondAmount,
-            _options.extraData
+            options.asBase,
+            bondAmount,
+            options.extraData
         );
 
         return proceeds;
@@ -315,27 +326,30 @@ abstract contract HyperdrivePair is IHyperdriveEvents, HyperdriveLP {
 
     /// @dev Applies state changes to burn a pair of matched long and short
     ///      positions and release the underlying funds. This operation leaves
-    ///      the pool's solvency and idle capital unchanged because the
-    ///      positions fully net out. Specifically:
+    ///      the pool's solvency unchanged because the positions fully net out.
+    ///      Specifically:
     ///
-    ///      - Share reserves, share adjustments, and bond reserves remain
-    ///        constant since the released capital backs the positions directly.
+    ///      - The share reserves and share adjustment are both increased by the
+    ///        flat fee. Otherwise, the reserves remain constant since the
+    ///        released capital backs the positions directly.
     ///      - Solvency remains constant because the net effect of burning
     ///        matching long and short positions is neutral.
-    ///      - Idle capital is unaffected since no excess funds are added or
-    ///        removed during this process.
     ///
     ///      Therefore:
     ///
     ///      - Solvency checks are unnecessary.
-    ///      - Idle capital does not need to be redistributed to LPs.
+    ///
+    ///      The pool's idle will increase by the flat fees paid and thus idle
+    ///      will need to be distributed.
     /// @param _maturityTime The maturity time of the pair of long and short
     ///        positions
     /// @param _bondAmount The amount of bonds burned.
-    /// @param _governanceFee The governance fee calculated from the bond amount.
+    /// @param _flatFee The flat fees in shares.
+    /// @param _governanceFee The governance fees in shares.
     function _applyBurn(
         uint256 _maturityTime,
         uint256 _bondAmount,
+        uint256 _flatFee,
         uint256 _governanceFee
     ) internal {
         // Update the amount of governance fees accrued.
@@ -366,6 +380,10 @@ abstract contract HyperdrivePair is IHyperdriveEvents, HyperdriveLP {
             .toUint128();
         _marketState.longsOutstanding -= _bondAmount.toUint128();
         _marketState.shortsOutstanding -= _bondAmount.toUint128();
+
+        // Increase the share reserves and the share adjustment by the flat fee.
+        _marketState.shareReserves += _flatFee.toUint128();
+        _marketState.shareAdjustment += _flatFee.toInt128();
     }
 
     /// @dev Calculates the amount of bonds that can be minted and the governance
@@ -432,29 +450,56 @@ abstract contract HyperdrivePair is IHyperdriveEvents, HyperdriveLP {
         return (bondAmount, governanceFee);
     }
 
-    /// @dev Calculates the share proceeds earned and the governance fee from
-    ///      burning the specified amount of bonds.
+    // FIXME: Review the flat fee calculations used in this system.
+    //
+    // FIXME: Document the flat fee calculations and clearly explain why we have
+    // to have them here.
+    //
+    /// @dev Calculates the share proceeds earned and the fees from burning the
+    ///      specified amount of bonds.
     /// @param _maturityTime The maturity time of the bonds to burn.
     /// @param _bondAmount The amount of bonds to burn.
     /// @param _vaultSharePrice The vault share price.
     /// @return The share proceeds earned from burning the bonds.
+    /// @return The flat fee in shares charged when burning the bonds.
     /// @return The governance fee in shares charged when burning the bonds.
     function _calculateBurn(
         uint256 _maturityTime,
         uint256 _bondAmount,
         uint256 _vaultSharePrice
-    ) internal view returns (uint256, uint256) {
+    ) internal view returns (uint256, uint256, uint256) {
         // The short's pre-paid flat fee in shares that will be refunded. This
         // is given by:
         //
-        // flatFee = bondAmount * flatFee / vaultSharePrice
+        // prepaidFlatFee = bondAmount * flatFee / vaultSharePrice
         //
         // NOTE: Round the flat fee calculation up to match the rounding used in
         // the other flows.
-        uint256 flatFee = _bondAmount.mulDivUp(_flatFee, _vaultSharePrice);
+        uint256 timeRemaining = _calculateTimeRemaining(_maturityTime);
+        uint256 prepaidFlatFee = _bondAmount.mulDivUp(
+            _flatFee,
+            _vaultSharePrice
+        );
 
-        // The governance fee in shares that will be paid on both the long and
-        // the short sides of the trade is given by:
+        // Since checkpointing will assume that the flat fee is paid, it's
+        // simpler to charge the flat fee when burning bonds. This ensures that
+        // burning is equivalent to redeeming longs and shorts at maturity. The
+        // governance fees are excluded from this flat fee since the full flat
+        // governance fee is always paid when burning bonds, regardless of the
+        // flat fee that is paid. The flat fee is given by:
+        //
+        // flatFee = 2 * prepaidFlatFee * (1 - timeRemaining) * (1 - governanceLPFee)
+        //
+        // NOTE: Round the flat fee calculation up to match the rounding used in
+        // the other flows.
+        uint256 flatFee = 2 *
+            prepaidFlatFee.mulUp(ONE - timeRemaining).mulDown(
+                ONE - _governanceLPFee
+            );
+
+        // The full flat governance fee is paid whenever bonds are burned. The
+        // governance fee in shares that will be paid on both the long and the
+        // short sides of the trade is given by:
         //
         // governanceFee = 2 * bondAmount * flatFee * governanceLPFee / vaultSharePrice
         //
@@ -477,6 +522,10 @@ abstract contract HyperdrivePair is IHyperdriveEvents, HyperdriveLP {
             ? _vaultSharePrice
             : _checkpoints[_maturityTime].vaultSharePrice;
         if (closeVaultSharePrice < openVaultSharePrice) {
+            prepaidFlatFee = prepaidFlatFee.mulDivDown(
+                closeVaultSharePrice,
+                openVaultSharePrice
+            );
             flatFee = flatFee.mulDivDown(
                 closeVaultSharePrice,
                 openVaultSharePrice
@@ -491,10 +540,14 @@ abstract contract HyperdrivePair is IHyperdriveEvents, HyperdriveLP {
         // is the face value of the bonds plus the amount of interest that
         // accrued on the face value. We then add the flat fee to this quantity
         // since this was pre-paid by the short and needs to be refunded.
-        // Finally, we subtract twice the governance fee. All of this is given
-        // by:
+        // Finally, we subtract flat fees and governance fees owed on the bonds.
+        // The flat fee is pro-rated to the amount of time the bonds have been
+        // open. All of this is given by:
         //
-        // totalValue = (c1 / (c * c0)) * bondAmount + flatFee - 2 * governanceFee
+        // totalValue = (c1 / (c * c0)) * bondAmount +
+        //              prepaidFlatFee -
+        //              flatFee -
+        //              governancFee
         //
         // Since the fees are already scaled for negative interest and the
         // `(c1 / (c * c0))` will properly scale the value underlying positions
@@ -502,14 +555,16 @@ abstract contract HyperdrivePair is IHyperdriveEvents, HyperdriveLP {
         // interest.
         //
         // NOTE: Round down to underestimate the share proceeds.
-        uint256 shareProceeds = _bondAmount.mulDivDown(
+        uint256 bondAmount = _bondAmount; // avoid stack-too-deep
+        uint256 vaultSharePrice = _vaultSharePrice; // avoid stack-too-deep
+        uint256 shareProceeds = bondAmount.mulDivDown(
             closeVaultSharePrice,
-            _vaultSharePrice.mulDown(openVaultSharePrice)
+            vaultSharePrice.mulDown(openVaultSharePrice)
         ) +
+            prepaidFlatFee -
             flatFee -
             governanceFee;
 
-        // Return the share proceeds
-        return (shareProceeds, governanceFee);
+        return (shareProceeds, flatFee, governanceFee);
     }
 }

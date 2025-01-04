@@ -186,6 +186,23 @@ interface IHyperdriveCore is IMultiTokenCore {
         IHyperdrive.PairOptions calldata _options
     ) external payable returns (uint256 maturityTime, uint256 bondAmount);
 
+    /// @dev Burns a pair of long and short positions that directly match each
+    ///      other. The capital underlying these positions is released to the
+    ///      trader burning the positions.
+    /// @param _maturityTime The maturity time of the long and short positions.
+    /// @param _bondAmount The amount of longs and shorts to close.
+    /// @param _minOutput The minimum amount of proceeds to receive.
+    /// @param _options The options that configure how the trade is settled.
+    /// @return proceeds The proceeds the user receives. The units of this
+    ///         quantity are either base or vault shares, depending on the value
+    ///         of `_options.asBase`.
+    function burn(
+        uint256 _maturityTime,
+        uint256 _bondAmount,
+        uint256 _minOutput,
+        IHyperdrive.Options calldata _options
+    ) external returns (uint256 proceeds);
+
     /// Checkpoints ///
 
     /// @notice Attempts to mint a checkpoint with the specified checkpoint time.
