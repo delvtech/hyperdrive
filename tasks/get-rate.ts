@@ -5,8 +5,6 @@ import {
     HyperdriveDeployBaseTaskParams,
 } from "./deploy";
 
-import * as hyperwasm from "@delvtech/hyperdrive-wasm";
-
 export type MarketStateParams = HyperdriveDeployBaseTaskParams & {
     address: string;
     amount: string;
@@ -35,6 +33,7 @@ HyperdriveDeployBaseTask(
             { address, amount }: Required<MarketStateParams>,
             { viem, hyperdriveDeploy: { deployments }, network },
         ) => {
+            const hyperwasm = await import("@delvtech/hyperdrive-wasm");
             let instance = await viem.getContractAt(
                 "IHyperdriveRead",
                 address as Address,
