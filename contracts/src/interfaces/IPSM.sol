@@ -12,14 +12,6 @@ interface IPSM {
         uint256 amountIn
     ) external view returns (uint256);
 
-    // convertToBase = USDS in, SUSDS out
-    // convertToShares = SUSDS in, USDS out
-    function previewSwapExactOut(
-        address assetIn,
-        address assetOut,
-        uint256 amountOut
-    ) external view returns (uint256);
-
     function rateProvider() external view returns (address);
 
     function susds() external view returns (IERC20);
@@ -38,13 +30,4 @@ interface IPSM {
         address receiver,
         uint256 referralCode
     ) external returns (uint256 amountOut);
-
-    function swapExactOut(
-        address assetIn,
-        address assetOut,
-        uint256 amountOut,
-        uint256 maxAmountIn,
-        address receiver,
-        uint256 referralCode
-    ) external returns (uint256 amountIn);
 }
