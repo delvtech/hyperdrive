@@ -5,8 +5,6 @@ import {
     HyperdriveDeployBaseTaskParams,
 } from "./deploy";
 
-// import * as hyperwasm from "@delvtech/hyperdrive-wasm";
-
 export type MarketStateParams = HyperdriveDeployBaseTaskParams & {
     address: string;
     amount: string;
