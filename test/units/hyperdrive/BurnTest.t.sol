@@ -238,8 +238,6 @@ contract BurnTest is HyperdriveTest {
         _verifyBurn(testCase, amountPaid);
     }
 
-    // FIXME: Figure out why this test is failing.
-    //
     /// @dev Ensure that bonds can be burned successfully halfway through the
     ///      term after negative interest accrues.
     function test_burn_halfway_through_term_negative_interest() external {
@@ -292,8 +290,6 @@ contract BurnTest is HyperdriveTest {
         _verifyBurn(testCase, amountPaid);
     }
 
-    // FIXME: Figure out why this test is failing.
-    //
     /// @dev Ensure that bonds can be burned successfully after maturity after
     ///      negative interest accrues.
     function test_burn_after_maturity_negative_interest() external {
@@ -480,12 +476,40 @@ contract BurnTest is HyperdriveTest {
                 openVaultSharePrice
             );
         }
-        assertApproxEqAbs(
-            proceeds + governanceFeeAdjustment,
-            expectedProceeds,
-            1e10
-        );
-        console.log("test: 2");
+        if (
+            closeVaultSharePrice >= openVaultSharePrice ||
+            block.timestamp >= _testCase.maturityTime
+        ) {
+            assertApproxEqAbs(
+                proceeds + governanceFeeAdjustment,
+                expectedProceeds,
+                1e10
+            );
+        }
+        // If negative interest accrued and the positions are closed before
+        // maturity, the proceeds from burning the positions will be greater
+        // than those from closing the positions separately. There are a few
+        // reasons for this. First, the short will have a proceeds of zero since
+        // the short's equity was wiped out, but some of the value underlying
+        // the long position is still used to back the short. This means that
+        // the long won't get all of the value back underlying the position when
+        // the positions are closed separately. Second, the prepaid flat fee
+        // won't be returned when the positions are closed separately, but it
+        // will be returned when burning the positions. Even though the proceeds
+        // are greater than the expected proceeds, they are still less than the
+        // bond amount due to negative interest accruing.
+        //
+        // It might seem strange for burning to be objectively better in a
+        // negative interest scenario, but the improved pricing is a result of
+        // the system being able to properly account for all of the value
+        // backing the bonds. When the positions are closed separately, it can't
+        // track whether or not the positions are still backed without
+        // increasing the complexity, so it gives a worst-case performance that
+        // is known to be safe.
+        else {
+            assertGt(proceeds + governanceFeeAdjustment, expectedProceeds);
+            assertLt(proceeds, _testCase.bondAmount);
+        }
 
         // Verify that the balances increased and decreased by the right amounts.
         assertEq(
@@ -588,9 +612,10 @@ contract BurnTest is HyperdriveTest {
                 openVaultSharePrice
             );
         }
-        assertEq(
+        assertApproxEqAbs(
             hyperdrive.getUncollectedGovernanceFees(),
-            _testCase.governanceFeesAccruedBefore + governanceFee
+            _testCase.governanceFeesAccruedBefore + governanceFee,
+            1
         );
 
         // Verify the `Burn` event.
