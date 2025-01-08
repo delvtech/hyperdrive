@@ -122,9 +122,6 @@ try:
     with open(OUTPUT_PATH, "w", encoding="utf-8") as f:
         json.dump(capture, f)
 
-    print(capture)
-    print(f"Wrote gas benchmarks to {OUTPUT_PATH}")
-
 except subprocess.CalledProcessError as e:
     print(e.output)
     exit(1)
