@@ -237,6 +237,8 @@ def main(argv: Sequence[str] | None = None) -> None:
                                 _maturityTime=0, _bondAmount=0, _minOutput=0, _options=options
                             ).sign_transact_and_wait(account=agent.account, validate_transaction=True)
 
+            # FIXME add any additional invariance checks specific to mint/burn here.
+
         # Advance time for a day
         # TODO parameterize the amount of time to advance.
         chain.advance_time(60 * 60 * 24)
