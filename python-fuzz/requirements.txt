@@ -1,2 +1,2 @@
 -e python/hyperdrivetypes
--e ../agent0
+agent0 >= 0.26.2
