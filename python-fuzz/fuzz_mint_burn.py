@@ -14,12 +14,9 @@ import numpy as np
 from agent0 import LocalChain, LocalHyperdrive
 from agent0.hyperfuzz.system_fuzz import generate_fuzz_hyperdrive_config, run_fuzz_bots
 from agent0.hyperlogs.rollbar_utilities import initialize_rollbar, log_rollbar_exception
-from eth_account.account import Account
-from eth_account.signers.local import LocalAccount
 from fixedpointmath import FixedPoint
-from hyperdrivetypes.types.IHyperdrive import PairOptions
+from hyperdrivetypes.types.IHyperdrive import Options, PairOptions
 from pypechain.core import PypechainCallException
-from web3 import Web3
 from web3.exceptions import ContractCustomError
 
 
@@ -222,9 +219,14 @@ def main(argv: Sequence[str] | None = None) -> None:
                             logging.info(f"Agent {agent.address} is calling burn with {amount}")
 
                             # FIXME figure out what these options are
-                            pair_options = PairOptions(
-                                longDestination=agent.address,
-                                shortDestination=agent.address,
+                            # pair_options = PairOptions(
+                            #     longDestination=agent.address,
+                            #     shortDestination=agent.address,
+                            #     asBase=True,
+                            #     extraData=bytes(0),
+                            # )
+                            options = Options(
+                                destination=agent.address,
                                 asBase=True,
                                 extraData=bytes(0),
                             )
@@ -232,7 +234,7 @@ def main(argv: Sequence[str] | None = None) -> None:
                             # FIXME figure out what _maturityTime is
                             # FIXME burn is expecting `Options`, not `PairOptions`
                             hyperdrive_contract.functions.burn(
-                                _maturityTime=0, _bondAmount=0, _minOutput=0, _options=pair_options
+                                _maturityTime=0, _bondAmount=0, _minOutput=0, _options=options
                             ).sign_transact_and_wait(account=agent.account, validate_transaction=True)
 
         # Advance time for a day
