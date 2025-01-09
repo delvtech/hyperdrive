@@ -132,6 +132,9 @@ def main(argv: Sequence[str] | None = None) -> None:
         gas_limit=int(1e6),  # Plenty of gas limit for transactions
     )
 
+    # FIXME wrap all of this in a try catch to catch any exceptions thrown in fuzzing.
+    # When an error occurs, we likely want to pause the chain to allow for remote connection
+    # for debugging
     while True:
         # Build interactive local hyperdrive
         # TODO can likely reuse some of these resources
