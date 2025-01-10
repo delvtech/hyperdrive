@@ -411,10 +411,10 @@ abstract contract HyperdrivePair is IHyperdriveEvents, HyperdriveLP {
         //    2 * bondAmount * flatFee * governanceFee
         // )
         //
-        // This implies that
+        // This implies that:
         //
         // bondAmount = shareDeposited * vaultSharePrice / (
-        //     1 + (max(c, c0) - c0) / c0 + flatFee + 2 * flatFee * governanceFee
+        //     max(c, c0) / c0 + flatFee + 2 * flatFee * governanceFee
         // )
         //
         // NOTE: We round down to underestimate the bond amount.
