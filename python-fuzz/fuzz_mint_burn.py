@@ -179,6 +179,12 @@ def main(argv: Sequence[str] | None = None) -> None:
                 log_to_rollbar=log_to_rollbar,
                 ignore_raise_error_func=_fuzz_ignore_errors,
                 random_advance_time=False,  # We take care of advancing time in the outer loop
+                # FIXME: Parameterize this. Would be good to go up to 250%.
+                #
+                # FIXME: Might be better to just call this myself.
+                #
+                # https://github.com/delvtech/agent0/blob/f3bc4c71b98d3cf407a18f62de85dab3fc63eb62/src/agent0/hyperfuzz/system_fuzz/run_fuzz_bots.py#L415
+                random_variable_rate=True, # Variable rate can change between 0% and 100%
                 lp_share_price_test=False,
                 base_budget_per_bot=FixedPoint(1_000_000),
                 num_iterations=1,
@@ -194,13 +200,17 @@ def main(argv: Sequence[str] | None = None) -> None:
                 trade = chain.config.rng.choice(["mint", "burn"])  # type: ignore
                 match trade:
                     case "mint":
+                        # FIXME: Need to add the pool that I need to call.
                         balance = agent.get_wallet().balance.amount
-                        if balance > 0:
+                        # FIXME: Double check this.
+                        if balance > hyperdrive_config.minimum_transaction_amount:
                             # TODO can't use numpy rng since it doesn't support uint256.
                             # Need to use the state from the chain config to use the same rng object.
                             amount = random.randint(0, balance.scaled_value)
                             logging.info(f"Agent {agent.address} is calling minting with {amount}")
 
+                            # FIXME: This should work
+                            #
                             # FIXME figure out what these options are
                             pair_options = PairOptions(
                                 longDestination=agent.address,
@@ -209,31 +219,35 @@ def main(argv: Sequence[str] | None = None) -> None:
                                 extraData=bytes(0),
                             )
 
+                            # FIXME: I need to make sure that agent0 knows that
+                            # the minted positions are owned.
                             hyperdrive_contract.functions.mint(
                                 _amount=amount, _minOutput=0, _minVaultSharePrice=0, _options=pair_options
                             ).sign_transact_and_wait(account=agent.account, validate_transaction=True)
 
                     case "burn":
+                        # FIXME: Update this to ensure that they have an equal
+                        # amount of longs and shorts in a given maturity. Can
+                        # also burn a partial amount
+                        #
                         # FIXME figure out in what cases an agent can burn tokens
+                        #
+                        # FIXME: This may return a list, but I can look at other
+                        # functions to get a dictionary keyed by maturity time
                         agent_longs = agent.get_longs()
                         num_longs = len(agent_longs)
                         if num_longs > 0 and agent_longs[0].balance > 0:
                             amount = random.randint(0, balance.scaled_value)
                             logging.info(f"Agent {agent.address} is calling burn with {amount}")
-
-                            # FIXME figure out what these options are
-                            # pair_options = PairOptions(
-                            #     longDestination=agent.address,
-                            #     shortDestination=agent.address,
-                            #     asBase=True,
-                            #     extraData=bytes(0),
-                            # )
                             options = Options(
                                 destination=agent.address,
                                 asBase=True,
                                 extraData=bytes(0),
                             )
 
+                            # FIXME: Update the parameters. Fuzz over the amount
+                            # of bonds to burn.
+                            #
                             # FIXME figure out what _maturityTime is
                             # FIXME burn is expecting `Options`, not `PairOptions`
                             hyperdrive_contract.functions.burn(
@@ -241,7 +255,17 @@ def main(argv: Sequence[str] | None = None) -> None:
                             ).sign_transact_and_wait(account=agent.account, validate_transaction=True)
 
             # FIXME add any additional invariance checks specific to mint/burn here.
+            #
+            # FIXME: I don't think there are any other invariant checks. I just
+            # need to make sure that I can run the existing invariant checks.
+            #
+            # FIXME: Invariant checks are abstracted into a function. I should
+            # call that function here. Here's the link:
+            #
+            # https://github.com/delvtech/agent0/blob/f3bc4c71b98d3cf407a18f62de85dab3fc63eb62/src/agent0/hyperfuzz/system_fuzz/run_fuzz_bots.py#L460
 
+        # FIXME: Tweak this time.
+        #
         # Advance time for a day
         # TODO parameterize the amount of time to advance.
         chain.advance_time(60 * 60 * 24)
