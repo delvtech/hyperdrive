@@ -116,7 +116,7 @@ contract ReentrancyTest is HyperdriveTest {
         // Hyperdrive call.
         function(address, bytes memory) internal[]
             memory assertions = new function(address, bytes memory) internal[](
-                8
+                10
             );
         assertions[0] = _reenter_initialize;
         assertions[1] = _reenter_addLiquidity;
@@ -126,6 +126,8 @@ contract ReentrancyTest is HyperdriveTest {
         assertions[5] = _reenter_closeLong;
         assertions[6] = _reenter_openShort;
         assertions[7] = _reenter_closeShort;
+        assertions[8] = _reenter_mint;
+        assertions[9] = _reenter_burn;
 
         // Verify that none of the core Hyperdrive functions can be reentered
         // with a reentrant ERC20 token.
@@ -160,7 +162,7 @@ contract ReentrancyTest is HyperdriveTest {
         // Encode the reentrant data. We use reasonable values, but in practice,
         // the calls will fail immediately. With this in mind, the parameters
         // that are used aren't that important.
-        bytes[] memory data = new bytes[](9);
+        bytes[] memory data = new bytes[](11);
         data[0] = abi.encodeCall(
             hyperdrive.initialize,
             (
@@ -263,7 +265,34 @@ contract ReentrancyTest is HyperdriveTest {
                 })
             )
         );
-        data[8] = abi.encodeCall(hyperdrive.checkpoint, (block.timestamp, 0));
+        data[8] = abi.encodeCall(
+            hyperdrive.mint,
+            (
+                BOND_AMOUNT,
+                0,
+                0,
+                IHyperdrive.PairOptions({
+                    longDestination: _trader,
+                    shortDestination: _trader,
+                    asBase: true,
+                    extraData: new bytes(0)
+                })
+            )
+        );
+        data[9] = abi.encodeCall(
+            hyperdrive.burn,
+            (
+                block.timestamp,
+                BOND_AMOUNT,
+                0,
+                IHyperdrive.Options({
+                    destination: _trader,
+                    asBase: true,
+                    extraData: new bytes(0)
+                })
+            )
+        );
+        data[10] = abi.encodeCall(hyperdrive.checkpoint, (block.timestamp, 0));
 
         return data;
     }
@@ -482,6 +511,61 @@ contract ReentrancyTest is HyperdriveTest {
 
         // Ensure that `closeShort` can't be reentered.
         closeShort(_trader, maturityTime, BOND_AMOUNT);
+        assert(tester.isSuccess());
+    }
+
+    function _reenter_mint(address _trader, bytes memory _data) internal {
+        // Initialize the pool.
+        initialize(_trader, FIXED_RATE, CONTRIBUTION);
+
+        // Set up the reentrant call.
+        tester.setTarget(address(hyperdrive));
+        tester.setData(_data);
+
+        // Ensure that `mint` can't be reentered.
+        mint(
+            _trader,
+            BASE_PAID,
+            // NOTE: Depositing more than the base payment to ensure that the
+            // ETH receiver will receive a refund.
+            DepositOverrides({
+                asBase: true,
+                destination: _trader,
+                // NOTE: Roughly double deposit amount needed to cover 100% flat fee
+                depositAmount: BOND_AMOUNT * 2,
+                minSharePrice: 0,
+                minSlippage: 0,
+                maxSlippage: type(uint256).max,
+                extraData: new bytes(0)
+            })
+        );
+        assert(tester.isSuccess());
+    }
+
+    function _reenter_burn(address _trader, bytes memory _data) internal {
+        // Initialize the pool and mint some bonds.
+        initialize(_trader, FIXED_RATE, CONTRIBUTION);
+        (uint256 maturityTime, uint256 bondAmount) = mint(
+            _trader,
+            BASE_PAID,
+            DepositOverrides({
+                asBase: true,
+                destination: _trader,
+                // NOTE: Roughly double deposit amount needed to cover 100% flat fee
+                depositAmount: BOND_AMOUNT * 2,
+                minSharePrice: 0,
+                minSlippage: 0,
+                maxSlippage: type(uint256).max,
+                extraData: new bytes(0)
+            })
+        );
+
+        // Set up the reentrant call.
+        tester.setTarget(address(hyperdrive));
+        tester.setData(_data);
+
+        // Ensure that `burn` can't be reentered.
+        burn(_trader, maturityTime, bondAmount);
         assert(tester.isSuccess());
     }
 }

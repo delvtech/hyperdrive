@@ -231,6 +231,104 @@ contract SandwichTest is HyperdriveTest {
         assertGe(withdrawalProceeds, contribution);
     }
 
+    function test_sandwich_pair_with_long(
+        uint256 apr,
+        uint256 tradeSize
+    ) external {
+        // limit the fuzz testing to variableRate's less than or equal to 50%
+        apr = apr.normalizeToRange(0.01e18, 0.2e18);
+
+        // ensure a feasible trade size
+        tradeSize = tradeSize.normalizeToRange(1_000e18, 10_000_000e18);
+
+        // Deploy the pool and initialize the market
+        {
+            uint256 timeStretchApr = 0.05e18;
+            deploy(alice, timeStretchApr, 0, 0, 0, 0);
+        }
+        uint256 contribution = 500_000_000e18;
+        initialize(alice, apr, contribution);
+
+        // Calculate the amount of bonds minted during a sandwich.
+        uint256 bondsReceived;
+        {
+            // open a long.
+            uint256 longBasePaid = tradeSize; // 10_000_000e18;
+            openLong(bob, longBasePaid);
+
+            // mint some bonds.
+            uint256 basePaidPair = tradeSize; //10_000_000e18;
+            (, bondsReceived) = mint(bob, basePaidPair);
+        }
+
+        // Deploy the pool and initialize the market
+        {
+            uint256 timeStretchApr = 0.05e18;
+            deploy(alice, timeStretchApr, 0, 0, 0, 0);
+        }
+        initialize(alice, apr, contribution);
+
+        // Calculate how many bonds would be minted without the sandwich.
+        uint256 baselineBondsReceived;
+        {
+            // mint some bonds.
+            uint256 basePaidPair = tradeSize; //10_000_000e18;
+            (, baselineBondsReceived) = mint(bob, basePaidPair);
+        }
+
+        // Ensure that the bonds minted are the same in either case.
+        assertEq(baselineBondsReceived, bondsReceived);
+    }
+
+    function test_sandwich_pair_with_short(
+        uint256 apr,
+        uint256 tradeSize
+    ) external {
+        // limit the fuzz testing to variableRate's less than or equal to 50%
+        apr = apr.normalizeToRange(0.01e18, 0.2e18);
+
+        // ensure a feasible trade size
+        tradeSize = tradeSize.normalizeToRange(1_000e18, 10_000_000e18);
+
+        // Deploy the pool and initialize the market
+        {
+            uint256 timeStretchApr = 0.05e18;
+            deploy(alice, timeStretchApr, 0, 0, 0, 0);
+        }
+        uint256 contribution = 500_000_000e18;
+        initialize(alice, apr, contribution);
+
+        // Calculate the amount of bonds minted during a sandwich.
+        uint256 bondsReceived;
+        {
+            // open a short.
+            uint256 shortAmount = tradeSize; // 10_000_000e18;
+            openShort(bob, shortAmount);
+
+            // mint some bonds.
+            uint256 basePaidPair = tradeSize; //10_000_000e18;
+            (, bondsReceived) = mint(bob, basePaidPair);
+        }
+
+        // Deploy the pool and initialize the market
+        {
+            uint256 timeStretchApr = 0.05e18;
+            deploy(alice, timeStretchApr, 0, 0, 0, 0);
+        }
+        initialize(alice, apr, contribution);
+
+        // Calculate how many bonds would be minted without the sandwich.
+        uint256 baselineBondsReceived;
+        {
+            // mint some bonds.
+            uint256 basePaidPair = tradeSize; //10_000_000e18;
+            (, baselineBondsReceived) = mint(bob, basePaidPair);
+        }
+
+        // Ensure that the bonds minted are the same in either case.
+        assertEq(baselineBondsReceived, bondsReceived);
+    }
+
     function test_sandwich_lp(uint256 apr) external {
         apr = apr.normalizeToRange(0.01e18, 0.2e18);
 
