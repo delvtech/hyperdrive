@@ -5,6 +5,7 @@ import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveEvents } from "../interfaces/IHyperdriveEvents.sol";
 import { AssetId } from "../libraries/AssetId.sol";
 import { FixedPointMath, ONE } from "../libraries/FixedPointMath.sol";
+import { HyperdriveMath } from "../libraries/HyperdriveMath.sol";
 import { LPMath } from "../libraries/LPMath.sol";
 import { SafeCast } from "../libraries/SafeCast.sol";
 import { HyperdriveLP } from "./HyperdriveLP.sol";
@@ -140,8 +141,6 @@ abstract contract HyperdrivePair is IHyperdriveEvents, HyperdriveLP {
         return (maturityTime, bondAmount);
     }
 
-    // FIXME: Document the update to the flat fee logic.
-    //
     /// @dev Burns a pair of long and short positions that directly match each
     ///      other. The capital underlying these positions is released to the
     ///      trader burning the positions.
@@ -450,11 +449,6 @@ abstract contract HyperdrivePair is IHyperdriveEvents, HyperdriveLP {
         return (bondAmount, governanceFee);
     }
 
-    // FIXME: Review the flat fee calculations used in this system.
-    //
-    // FIXME: Document the flat fee calculations and clearly explain why we have
-    // to have them here.
-    //
     /// @dev Calculates the share proceeds earned and the fees from burning the
     ///      specified amount of bonds.
     /// @param _maturityTime The maturity time of the bonds to burn.
@@ -557,10 +551,9 @@ abstract contract HyperdrivePair is IHyperdriveEvents, HyperdriveLP {
         // NOTE: Round down to underestimate the share proceeds.
         uint256 bondAmount = _bondAmount; // avoid stack-too-deep
         uint256 vaultSharePrice = _vaultSharePrice; // avoid stack-too-deep
-        uint256 shareProceeds = bondAmount.mulDivDown(
-            closeVaultSharePrice,
-            vaultSharePrice.mulDown(openVaultSharePrice)
-        ) +
+        uint256 shareProceeds = bondAmount
+            .mulDivDown(closeVaultSharePrice, openVaultSharePrice)
+            .divDown(vaultSharePrice) +
             prepaidFlatFee -
             flatFee -
             governanceFee;
