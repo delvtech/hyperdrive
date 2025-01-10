@@ -210,7 +210,8 @@ contract MintTest is HyperdriveTest {
         _verifyMint(testCase);
     }
 
-    /// @dev Ensures that minting performs correctly when it succeeds.
+    /// @dev Ensures that minting performs correctly when there is prepaid
+    ///      interest.
     function test_mint_success_prepaid_interest() external {
         // Mint some base tokens to Alice and approve Hyperdrive.
         vm.stopPrank();
@@ -223,6 +224,35 @@ contract MintTest is HyperdriveTest {
         // prepaid interest to account for.
         hyperdrive.checkpoint(hyperdrive.latestCheckpoint(), 0);
         advanceTime(CHECKPOINT_DURATION.mulDown(0.5e18), 2.5e18);
+
+        // Get some data before minting.
+        MintTestCase memory testCase = _mintTestCase(
+            alice, // funder
+            bob, // long
+            celine, // short
+            baseAmount, // amount
+            true, // asBase
+            "" // extraData
+        );
+
+        // Verify the mint transaction.
+        _verifyMint(testCase);
+    }
+
+    /// @dev Ensures that minting performs correctly when negative interest
+    ///      accrues.
+    function test_mint_success_negative_interest() external {
+        // Mint some base tokens to Alice and approve Hyperdrive.
+        vm.stopPrank();
+        vm.startPrank(alice);
+        uint256 baseAmount = 100_000e18;
+        baseToken.mint(baseAmount);
+        baseToken.approve(address(hyperdrive), baseAmount);
+
+        // Mint a checkpoint and accrue interest. This sets us up to have
+        // prepaid interest to account for.
+        hyperdrive.checkpoint(hyperdrive.latestCheckpoint(), 0);
+        advanceTime(CHECKPOINT_DURATION.mulDown(0.5e18), -0.2e18);
 
         // Get some data before minting.
         MintTestCase memory testCase = _mintTestCase(
@@ -416,7 +446,10 @@ contract MintTest is HyperdriveTest {
             .vaultSharePrice;
         uint256 requiredBaseAmount = bondAmount +
             bondAmount.mulDivDown(
-                hyperdrive.getPoolInfo().vaultSharePrice - openVaultSharePrice,
+                hyperdrive.getPoolInfo().vaultSharePrice -
+                    openVaultSharePrice.min(
+                        hyperdrive.getPoolInfo().vaultSharePrice
+                    ),
                 openVaultSharePrice
             ) +
             bondAmount.mulDown(hyperdrive.getPoolConfig().fees.flat) +
@@ -425,7 +458,7 @@ contract MintTest is HyperdriveTest {
                 hyperdrive.getPoolConfig().fees.governanceLP
             );
         assertGt(_testCase.amount, requiredBaseAmount);
-        assertApproxEqAbs(_testCase.amount, requiredBaseAmount, 10);
+        assertApproxEqAbs(_testCase.amount, requiredBaseAmount, 1e6);
 
         // Verify the `Mint` event.
         _verifyMintEvent(_testCase, bondAmount);
