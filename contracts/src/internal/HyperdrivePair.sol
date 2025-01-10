@@ -414,7 +414,7 @@ abstract contract HyperdrivePair is IHyperdriveEvents, HyperdriveLP {
         // This implies that
         //
         // bondAmount = shareDeposited * vaultSharePrice / (
-        //     1 + (c - c0) / c0 + flatFee + 2 * flatFee * governanceFee
+        //     1 + (max(c, c0) - c0) / c0 + flatFee + 2 * flatFee * governanceFee
         // )
         //
         // NOTE: We round down to underestimate the bond amount.
@@ -422,12 +422,13 @@ abstract contract HyperdrivePair is IHyperdriveEvents, HyperdriveLP {
             _vaultSharePrice,
             // NOTE: Round up to overestimate the denominator. This
             // underestimates the bond amount.
-            (ONE +
-                // NOTE: If negative interest has accrued and the open vault
-                // share price is greater than the vault share price, we clamp
-                // the vault share price to the open vault share price.
-                (_vaultSharePrice.max(_openVaultSharePrice) -
-                    _openVaultSharePrice).divUp(_openVaultSharePrice) +
+            //
+            // NOTE: If negative interest has accrued and the open vault share
+            // price is greater than the vault share price, we clamp the vault
+            // share price to the open vault share price.
+            ((_vaultSharePrice.max(_openVaultSharePrice)).divUp(
+                _openVaultSharePrice
+            ) +
                 _flatFee +
                 2 *
                 _flatFee.mulUp(_governanceLPFee))
