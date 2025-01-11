@@ -1,9 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.20;
 
-// FIXME
-import { console2 as console } from "forge-std/console2.sol";
-
 import { ERC20ForwarderFactory } from "../../contracts/src/token/ERC20ForwarderFactory.sol";
 import { HyperdriveFactory } from "../../contracts/src/factory/HyperdriveFactory.sol";
 import { IERC20 } from "../../contracts/src/interfaces/IERC20.sol";
@@ -3135,8 +3132,6 @@ abstract contract InstanceTest is HyperdriveTest {
         }
     }
 
-    // FIXME: Make some of these updates to the other instance tests.
-    //
     /// @dev Fuzz test to ensure deposit accounting is correct when mint bonds
     ///      with the share token. This test case is expected to fail if share
     ///      deposits are not supported.
@@ -3347,220 +3342,279 @@ abstract contract InstanceTest is HyperdriveTest {
         );
     }
 
-    // /// @dev Fuzz test to ensure withdrawal accounting is correct when closing
-    // ///      longs with the share token. This test case is expected to fail if
-    // ///      share withdraws are not supported.
-    // /// @param basePaid Amount in terms of base.
-    // /// @param variableRate Rate of interest accrual over the position duration.
-    // function test_close_long_with_shares(
-    //     uint256 basePaid,
-    //     int256 variableRate
-    // ) external virtual {
-    //     // Early termination if share withdrawals are not supported.
-    //     if (!config.enableShareWithdraws) {
-    //         return;
-    //     }
+    /// @dev Fuzz test to ensure withdrawal accounting is correct when burning
+    ///      bonds with the share token. This test case is expected to fail if
+    ///      share withdraws are not supported.
+    /// @param sharesPaid Amount paid in shares.
+    /// @param variableRate Rate of interest accrual over the position duration.
+    function test_burn_with_shares(
+        uint256 sharesPaid,
+        int256 variableRate
+    ) external virtual {
+        // Early termination if share withdrawals are not supported.
+        if (!config.enableShareWithdraws) {
+            return;
+        }
 
-    //     // Get Bob's account balances before opening the long.
-    //     AccountBalances memory bobBalancesBefore = getAccountBalances(bob);
+        // Get Bob's account balances before opening the long.
+        AccountBalances memory bobBalancesBefore = getAccountBalances(bob);
 
-    //     // Accrue interest for a term.
-    //     if (config.shouldAccrueInterest) {
-    //         advanceTime(
-    //             hyperdrive.getPoolConfig().positionDuration,
-    //             int256(FIXED_RATE)
-    //         );
-    //     } else {
-    //         advanceTime(hyperdrive.getPoolConfig().positionDuration, 0);
-    //     }
+        // Accrue interest for a term.
+        if (config.shouldAccrueInterest) {
+            advanceTime(
+                hyperdrive.getPoolConfig().positionDuration,
+                int256(FIXED_RATE)
+            );
+        } else {
+            advanceTime(hyperdrive.getPoolConfig().positionDuration, 0);
+        }
 
-    //     // Calculate the maximum amount of basePaid we can test. The limit is
-    //     // either the maximum long that Hyperdrive can open or the amount of the
-    //     // share token the trader has.
-    //     uint256 maxLongAmount = HyperdriveUtils.calculateMaxLong(hyperdrive);
-    //     uint256 maxShareAmount = bobBalancesBefore.sharesBalance;
+        // We normalize the sharesPaid variable within a valid range the market
+        // can support.
+        uint256 maxSharesPaid;
+        if (config.isRebasing) {
+            maxSharesPaid = convertToShares(
+                IERC20(config.vaultSharesToken).balanceOf(bob) / 10
+            );
+        } else {
+            maxSharesPaid = IERC20(config.vaultSharesToken).balanceOf(bob) / 10;
+        }
+        sharesPaid = sharesPaid.normalizeToRange(
+            convertToShares(
+                2 * hyperdrive.getPoolConfig().minimumTransactionAmount
+            ),
+            maxSharesPaid
+        );
 
-    //     // We normalize the basePaid variable within a valid range the market can support.
-    //     basePaid = basePaid.normalizeToRange(
-    //         2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
-    //         maxLongAmount > maxShareAmount ? maxShareAmount : maxLongAmount
-    //     );
+        // Bob mints bonds with the share token.
+        (uint256 maturityTime, uint256 bondAmount) = mint(
+            bob,
+            sharesPaid,
+            false
+        );
 
-    //     // Bob opens a long with the share token.
-    //     (uint256 maturityTime, uint256 longAmount) = openLong(
-    //         bob,
-    //         convertToShares(basePaid),
-    //         false
-    //     );
+        // The term passes and some interest accrues.
+        if (config.shouldAccrueInterest) {
+            variableRate = variableRate.normalizeToRange(0, 2.5e18);
+        } else {
+            variableRate = 0;
+        }
+        advanceTime(hyperdrive.getPoolConfig().positionDuration, variableRate);
 
-    //     // The term passes and some interest accrues.
-    //     if (config.shouldAccrueInterest) {
-    //         variableRate = variableRate.normalizeToRange(0, 2.5e18);
-    //     } else {
-    //         variableRate = 0;
-    //     }
-    //     advanceTime(hyperdrive.getPoolConfig().positionDuration, variableRate);
+        // Get some balance information before burning the bonds.
+        (
+            uint256 totalBaseSupplyBefore,
+            uint256 totalShareSupplyBefore
+        ) = getSupply();
+        bobBalancesBefore = getAccountBalances(bob);
+        AccountBalances memory hyperdriveBalancesBefore = getAccountBalances(
+            address(hyperdrive)
+        );
 
-    //     // Get some balance information before closing the long.
-    //     (
-    //         uint256 totalBaseSupplyBefore,
-    //         uint256 totalShareSupplyBefore
-    //     ) = getSupply();
-    //     bobBalancesBefore = getAccountBalances(bob);
-    //     AccountBalances memory hyperdriveBalancesBefore = getAccountBalances(
-    //         address(hyperdrive)
-    //     );
+        // Bob closes his long with shares as the target asset.
+        uint256 shareProceeds = burn(bob, maturityTime, bondAmount, false);
+        uint256 baseProceeds = convertToBase(shareProceeds);
 
-    //     // Bob closes his long with shares as the target asset.
-    //     uint256 shareProceeds = closeLong(bob, maturityTime, longAmount, false);
-    //     uint256 baseProceeds = convertToBase(shareProceeds);
+        // Ensure that Bob received approximately the value of the underlying
+        // bonds (minus fees) but wasn't overpaid.
+        uint256 openVaultSharePrice = hyperdrive
+            .getCheckpoint(
+                maturityTime - hyperdrive.getPoolConfig().positionDuration
+            )
+            .vaultSharePrice;
+        uint256 closeVaultSharePrice = hyperdrive
+            .getCheckpoint(maturityTime)
+            .vaultSharePrice;
+        uint256 expectedBaseProceeds = bondAmount.mulDivDown(
+            closeVaultSharePrice,
+            openVaultSharePrice
+        ) -
+            bondAmount.mulUp(hyperdrive.getPoolConfig().fees.flat).mulDown(
+                ONE - hyperdrive.getPoolConfig().fees.governanceLP
+            ) -
+            2 *
+            bondAmount.mulUp(hyperdrive.getPoolConfig().fees.flat).mulDown(
+                hyperdrive.getPoolConfig().fees.governanceLP
+            );
+        assertLe(baseProceeds, expectedBaseProceeds);
+        assertApproxEqAbs(
+            baseProceeds,
+            expectedBaseProceeds,
+            config.closeLongWithSharesTolerance
+        );
 
-    //     // Ensure that Bob received approximately the bond amount but wasn't
-    //     // overpaid.
-    //     assertLe(
-    //         baseProceeds,
-    //         longAmount.mulDown(ONE - hyperdrive.getPoolConfig().fees.flat)
-    //     );
-    //     assertApproxEqAbs(
-    //         baseProceeds,
-    //         longAmount.mulDown(ONE - hyperdrive.getPoolConfig().fees.flat),
-    //         config.closeLongWithSharesTolerance
-    //     );
+        // Ensure the withdrawal accounting is correct.
+        AccountBalances memory bobBalancesBefore_ = bobBalancesBefore; // avoid stack-too-deep
+        verifyWithdrawal(
+            bob,
+            baseProceeds,
+            false,
+            totalBaseSupplyBefore,
+            totalShareSupplyBefore,
+            bobBalancesBefore_,
+            hyperdriveBalancesBefore
+        );
+    }
 
-    //     // Ensure the withdrawal accounting is correct.
-    //     verifyWithdrawal(
-    //         bob,
-    //         baseProceeds,
-    //         false,
-    //         totalBaseSupplyBefore,
-    //         totalShareSupplyBefore,
-    //         bobBalancesBefore,
-    //         hyperdriveBalancesBefore
-    //     );
-    // }
+    // FIXME: This failed in a bunch of places.
+    //
+    /// @dev Fuzz test to ensure withdrawal accounting is correct when burning
+    ///      bonds with the base token. This test case is expected to fail if
+    ///      base withdraws are not supported.
+    /// @param basePaid Amount in terms of base.
+    /// @param variableRate Rate of interest accrual over the position duration.
+    function test_burn_with_base(
+        uint256 basePaid,
+        int256 variableRate
+    ) external {
+        // Get Bob's account balances before opening the long.
+        AccountBalances memory bobBalancesBefore = getAccountBalances(bob);
 
-    // /// @dev Fuzz test to ensure withdrawal accounting is correct when closing
-    // ///      longs with the base token. This test case is expected to fail if
-    // ///      base withdraws are not supported.
-    // /// @param basePaid Amount in terms of base.
-    // /// @param variableRate Rate of interest accrual over the position duration.
-    // function test_close_long_with_base(
-    //     uint256 basePaid,
-    //     int256 variableRate
-    // ) external {
-    //     // Get Bob's account balances before opening the long.
-    //     AccountBalances memory bobBalancesBefore = getAccountBalances(bob);
+        // Accrue interest for a term.
+        if (config.shouldAccrueInterest) {
+            advanceTime(
+                hyperdrive.getPoolConfig().positionDuration,
+                int256(FIXED_RATE)
+            );
+        } else {
+            advanceTime(hyperdrive.getPoolConfig().positionDuration, 0);
+        }
 
-    //     // Accrue interest for a term.
-    //     if (config.shouldAccrueInterest) {
-    //         advanceTime(
-    //             hyperdrive.getPoolConfig().positionDuration,
-    //             int256(FIXED_RATE)
-    //         );
-    //     } else {
-    //         advanceTime(hyperdrive.getPoolConfig().positionDuration, 0);
-    //     }
+        // Mint bonds in either base or shares, depending on which asset is
+        // supported.
+        uint256 maturityTime;
+        uint256 bondAmount;
+        if (config.enableBaseDeposits) {
+            // Calculate the maximum amount of basePaid we can test. The limit is
+            // the amount of the base token that the trader has.
+            uint256 maxBaseAmount;
+            if (isBaseETH) {
+                maxBaseAmount = bob.balance;
+            } else {
+                maxBaseAmount = IERC20(config.baseToken).balanceOf(bob) / 10;
+            }
 
-    //     // Calculate the maximum amount of basePaid we can test. The limit is
-    //     // either the maximum long that Hyperdrive can open or the amount of the
-    //     // base token the trader has.
-    //     uint256 maxLongAmount = HyperdriveUtils.calculateMaxLong(hyperdrive);
+            // We normalize the basePaid variable within a valid range the market
+            // can support.
+            basePaid = basePaid.normalizeToRange(
+                2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
+                maxBaseAmount
+            );
 
-    //     // Open a long in either base or shares, depending on which asset is
-    //     // supported.
-    //     uint256 maturityTime;
-    //     uint256 longAmount;
-    //     if (config.enableBaseDeposits) {
-    //         // We normalize the basePaid variable within a valid range the market
-    //         // can support.
-    //         uint256 maxBaseAmount = bobBalancesBefore.baseBalance;
-    //         basePaid = basePaid.normalizeToRange(
-    //             2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
-    //             maxLongAmount > maxBaseAmount ? maxBaseAmount : maxLongAmount
-    //         );
+            // Bob mints bonds with the base token.
+            (maturityTime, bondAmount) = mint(bob, basePaid);
+        } else {
+            // Calculate the maximum amount of sharesPaid we can test. The limit
+            // is the amount of the vault shares token that the trader has.
+            uint256 maxSharesAmount = IERC20(config.vaultSharesToken).balanceOf(
+                bob
+            ) / 10;
 
-    //         // Bob opens a long with the base token.
-    //         (maturityTime, longAmount) = openLong(bob, basePaid);
-    //     } else {
-    //         // We normalize the sharesPaid variable within a valid range the market
-    //         // can support.
-    //         uint256 maxSharesAmount = bobBalancesBefore.sharesBalance;
-    //         basePaid = basePaid.normalizeToRange(
-    //             2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
-    //             maxLongAmount
-    //         );
+            // We normalize the basePaid variable within a valid range the market
+            // can support.
+            if (config.isRebasing) {
+                basePaid = basePaid.normalizeToRange(
+                    2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
+                    maxSharesAmount
+                );
+            } else {
+                basePaid = basePaid.normalizeToRange(
+                    2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
+                    convertToBase(maxSharesAmount)
+                );
+            }
+            uint256 sharesPaid = convertToShares(basePaid);
 
-    //         // Bob opens a long with the share token.
-    //         (maturityTime, longAmount) = openLong(
-    //             bob,
-    //             convertToShares(basePaid).min(maxSharesAmount),
-    //             false
-    //         );
-    //     }
+            // Bob mints bonds with the share token.
+            (maturityTime, bondAmount) = mint(
+                bob,
+                sharesPaid.min(maxSharesAmount),
+                false
+            );
+        }
 
-    //     // The term passes and some interest accrues.
-    //     if (config.shouldAccrueInterest) {
-    //         variableRate = variableRate.normalizeToRange(0, 2.5e18);
-    //     } else {
-    //         variableRate = 0;
-    //     }
-    //     advanceTime(hyperdrive.getPoolConfig().positionDuration, variableRate);
+        // The term passes and some interest accrues.
+        if (config.shouldAccrueInterest) {
+            variableRate = variableRate.normalizeToRange(0, 2.5e18);
+        } else {
+            variableRate = 0;
+        }
+        advanceTime(hyperdrive.getPoolConfig().positionDuration, variableRate);
 
-    //     // Get some balance information before closing the long.
-    //     (
-    //         uint256 totalBaseSupplyBefore,
-    //         uint256 totalShareSupplyBefore
-    //     ) = getSupply();
-    //     bobBalancesBefore = getAccountBalances(bob);
-    //     AccountBalances memory hyperdriveBalancesBefore = getAccountBalances(
-    //         address(hyperdrive)
-    //     );
+        // Get some balance information before closing the long.
+        (
+            uint256 totalBaseSupplyBefore,
+            uint256 totalShareSupplyBefore
+        ) = getSupply();
+        bobBalancesBefore = getAccountBalances(bob);
+        AccountBalances memory hyperdriveBalancesBefore = getAccountBalances(
+            address(hyperdrive)
+        );
 
-    //     // Bob closes the long. We expect to fail if withdrawing with base is
-    //     // not supported.
-    //     vm.startPrank(bob);
-    //     if (!config.enableBaseWithdraws) {
-    //         vm.expectRevert(config.baseWithdrawError);
-    //     }
-    //     uint256 baseProceeds = hyperdrive.closeLong(
-    //         maturityTime,
-    //         longAmount,
-    //         0,
-    //         IHyperdrive.Options({
-    //             destination: bob,
-    //             asBase: true,
-    //             extraData: new bytes(0)
-    //         })
-    //     );
+        // Bob burns the bonds. We expect to fail if withdrawing with base is
+        // not supported.
+        vm.startPrank(bob);
+        if (!config.enableBaseWithdraws) {
+            vm.expectRevert(config.baseWithdrawError);
+        }
+        uint256 baseProceeds = hyperdrive.burn(
+            maturityTime,
+            bondAmount,
+            0,
+            IHyperdrive.Options({
+                destination: bob,
+                asBase: true,
+                extraData: new bytes(0)
+            })
+        );
 
-    //     // Early termination if base withdraws are not supported.
-    //     if (!config.enableBaseWithdraws) {
-    //         return;
-    //     }
+        // Early termination if base withdraws are not supported.
+        if (!config.enableBaseWithdraws) {
+            return;
+        }
 
-    //     // Ensure Bob is credited the correct amount of bonds.
-    //     assertLe(
-    //         baseProceeds,
-    //         longAmount.mulDown(ONE - hyperdrive.getPoolConfig().fees.flat)
-    //     );
-    //     assertApproxEqAbs(
-    //         baseProceeds,
-    //         longAmount.mulDown(ONE - hyperdrive.getPoolConfig().fees.flat),
-    //         config.closeLongWithBaseTolerance
-    //     );
+        // Ensure that Bob received approximately the value of the underlying
+        // bonds (minus fees) but wasn't overpaid.
+        uint256 openVaultSharePrice = hyperdrive
+            .getCheckpoint(
+                maturityTime - hyperdrive.getPoolConfig().positionDuration
+            )
+            .vaultSharePrice;
+        uint256 closeVaultSharePrice = hyperdrive
+            .getCheckpoint(maturityTime)
+            .vaultSharePrice;
+        uint256 expectedBaseProceeds = bondAmount.mulDivDown(
+            closeVaultSharePrice,
+            openVaultSharePrice
+        ) -
+            bondAmount.mulUp(hyperdrive.getPoolConfig().fees.flat).mulDown(
+                ONE - hyperdrive.getPoolConfig().fees.governanceLP
+            ) -
+            2 *
+            bondAmount.mulUp(hyperdrive.getPoolConfig().fees.flat).mulDown(
+                hyperdrive.getPoolConfig().fees.governanceLP
+            );
+        assertLe(baseProceeds, expectedBaseProceeds);
+        assertApproxEqAbs(
+            baseProceeds,
+            expectedBaseProceeds,
+            config.closeLongWithSharesTolerance
+        );
 
-    //     // Ensure the withdrawal accounting is correct.
-    //     verifyWithdrawal(
-    //         bob,
-    //         baseProceeds,
-    //         true,
-    //         totalBaseSupplyBefore,
-    //         totalShareSupplyBefore,
-    //         bobBalancesBefore,
-    //         hyperdriveBalancesBefore
-    //     );
-    // }
+        // Ensure the withdrawal accounting is correct.
+        verifyWithdrawal(
+            bob,
+            baseProceeds,
+            true,
+            totalBaseSupplyBefore,
+            totalShareSupplyBefore,
+            bobBalancesBefore,
+            hyperdriveBalancesBefore
+        );
+    }
 
+    // FIXME
+    //
     // /// @dev Fuzz test that ensures that longs receive the correct payouts if
     // ///      they open and close instantaneously when deposits and withdrawals
     // ///      are made with base.

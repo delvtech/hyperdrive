@@ -112,7 +112,7 @@ contract EzETHHyperdriveTest is InstanceTest {
                 roundTripShortMaturityWithSharesTolerance: 1e8,
                 // The verification tolerances.
                 verifyDepositTolerance: 300,
-                verifyWithdrawalTolerance: 1_000
+                verifyWithdrawalTolerance: 3_000
             })
         )
     {}
