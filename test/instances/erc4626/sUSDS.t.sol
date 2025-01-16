@@ -120,19 +120,29 @@ contract sUSDSHyperdriveTest is ERC4626HyperdriveInstanceTest {
         uint256 timeDelta,
         int256 variableRate
     ) internal override {
+        uint256 baseBalance = USDS.balanceOf(address(SUSDS));
         uint256 chi = ISUSDS(address(SUSDS)).chi();
         uint256 rho = ISUSDS(address(SUSDS)).rho();
         uint256 ssr = ISUSDS(address(SUSDS)).ssr();
         chi = (_rpow(ssr, block.timestamp - rho) * chi) / RAY;
 
         // Accrue interest in the sUSDS market. This amounts to manually
-        // updating the total supply assets.
+        // updating the total supply assets and increasing the contract's
+        // USDS balance.
         (chi, ) = chi.calculateInterest(variableRate, timeDelta);
+        (baseBalance, ) = baseBalance.calculateInterest(
+            variableRate,
+            timeDelta
+        );
 
         // Advance the time.
         vm.warp(block.timestamp + timeDelta);
 
         // Update the sUSDS market state.
+        bytes32 balanceLocation = keccak256(abi.encode(address(SUSDS), 2));
+        vm.store(address(USDS), balanceLocation, bytes32(baseBalance));
+
+        // Update the sUSDS contract's base balance.
         vm.store(
             address(SUSDS),
             bytes32(uint256(5)),
