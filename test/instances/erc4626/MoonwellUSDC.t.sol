@@ -62,6 +62,7 @@ contract MoonwellUSDCHyperdriveTest is MetaMorphoHyperdriveInstanceTest {
                 closeLongWithBaseTolerance: 20,
                 closeShortWithBaseUpperBoundTolerance: 10,
                 closeShortWithBaseTolerance: 100,
+                burnWithBaseTolerance: 20,
                 roundTripLpInstantaneousWithBaseTolerance: 1e5,
                 roundTripLpWithdrawalSharesWithBaseTolerance: 1e6,
                 roundTripLongInstantaneousWithBaseUpperBoundTolerance: 1e3,
@@ -71,9 +72,13 @@ contract MoonwellUSDCHyperdriveTest is MetaMorphoHyperdriveInstanceTest {
                 roundTripShortInstantaneousWithBaseUpperBoundTolerance: 1e3,
                 roundTripShortInstantaneousWithBaseTolerance: 1e5,
                 roundTripShortMaturityWithBaseTolerance: 1e5,
+                roundTripPairInstantaneousWithBaseUpperBoundTolerance: 1e3,
+                roundTripPairInstantaneousWithBaseTolerance: 1e5,
+                roundTripPairMaturityWithBaseTolerance: 1e5,
                 // The share test tolerances.
                 closeLongWithSharesTolerance: 20,
                 closeShortWithSharesTolerance: 100,
+                burnWithSharesTolerance: 20,
                 // NOTE: This is high, but the vault share proceeds are always
                 // less than the expected amount. This seems to be caused by the
                 // lack of precision of our vault share price. For reasonable
@@ -88,6 +93,9 @@ contract MoonwellUSDCHyperdriveTest is MetaMorphoHyperdriveInstanceTest {
                 roundTripShortInstantaneousWithSharesUpperBoundTolerance: 1e3,
                 roundTripShortInstantaneousWithSharesTolerance: 1e5,
                 roundTripShortMaturityWithSharesTolerance: 1e5,
+                roundTripPairInstantaneousWithSharesUpperBoundTolerance: 1e3,
+                roundTripPairInstantaneousWithSharesTolerance: 1e5,
+                roundTripPairMaturityWithSharesTolerance: 1e5,
                 // The verification tolerances.
                 verifyDepositTolerance: 1e12,
                 verifyWithdrawalTolerance: 1e13

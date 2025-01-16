@@ -72,6 +72,7 @@ contract stUSDHyperdriveTest is ERC4626HyperdriveInstanceTest {
                 closeLongWithBaseTolerance: 20,
                 closeShortWithBaseUpperBoundTolerance: 10,
                 closeShortWithBaseTolerance: 100,
+                burnWithBaseTolerance: 20,
                 roundTripLpInstantaneousWithBaseTolerance: 1e5,
                 roundTripLpWithdrawalSharesWithBaseTolerance: 1e6,
                 roundTripLongInstantaneousWithBaseUpperBoundTolerance: 1e3,
@@ -81,9 +82,13 @@ contract stUSDHyperdriveTest is ERC4626HyperdriveInstanceTest {
                 roundTripShortInstantaneousWithBaseUpperBoundTolerance: 1e3,
                 roundTripShortInstantaneousWithBaseTolerance: 1e5,
                 roundTripShortMaturityWithBaseTolerance: 1e5,
+                roundTripPairInstantaneousWithBaseUpperBoundTolerance: 1e3,
+                roundTripPairInstantaneousWithBaseTolerance: 1e5,
+                roundTripPairMaturityWithBaseTolerance: 1e5,
                 // The share test tolerances.
                 closeLongWithSharesTolerance: 20,
                 closeShortWithSharesTolerance: 100,
+                burnWithSharesTolerance: 20,
                 roundTripLpInstantaneousWithSharesTolerance: 1e7,
                 roundTripLpWithdrawalSharesWithSharesTolerance: 1e7,
                 roundTripLongInstantaneousWithSharesUpperBoundTolerance: 1e3,
@@ -93,6 +98,9 @@ contract stUSDHyperdriveTest is ERC4626HyperdriveInstanceTest {
                 roundTripShortInstantaneousWithSharesUpperBoundTolerance: 1e3,
                 roundTripShortInstantaneousWithSharesTolerance: 1e5,
                 roundTripShortMaturityWithSharesTolerance: 1e5,
+                roundTripPairInstantaneousWithSharesUpperBoundTolerance: 1e3,
+                roundTripPairInstantaneousWithSharesTolerance: 1e5,
+                roundTripPairMaturityWithSharesTolerance: 1e5,
                 // The verification tolerances.
                 verifyDepositTolerance: 2,
                 verifyWithdrawalTolerance: 2

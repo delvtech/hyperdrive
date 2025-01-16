@@ -89,6 +89,7 @@ contract EzETHHyperdriveTest is InstanceTest {
                 closeLongWithBaseTolerance: 20,
                 closeShortWithBaseUpperBoundTolerance: 10,
                 closeShortWithBaseTolerance: 100,
+                burnWithBaseTolerance: 20,
                 roundTripLpInstantaneousWithBaseTolerance: 0,
                 roundTripLpWithdrawalSharesWithBaseTolerance: 0,
                 roundTripLongInstantaneousWithBaseUpperBoundTolerance: 0,
@@ -98,9 +99,13 @@ contract EzETHHyperdriveTest is InstanceTest {
                 roundTripShortInstantaneousWithBaseUpperBoundTolerance: 0,
                 roundTripShortInstantaneousWithBaseTolerance: 0,
                 roundTripShortMaturityWithBaseTolerance: 0,
+                roundTripPairInstantaneousWithBaseUpperBoundTolerance: 0,
+                roundTripPairInstantaneousWithBaseTolerance: 0,
+                roundTripPairMaturityWithBaseTolerance: 0,
                 // The share test tolerances.
                 closeLongWithSharesTolerance: 1e6,
                 closeShortWithSharesTolerance: 1e6,
+                burnWithSharesTolerance: 1e6,
                 roundTripLpInstantaneousWithSharesTolerance: 1e7,
                 roundTripLpWithdrawalSharesWithSharesTolerance: 1e7,
                 roundTripLongInstantaneousWithSharesUpperBoundTolerance: 1e3,
@@ -110,6 +115,9 @@ contract EzETHHyperdriveTest is InstanceTest {
                 roundTripShortInstantaneousWithSharesUpperBoundTolerance: 1e3,
                 roundTripShortInstantaneousWithSharesTolerance: 1e7,
                 roundTripShortMaturityWithSharesTolerance: 1e8,
+                roundTripPairInstantaneousWithSharesUpperBoundTolerance: 1e3,
+                roundTripPairInstantaneousWithSharesTolerance: 1e7,
+                roundTripPairMaturityWithSharesTolerance: 1e8,
                 // The verification tolerances.
                 verifyDepositTolerance: 300,
                 verifyWithdrawalTolerance: 3_000

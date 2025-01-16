@@ -57,6 +57,7 @@ contract StakingUSDS_Chronicle_Hyperdrive is StakingUSDSHyperdriveInstanceTest {
                 closeLongWithBaseTolerance: 2,
                 closeShortWithBaseUpperBoundTolerance: 10,
                 closeShortWithBaseTolerance: 100,
+                burnWithBaseTolerance: 2,
                 roundTripLpInstantaneousWithBaseTolerance: 1e3,
                 roundTripLpWithdrawalSharesWithBaseTolerance: 1e7,
                 roundTripLongInstantaneousWithBaseUpperBoundTolerance: 1e3,
@@ -68,12 +69,16 @@ contract StakingUSDS_Chronicle_Hyperdrive is StakingUSDSHyperdriveInstanceTest {
                 // NOTE: Since the curve fee isn't zero, this check is ignored.
                 roundTripShortInstantaneousWithBaseTolerance: 1e3,
                 roundTripShortMaturityWithBaseTolerance: 1e3,
+                roundTripPairInstantaneousWithBaseUpperBoundTolerance: 1e3,
+                roundTripPairInstantaneousWithBaseTolerance: 1e3,
+                roundTripPairMaturityWithBaseTolerance: 1e3,
                 // NOTE: Share deposits and withdrawals are disabled, so these are
                 // 0.
                 //
                 // The share test tolerances.
                 closeLongWithSharesTolerance: 0,
                 closeShortWithSharesTolerance: 0,
+                burnWithSharesTolerance: 0,
                 roundTripLpInstantaneousWithSharesTolerance: 0,
                 roundTripLpWithdrawalSharesWithSharesTolerance: 0,
                 roundTripLongInstantaneousWithSharesUpperBoundTolerance: 0,
@@ -83,6 +88,9 @@ contract StakingUSDS_Chronicle_Hyperdrive is StakingUSDSHyperdriveInstanceTest {
                 roundTripShortInstantaneousWithSharesUpperBoundTolerance: 0,
                 roundTripShortInstantaneousWithSharesTolerance: 0,
                 roundTripShortMaturityWithSharesTolerance: 0,
+                roundTripPairInstantaneousWithSharesUpperBoundTolerance: 0,
+                roundTripPairInstantaneousWithSharesTolerance: 0,
+                roundTripPairMaturityWithSharesTolerance: 0,
                 // The verification tolerances.
                 verifyDepositTolerance: 2,
                 verifyWithdrawalTolerance: 3

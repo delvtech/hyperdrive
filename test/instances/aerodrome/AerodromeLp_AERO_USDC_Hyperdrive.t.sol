@@ -59,6 +59,7 @@ contract AerodromeLp_AERO_USDC_Hyperdrive is AerodromeLpHyperdriveInstanceTest {
                 closeLongWithBaseTolerance: 0,
                 closeShortWithBaseUpperBoundTolerance: 10,
                 closeShortWithBaseTolerance: 100,
+                burnWithBaseTolerance: 0,
                 roundTripLpInstantaneousWithBaseTolerance: 0,
                 roundTripLpWithdrawalSharesWithBaseTolerance: 10,
                 roundTripLongInstantaneousWithBaseUpperBoundTolerance: 100,
@@ -68,12 +69,16 @@ contract AerodromeLp_AERO_USDC_Hyperdrive is AerodromeLpHyperdriveInstanceTest {
                 roundTripShortInstantaneousWithBaseUpperBoundTolerance: 100,
                 roundTripShortInstantaneousWithBaseTolerance: 10,
                 roundTripShortMaturityWithBaseTolerance: 0,
+                roundTripPairInstantaneousWithBaseUpperBoundTolerance: 100,
+                roundTripPairInstantaneousWithBaseTolerance: 10,
+                roundTripPairMaturityWithBaseTolerance: 0,
                 // NOTE: Share deposits and withdrawals are disabled, so these are
                 // 0.
                 //
                 // The share test tolerances.
                 closeLongWithSharesTolerance: 0,
                 closeShortWithSharesTolerance: 0,
+                burnWithSharesTolerance: 0,
                 roundTripLpInstantaneousWithSharesTolerance: 0,
                 roundTripLpWithdrawalSharesWithSharesTolerance: 0,
                 roundTripLongInstantaneousWithSharesUpperBoundTolerance: 0,
@@ -83,6 +88,9 @@ contract AerodromeLp_AERO_USDC_Hyperdrive is AerodromeLpHyperdriveInstanceTest {
                 roundTripShortInstantaneousWithSharesUpperBoundTolerance: 0,
                 roundTripShortInstantaneousWithSharesTolerance: 0,
                 roundTripShortMaturityWithSharesTolerance: 0,
+                roundTripPairInstantaneousWithSharesUpperBoundTolerance: 0,
+                roundTripPairInstantaneousWithSharesTolerance: 0,
+                roundTripPairMaturityWithSharesTolerance: 0,
                 // The verification tolerances.
                 verifyDepositTolerance: 2,
                 verifyWithdrawalTolerance: 3

@@ -64,6 +64,7 @@ contract MorphoBlue_wstETH_USDA_HyperdriveTest is
                 closeLongWithBaseTolerance: 2,
                 closeShortWithBaseUpperBoundTolerance: 10,
                 closeShortWithBaseTolerance: 100,
+                burnWithBaseTolerance: 2,
                 roundTripLpInstantaneousWithBaseTolerance: 1e13,
                 roundTripLpWithdrawalSharesWithBaseTolerance: 1e13,
                 roundTripLongInstantaneousWithBaseUpperBoundTolerance: 1e3,
@@ -73,12 +74,17 @@ contract MorphoBlue_wstETH_USDA_HyperdriveTest is
                 roundTripShortInstantaneousWithBaseUpperBoundTolerance: 1e3,
                 roundTripShortInstantaneousWithBaseTolerance: 1e8,
                 roundTripShortMaturityWithBaseTolerance: 1e10,
+                roundTripPairInstantaneousWithBaseUpperBoundTolerance: 1e3,
+                // FIXME: Why is this higher than the other tolerances?
+                roundTripPairInstantaneousWithBaseTolerance: 1e13,
+                roundTripPairMaturityWithBaseTolerance: 1e10,
                 // NOTE: Share deposits and withdrawals are disabled, so these are
                 // 0.
                 //
                 // The share test tolerances.
                 closeLongWithSharesTolerance: 0,
                 closeShortWithSharesTolerance: 0,
+                burnWithSharesTolerance: 0,
                 roundTripLpInstantaneousWithSharesTolerance: 0,
                 roundTripLpWithdrawalSharesWithSharesTolerance: 0,
                 roundTripLongInstantaneousWithSharesUpperBoundTolerance: 0,
@@ -88,6 +94,9 @@ contract MorphoBlue_wstETH_USDA_HyperdriveTest is
                 roundTripShortInstantaneousWithSharesUpperBoundTolerance: 0,
                 roundTripShortInstantaneousWithSharesTolerance: 0,
                 roundTripShortMaturityWithSharesTolerance: 0,
+                roundTripPairInstantaneousWithSharesUpperBoundTolerance: 0,
+                roundTripPairInstantaneousWithSharesTolerance: 0,
+                roundTripPairMaturityWithSharesTolerance: 0,
                 // The verification tolerances.
                 verifyDepositTolerance: 2,
                 verifyWithdrawalTolerance: 2

@@ -75,6 +75,7 @@ contract AaveHyperdriveTest is InstanceTest {
                 closeLongWithBaseTolerance: 20,
                 closeShortWithBaseUpperBoundTolerance: 10,
                 closeShortWithBaseTolerance: 100,
+                burnWithBaseTolerance: 10,
                 roundTripLpInstantaneousWithBaseTolerance: 1e5,
                 roundTripLpWithdrawalSharesWithBaseTolerance: 1e5,
                 roundTripLongInstantaneousWithBaseUpperBoundTolerance: 1e3,
@@ -84,9 +85,13 @@ contract AaveHyperdriveTest is InstanceTest {
                 roundTripShortInstantaneousWithBaseUpperBoundTolerance: 1e3,
                 roundTripShortInstantaneousWithBaseTolerance: 1e5,
                 roundTripShortMaturityWithBaseTolerance: 1e5,
+                roundTripPairInstantaneousWithBaseUpperBoundTolerance: 1e3,
+                roundTripPairInstantaneousWithBaseTolerance: 1e5,
+                roundTripPairMaturityWithBaseTolerance: 0,
                 // The share test tolerances.
                 closeLongWithSharesTolerance: 20,
                 closeShortWithSharesTolerance: 100,
+                burnWithSharesTolerance: 10,
                 roundTripLpInstantaneousWithSharesTolerance: 1e5,
                 roundTripLpWithdrawalSharesWithSharesTolerance: 1e3,
                 roundTripLongInstantaneousWithSharesUpperBoundTolerance: 1e3,
@@ -96,6 +101,9 @@ contract AaveHyperdriveTest is InstanceTest {
                 roundTripShortInstantaneousWithSharesUpperBoundTolerance: 1e3,
                 roundTripShortInstantaneousWithSharesTolerance: 1e5,
                 roundTripShortMaturityWithSharesTolerance: 1e5,
+                roundTripPairInstantaneousWithSharesUpperBoundTolerance: 0,
+                roundTripPairInstantaneousWithSharesTolerance: 0,
+                roundTripPairMaturityWithSharesTolerance: 0,
                 // The verification tolerances.
                 verifyDepositTolerance: 2,
                 verifyWithdrawalTolerance: 2
