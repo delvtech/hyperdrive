@@ -3456,8 +3456,6 @@ abstract contract InstanceTest is HyperdriveTest {
         );
     }
 
-    // FIXME: This failed in a bunch of places.
-    //
     /// @dev Fuzz test to ensure withdrawal accounting is correct when burning
     ///      bonds with the base token. This test case is expected to fail if
     ///      base withdraws are not supported.
@@ -3598,7 +3596,7 @@ abstract contract InstanceTest is HyperdriveTest {
         assertApproxEqAbs(
             baseProceeds,
             expectedBaseProceeds,
-            config.closeLongWithSharesTolerance
+            config.closeLongWithBaseTolerance
         );
 
         // Ensure the withdrawal accounting is correct.

@@ -129,10 +129,6 @@ contract MorphoBlue_cbETH_USDC_Base_HyperdriveTest is
         uint256 _amount
     ) internal override {
         bytes32 balanceLocation = keccak256(abi.encode(address(_recipient), 9));
-        vm.store(
-            IFiatTokenProxy(LOAN_TOKEN).implementation(),
-            balanceLocation,
-            bytes32(_amount)
-        );
+        vm.store(LOAN_TOKEN, balanceLocation, bytes32(_amount));
     }
 }
