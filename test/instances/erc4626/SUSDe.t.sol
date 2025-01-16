@@ -85,6 +85,7 @@ contract SUSDeHyperdriveTest is ERC4626HyperdriveInstanceTest {
                 closeLongWithBaseTolerance: 20,
                 closeShortWithBaseUpperBoundTolerance: 10,
                 closeShortWithBaseTolerance: 100,
+                burnWithBaseTolerance: 20,
                 roundTripLpInstantaneousWithBaseTolerance: 0,
                 roundTripLpWithdrawalSharesWithBaseTolerance: 0,
                 roundTripLongInstantaneousWithBaseUpperBoundTolerance: 0,
@@ -94,9 +95,13 @@ contract SUSDeHyperdriveTest is ERC4626HyperdriveInstanceTest {
                 roundTripShortInstantaneousWithBaseUpperBoundTolerance: 0,
                 roundTripShortInstantaneousWithBaseTolerance: 0,
                 roundTripShortMaturityWithBaseTolerance: 0,
+                roundTripPairInstantaneousWithBaseUpperBoundTolerance: 0,
+                roundTripPairInstantaneousWithBaseTolerance: 0,
+                roundTripPairMaturityWithBaseTolerance: 0,
                 // The share test tolerances.
                 closeLongWithSharesTolerance: 20,
                 closeShortWithSharesTolerance: 100,
+                burnWithSharesTolerance: 20,
                 roundTripLpInstantaneousWithSharesTolerance: 1e8,
                 roundTripLpWithdrawalSharesWithSharesTolerance: 1e8,
                 roundTripLongInstantaneousWithSharesUpperBoundTolerance: 1e3,
@@ -106,6 +111,11 @@ contract SUSDeHyperdriveTest is ERC4626HyperdriveInstanceTest {
                 roundTripShortInstantaneousWithSharesUpperBoundTolerance: 1e3,
                 roundTripShortInstantaneousWithSharesTolerance: 1e5,
                 roundTripShortMaturityWithSharesTolerance: 1e5,
+                roundTripPairInstantaneousWithSharesUpperBoundTolerance: 1e3,
+                // FIXME: Why is this so high? Shouldn't this be lower than the
+                // other tolerances?
+                roundTripPairInstantaneousWithSharesTolerance: 1e8,
+                roundTripPairMaturityWithSharesTolerance: 1e5,
                 // The verification tolerances.
                 verifyDepositTolerance: 2,
                 verifyWithdrawalTolerance: 2
