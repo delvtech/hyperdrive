@@ -166,9 +166,15 @@ abstract contract InstanceTest is HyperdriveTest {
         /// @dev The equality tolerance in wei for the instantaneous pair round
         ///      trip with shares test.
         uint256 roundTripPairInstantaneousWithSharesTolerance;
+        /// @dev The upper bound tolerance in wei for the pair at maturity round
+        ///      trip with base test.
+        uint256 roundTripPairMaturityWithBaseUpperBoundTolerance;
         /// @dev The equality tolerance in wei for the pair at maturity round
         ///      trip with base test.
         uint256 roundTripPairMaturityWithBaseTolerance;
+        /// @dev The upper bound tolerance in wei for the pair at maturity round
+        ///      trip with shares test.
+        uint256 roundTripPairMaturityWithSharesUpperBoundTolerance;
         /// @dev The equality tolerance in wei for the pair at maturity round
         ///      trip with shares test.
         uint256 roundTripPairMaturityWithSharesTolerance;
@@ -3635,8 +3641,6 @@ abstract contract InstanceTest is HyperdriveTest {
         );
     }
 
-    // FIXME: This is still failing in several places.
-    //
     /// @dev Fuzz test that ensures that traders receive the correct payouts if
     ///      they mint and burn instantaneously when deposits and withdrawals
     ///      are made with base.
@@ -3738,194 +3742,255 @@ abstract contract InstanceTest is HyperdriveTest {
         );
     }
 
-    // /// @dev Fuzz test that ensures that longs receive the correct payouts if
-    // ///      they open and close instantaneously when deposits and withdrawals
-    // ///      are made with vault shares.
-    // /// @param _vaultSharesPaid The fuzz parameter for the vault shares paid.
-    // function test_round_trip_long_instantaneous_with_shares(
-    //     uint256 _vaultSharesPaid
-    // ) external {
-    //     // If share deposits aren't enabled, we skip the test.
-    //     if (!config.enableShareDeposits) {
-    //         return;
-    //     }
+    /// @dev Fuzz test that ensures that traders receive the correct payouts if
+    ///      they mint and burn instantaneously when deposits and withdrawals
+    ///      are made with vault shares.
+    /// @param _vaultSharesPaid The fuzz parameter for the vault shares paid.
+    function test_round_trip_pair_instantaneous_with_shares(
+        uint256 _vaultSharesPaid
+    ) external {
+        // If share deposits aren't enabled, we skip the test.
+        if (!config.enableShareDeposits) {
+            return;
+        }
 
-    //     // Bob opens a long with vault shares.
-    //     _vaultSharesPaid = hyperdrive.convertToShares(
-    //         _vaultSharesPaid.normalizeToRange(
-    //             2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
-    //             hyperdrive.calculateMaxLong()
-    //         )
-    //     );
-    //     (uint256 maturityTime, uint256 longAmount) = openLong(
-    //         bob,
-    //         _vaultSharesPaid,
-    //         false
-    //     );
+        // Calculate the maximum amount of sharesPaid we can test. The limit
+        // is the amount of the vault shares token that the trader has.
+        uint256 maxSharesAmount = IERC20(config.vaultSharesToken).balanceOf(
+            bob
+        ) / 10;
 
-    //     // Get some balance information before the withdrawal.
-    //     (
-    //         uint256 totalSupplyAssetsBefore,
-    //         uint256 totalSupplySharesBefore
-    //     ) = getSupply();
-    //     AccountBalances memory bobBalancesBefore = getAccountBalances(bob);
-    //     AccountBalances memory hyperdriveBalancesBefore = getAccountBalances(
-    //         address(hyperdrive)
-    //     );
+        // We normalize the basePaid variable within a valid range the market
+        // can support.
+        if (config.isRebasing) {
+            _vaultSharesPaid = _vaultSharesPaid.normalizeToRange(
+                convertToShares(
+                    2 * hyperdrive.getPoolConfig().minimumTransactionAmount
+                ),
+                convertToShares(maxSharesAmount)
+            );
+        } else {
+            _vaultSharesPaid = _vaultSharesPaid.normalizeToRange(
+                convertToShares(
+                    2 * hyperdrive.getPoolConfig().minimumTransactionAmount
+                ),
+                maxSharesAmount
+            );
+        }
 
-    //     // If vault share withdrawals are supported, we withdraw with vault
-    //     // shares.
-    //     uint256 baseProceeds;
-    //     if (config.enableShareWithdraws) {
-    //         // Bob closes his long with vault shares as the target asset.
-    //         uint256 vaultSharesProceeds = closeLong(
-    //             bob,
-    //             maturityTime,
-    //             longAmount,
-    //             false
-    //         );
-    //         baseProceeds = hyperdrive.convertToBase(vaultSharesProceeds);
+        // Bob mints some bonds with vault shares.
+        (uint256 maturityTime, uint256 bondAmount) = mint(
+            bob,
+            _vaultSharesPaid,
+            false
+        );
 
-    //         // Bob should receive less base than he paid since no time as passed.
-    //         assertLt(
-    //             vaultSharesProceeds,
-    //             _vaultSharesPaid +
-    //                 config
-    //                     .roundTripLongInstantaneousWithSharesUpperBoundTolerance
-    //         );
-    //         // NOTE: If the fees aren't zero, we can't make an equality comparison.
-    //         if (hyperdrive.getPoolConfig().fees.curve == 0) {
-    //             assertApproxEqAbs(
-    //                 vaultSharesProceeds,
-    //                 _vaultSharesPaid,
-    //                 config.roundTripLongInstantaneousWithSharesTolerance
-    //             );
-    //         }
-    //     }
-    //     // Otherwise we withdraw with base.
-    //     else {
-    //         // Bob closes his long with base as the target asset.
-    //         baseProceeds = closeLong(bob, maturityTime, longAmount);
+        // Get some balance information before the withdrawal.
+        (
+            uint256 totalSupplyAssetsBefore,
+            uint256 totalSupplySharesBefore
+        ) = getSupply();
+        AccountBalances memory bobBalancesBefore = getAccountBalances(bob);
+        AccountBalances memory hyperdriveBalancesBefore = getAccountBalances(
+            address(hyperdrive)
+        );
 
-    //         // Bob should receive less base than he paid since no time as passed.
-    //         assertLt(
-    //             baseProceeds,
-    //             hyperdrive.convertToBase(_vaultSharesPaid) +
-    //                 config.roundTripLongInstantaneousWithBaseUpperBoundTolerance
-    //         );
-    //         // NOTE: If the fees aren't zero, we can't make an equality comparison.
-    //         if (hyperdrive.getPoolConfig().fees.curve == 0) {
-    //             assertApproxEqAbs(
-    //                 baseProceeds,
-    //                 hyperdrive.convertToBase(_vaultSharesPaid),
-    //                 config.roundTripLongInstantaneousWithBaseTolerance
-    //             );
-    //         }
-    //     }
+        // If vault share withdrawals are supported, we withdraw with vault
+        // shares.
+        uint256 baseProceeds;
+        if (config.enableShareWithdraws) {
+            // Bob burns his bonds with vault shares as the target asset.
+            uint256 vaultSharesProceeds = burn(
+                bob,
+                maturityTime,
+                bondAmount,
+                false
+            );
+            baseProceeds = hyperdrive.convertToBase(vaultSharesProceeds);
 
-    //     // Ensure that the withdrawal was processed as expected.
-    //     verifyWithdrawal(
-    //         bob,
-    //         baseProceeds,
-    //         !config.enableShareWithdraws,
-    //         totalSupplyAssetsBefore,
-    //         totalSupplySharesBefore,
-    //         bobBalancesBefore,
-    //         hyperdriveBalancesBefore
-    //     );
-    // }
+            // Bob should receive less base than he paid since no time as passed.
+            assertLt(
+                vaultSharesProceeds,
+                _vaultSharesPaid +
+                    config
+                        .roundTripPairInstantaneousWithSharesUpperBoundTolerance
+            );
+            // NOTE: If the fees aren't zero, we can't make an equality comparison.
+            if (hyperdrive.getPoolConfig().fees.curve == 0) {
+                assertApproxEqAbs(
+                    vaultSharesProceeds,
+                    _vaultSharesPaid,
+                    config.roundTripPairInstantaneousWithSharesTolerance
+                );
+            }
+        }
+        // Otherwise we withdraw with base.
+        else {
+            // Bob closes his long with base as the target asset.
+            baseProceeds = burn(bob, maturityTime, bondAmount);
 
-    // /// @dev Fuzz test that ensures that shorts receive the correct payouts at
-    // ///      maturity when deposits and withdrawals are made with base.
-    // /// @param _basePaid The fuzz parameter for the base paid.
-    // /// @param _variableRate The fuzz parameter for the variable rate.
-    // function test_round_trip_long_maturity_with_base(
-    //     uint256 _basePaid,
-    //     uint256 _variableRate
-    // ) external {
-    //     // If base deposits aren't enabled, we skip the test.
-    //     if (!config.enableBaseDeposits) {
-    //         return;
-    //     }
+            // Bob should receive less base than he paid since no time as passed.
+            assertLt(
+                baseProceeds,
+                hyperdrive.convertToBase(_vaultSharesPaid) +
+                    config.roundTripPairInstantaneousWithBaseUpperBoundTolerance
+            );
+            // NOTE: If the fees aren't zero, we can't make an equality comparison.
+            if (hyperdrive.getPoolConfig().fees.curve == 0) {
+                assertApproxEqAbs(
+                    baseProceeds,
+                    hyperdrive.convertToBase(_vaultSharesPaid),
+                    config.roundTripPairInstantaneousWithBaseTolerance
+                );
+            }
+        }
 
-    //     // Bob opens a long with base.
-    //     _basePaid = _basePaid.normalizeToRange(
-    //         2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
-    //         hyperdrive.calculateMaxLong()
-    //     );
-    //     (uint256 maturityTime, uint256 longAmount) = openLong(bob, _basePaid);
+        // Ensure that the withdrawal was processed as expected.
+        verifyWithdrawal(
+            bob,
+            baseProceeds,
+            !config.enableShareWithdraws,
+            totalSupplyAssetsBefore,
+            totalSupplySharesBefore,
+            bobBalancesBefore,
+            hyperdriveBalancesBefore
+        );
+    }
 
-    //     // Advance the time and accrue a large amount of interest.
-    //     if (config.shouldAccrueInterest) {
-    //         _variableRate = _variableRate.normalizeToRange(0, 1000e18);
-    //     } else {
-    //         _variableRate = 0;
-    //     }
-    //     advanceTime(POSITION_DURATION, int256(_variableRate));
+    /// @dev Fuzz test that ensures that traders receive the correct payouts at
+    ///      maturity when bonds are minted and burned with base.
+    /// @param _basePaid The fuzz parameter for the base paid.
+    /// @param _variableRate The fuzz parameter for the variable rate.
+    function test_round_trip_pair_maturity_with_base(
+        uint256 _basePaid,
+        uint256 _variableRate
+    ) external {
+        // If base deposits aren't enabled, we skip the test.
+        if (!config.enableBaseDeposits) {
+            return;
+        }
 
-    //     // Get some balance information before the withdrawal.
-    //     (
-    //         uint256 totalSupplyAssetsBefore,
-    //         uint256 totalSupplySharesBefore
-    //     ) = getSupply();
-    //     AccountBalances memory bobBalancesBefore = getAccountBalances(bob);
-    //     AccountBalances memory hyperdriveBalancesBefore = getAccountBalances(
-    //         address(hyperdrive)
-    //     );
+        // Calculate the maximum amount of basePaid we can test. The limit is
+        // the amount of the base token that the trader has.
+        uint256 maxBaseAmount;
+        if (isBaseETH) {
+            maxBaseAmount = bob.balance;
+        } else {
+            maxBaseAmount = IERC20(config.baseToken).balanceOf(bob) / 10;
+        }
 
-    //     // If base withdrawals are supported, we withdraw with base.
-    //     uint256 baseProceeds;
-    //     if (config.enableBaseWithdraws) {
-    //         // Bob closes his long with base as the target asset.
-    //         baseProceeds = closeLong(bob, maturityTime, longAmount);
+        // Bob mints some bonds with base.
+        _basePaid = _basePaid.normalizeToRange(
+            2 * hyperdrive.getPoolConfig().minimumTransactionAmount,
+            maxBaseAmount
+        );
+        (uint256 maturityTime, uint256 bondAmount) = mint(bob, _basePaid);
 
-    //         // Bob should receive almost exactly his bond amount.
-    //         assertLe(
-    //             baseProceeds,
-    //             longAmount.mulDown(ONE - hyperdrive.getPoolConfig().fees.flat) +
-    //                 config.roundTripLongMaturityWithBaseUpperBoundTolerance
-    //         );
-    //         assertApproxEqAbs(
-    //             baseProceeds,
-    //             longAmount.mulDown(ONE - hyperdrive.getPoolConfig().fees.flat),
-    //             config.roundTripLongMaturityWithBaseTolerance
-    //         );
-    //     }
-    //     // Otherwise we withdraw with vault shares.
-    //     else {
-    //         // Bob closes his long with vault shares as the target asset.
-    //         uint256 vaultSharesProceeds = closeLong(
-    //             bob,
-    //             maturityTime,
-    //             longAmount,
-    //             false
-    //         );
-    //         baseProceeds = hyperdrive.convertToBase(vaultSharesProceeds);
+        // Advance the time and accrue a large amount of interest.
+        if (config.shouldAccrueInterest) {
+            _variableRate = _variableRate.normalizeToRange(0, 2.5e18);
+        } else {
+            _variableRate = 0;
+        }
+        advanceTime(POSITION_DURATION, int256(_variableRate));
 
-    //         // Bob should receive almost exactly his bond amount.
-    //         assertLe(
-    //             baseProceeds,
-    //             longAmount.mulDown(ONE - hyperdrive.getPoolConfig().fees.flat) +
-    //                 config.roundTripLongMaturityWithSharesUpperBoundTolerance
-    //         );
-    //         assertApproxEqAbs(
-    //             baseProceeds,
-    //             longAmount.mulDown(ONE - hyperdrive.getPoolConfig().fees.flat),
-    //             config.roundTripLongMaturityWithSharesTolerance
-    //         );
-    //     }
+        // Get some balance information before the withdrawal.
+        (
+            uint256 totalSupplyAssetsBefore,
+            uint256 totalSupplySharesBefore
+        ) = getSupply();
+        AccountBalances memory bobBalancesBefore = getAccountBalances(bob);
+        AccountBalances memory hyperdriveBalancesBefore = getAccountBalances(
+            address(hyperdrive)
+        );
 
-    //     // Ensure that the withdrawal was processed as expected.
-    //     verifyWithdrawal(
-    //         bob,
-    //         baseProceeds,
-    //         config.enableBaseWithdraws,
-    //         totalSupplyAssetsBefore,
-    //         totalSupplySharesBefore,
-    //         bobBalancesBefore,
-    //         hyperdriveBalancesBefore
-    //     );
-    // }
+        // If base withdrawals are supported, we withdraw with base.
+        uint256 baseProceeds;
+        if (config.enableBaseWithdraws) {
+            // Bob burns his bonds with base as the target asset.
+            baseProceeds = burn(bob, maturityTime, bondAmount);
+
+            // Bob should receive almost exactly the value underlying the bonds
+            // minus fees.
+            uint256 expectedProceeds = bondAmount.mulDivDown(
+                hyperdrive.getCheckpoint(maturityTime).vaultSharePrice,
+                hyperdrive
+                    .getCheckpoint(
+                        maturityTime -
+                            hyperdrive.getPoolConfig().positionDuration
+                    )
+                    .vaultSharePrice
+            ) -
+                bondAmount.mulUp(hyperdrive.getPoolConfig().fees.flat).mulDown(
+                    ONE - hyperdrive.getPoolConfig().fees.governanceLP
+                ) -
+                2 *
+                bondAmount.mulUp(hyperdrive.getPoolConfig().fees.flat).mulDown(
+                    hyperdrive.getPoolConfig().fees.governanceLP
+                );
+            assertLe(
+                baseProceeds,
+                expectedProceeds +
+                    config.roundTripPairMaturityWithBaseUpperBoundTolerance
+            );
+            assertApproxEqAbs(
+                baseProceeds,
+                expectedProceeds,
+                config.roundTripPairMaturityWithBaseTolerance
+            );
+        }
+        // Otherwise we withdraw with vault shares.
+        else {
+            // Bob burns his bonds with vault shares as the target asset.
+            uint256 vaultSharesProceeds = burn(
+                bob,
+                maturityTime,
+                bondAmount,
+                false
+            );
+            baseProceeds = hyperdrive.convertToBase(vaultSharesProceeds);
+
+            // Bob should receive almost exactly the value underlying the bonds
+            // minus fees.
+            uint256 expectedProceeds = bondAmount.mulDivDown(
+                hyperdrive.getCheckpoint(maturityTime).vaultSharePrice,
+                hyperdrive
+                    .getCheckpoint(
+                        maturityTime -
+                            hyperdrive.getPoolConfig().positionDuration
+                    )
+                    .vaultSharePrice
+            ) -
+                bondAmount.mulUp(hyperdrive.getPoolConfig().fees.flat).mulDown(
+                    ONE - hyperdrive.getPoolConfig().fees.governanceLP
+                ) -
+                2 *
+                bondAmount.mulUp(hyperdrive.getPoolConfig().fees.flat).mulDown(
+                    hyperdrive.getPoolConfig().fees.governanceLP
+                );
+            assertLe(
+                baseProceeds,
+                expectedProceeds +
+                    config.roundTripPairMaturityWithSharesUpperBoundTolerance
+            );
+            assertApproxEqAbs(
+                baseProceeds,
+                expectedProceeds,
+                config.roundTripPairMaturityWithSharesTolerance
+            );
+        }
+
+        // Ensure that the withdrawal was processed as expected.
+        verifyWithdrawal(
+            bob,
+            baseProceeds,
+            config.enableBaseWithdraws,
+            totalSupplyAssetsBefore,
+            totalSupplySharesBefore,
+            bobBalancesBefore,
+            hyperdriveBalancesBefore
+        );
+    }
 
     // /// @dev Fuzz test that ensures that shorts receive the correct payouts at
     // ///      maturity when deposits and withdrawals are made with vault shares.

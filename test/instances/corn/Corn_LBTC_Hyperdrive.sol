@@ -71,6 +71,7 @@ contract Corn_LBTC_Hyperdrive is CornHyperdriveInstanceTest {
                 roundTripShortMaturityWithBaseTolerance: 1e3,
                 roundTripPairInstantaneousWithBaseUpperBoundTolerance: 100,
                 roundTripPairInstantaneousWithBaseTolerance: 1e3,
+                roundTripPairMaturityWithBaseUpperBoundTolerance: 100,
                 roundTripPairMaturityWithBaseTolerance: 1e3,
                 // NOTE: Share deposits and withdrawals are disabled, so these are
                 // 0.
@@ -90,6 +91,7 @@ contract Corn_LBTC_Hyperdrive is CornHyperdriveInstanceTest {
                 roundTripShortMaturityWithSharesTolerance: 0,
                 roundTripPairInstantaneousWithSharesUpperBoundTolerance: 0,
                 roundTripPairInstantaneousWithSharesTolerance: 0,
+                roundTripPairMaturityWithSharesUpperBoundTolerance: 0,
                 roundTripPairMaturityWithSharesTolerance: 0,
                 // The verification tolerances.
                 verifyDepositTolerance: 2,

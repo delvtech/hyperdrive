@@ -71,6 +71,7 @@ contract AerodromeLp_AERO_USDC_Hyperdrive is AerodromeLpHyperdriveInstanceTest {
                 roundTripShortMaturityWithBaseTolerance: 0,
                 roundTripPairInstantaneousWithBaseUpperBoundTolerance: 100,
                 roundTripPairInstantaneousWithBaseTolerance: 10,
+                roundTripPairMaturityWithBaseUpperBoundTolerance: 0,
                 roundTripPairMaturityWithBaseTolerance: 0,
                 // NOTE: Share deposits and withdrawals are disabled, so these are
                 // 0.
@@ -90,6 +91,7 @@ contract AerodromeLp_AERO_USDC_Hyperdrive is AerodromeLpHyperdriveInstanceTest {
                 roundTripShortMaturityWithSharesTolerance: 0,
                 roundTripPairInstantaneousWithSharesUpperBoundTolerance: 0,
                 roundTripPairInstantaneousWithSharesTolerance: 0,
+                roundTripPairMaturityWithSharesUpperBoundTolerance: 0,
                 roundTripPairMaturityWithSharesTolerance: 0,
                 // The verification tolerances.
                 verifyDepositTolerance: 2,

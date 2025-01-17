@@ -89,6 +89,7 @@ contract RETHHyperdriveTest is InstanceTest {
                 roundTripShortMaturityWithBaseTolerance: 1e3,
                 roundTripPairInstantaneousWithBaseUpperBoundTolerance: 1e3,
                 roundTripPairInstantaneousWithBaseTolerance: 1e3,
+                roundTripPairMaturityWithBaseUpperBoundTolerance: 1e3,
                 roundTripPairMaturityWithBaseTolerance: 1e3,
                 // The share test tolerances.
                 closeLongWithSharesTolerance: 20,
@@ -104,7 +105,8 @@ contract RETHHyperdriveTest is InstanceTest {
                 roundTripShortInstantaneousWithSharesTolerance: 1e3,
                 roundTripShortMaturityWithSharesTolerance: 1e3,
                 roundTripPairInstantaneousWithSharesUpperBoundTolerance: 1e3,
-                roundTripPairInstantaneousWithSharesTolerance: 1e3,
+                roundTripPairInstantaneousWithSharesTolerance: 1e4,
+                roundTripPairMaturityWithSharesUpperBoundTolerance: 100,
                 roundTripPairMaturityWithSharesTolerance: 1e3,
                 // The verification tolerances.
                 verifyDepositTolerance: 2,

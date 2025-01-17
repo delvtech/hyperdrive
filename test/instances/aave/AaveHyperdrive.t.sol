@@ -22,6 +22,7 @@ import { Lib } from "../../utils/Lib.sol";
 
 contract AaveHyperdriveTest is InstanceTest {
     using FixedPointMath for uint256;
+    using HyperdriveUtils for *;
     using Lib for *;
     using stdStorage for StdStorage;
 
@@ -87,7 +88,8 @@ contract AaveHyperdriveTest is InstanceTest {
                 roundTripShortMaturityWithBaseTolerance: 1e5,
                 roundTripPairInstantaneousWithBaseUpperBoundTolerance: 1e3,
                 roundTripPairInstantaneousWithBaseTolerance: 1e5,
-                roundTripPairMaturityWithBaseTolerance: 0,
+                roundTripPairMaturityWithBaseUpperBoundTolerance: 1e3,
+                roundTripPairMaturityWithBaseTolerance: 1e5,
                 // The share test tolerances.
                 closeLongWithSharesTolerance: 20,
                 closeShortWithSharesTolerance: 100,
@@ -101,9 +103,10 @@ contract AaveHyperdriveTest is InstanceTest {
                 roundTripShortInstantaneousWithSharesUpperBoundTolerance: 1e3,
                 roundTripShortInstantaneousWithSharesTolerance: 1e5,
                 roundTripShortMaturityWithSharesTolerance: 1e5,
-                roundTripPairInstantaneousWithSharesUpperBoundTolerance: 0,
-                roundTripPairInstantaneousWithSharesTolerance: 0,
-                roundTripPairMaturityWithSharesTolerance: 0,
+                roundTripPairInstantaneousWithSharesUpperBoundTolerance: 1e3,
+                roundTripPairInstantaneousWithSharesTolerance: 1e5,
+                roundTripPairMaturityWithSharesUpperBoundTolerance: 1e3,
+                roundTripPairMaturityWithSharesTolerance: 1e5,
                 // The verification tolerances.
                 verifyDepositTolerance: 2,
                 verifyWithdrawalTolerance: 2
@@ -232,6 +235,9 @@ contract AaveHyperdriveTest is InstanceTest {
         uint256 timeDelta,
         int256 variableRate
     ) internal override {
+        // Get the base balance before updating the time.
+        uint256 baseBalance = WETH.balanceOf(address(AWETH));
+
         // Get the normalized income prior to updating the time.
         uint256 reserveNormalizedIncome = POOL.getReserveNormalizedIncome(
             address(WETH)
@@ -277,5 +283,14 @@ contract AaveHyperdriveTest is InstanceTest {
                     data.currentStableBorrowRate
             )
         );
+
+        // Mint more of the base token to the Aave pool to ensure that it
+        // remains solvent.
+        (baseBalance, ) = baseBalance.calculateInterest(
+            variableRate,
+            timeDelta
+        );
+        bytes32 balanceLocation = keccak256(abi.encode(address(AWETH), 3));
+        vm.store(address(WETH), balanceLocation, bytes32(baseBalance));
     }
 }

@@ -97,6 +97,7 @@ contract SUSDeHyperdriveTest is ERC4626HyperdriveInstanceTest {
                 roundTripShortMaturityWithBaseTolerance: 0,
                 roundTripPairInstantaneousWithBaseUpperBoundTolerance: 0,
                 roundTripPairInstantaneousWithBaseTolerance: 0,
+                roundTripPairMaturityWithBaseUpperBoundTolerance: 0,
                 roundTripPairMaturityWithBaseTolerance: 0,
                 // The share test tolerances.
                 closeLongWithSharesTolerance: 20,
@@ -115,6 +116,7 @@ contract SUSDeHyperdriveTest is ERC4626HyperdriveInstanceTest {
                 // FIXME: Why is this so high? Shouldn't this be lower than the
                 // other tolerances?
                 roundTripPairInstantaneousWithSharesTolerance: 1e8,
+                roundTripPairMaturityWithSharesUpperBoundTolerance: 100,
                 roundTripPairMaturityWithSharesTolerance: 1e5,
                 // The verification tolerances.
                 verifyDepositTolerance: 2,
