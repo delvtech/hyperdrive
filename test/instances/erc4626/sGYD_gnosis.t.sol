@@ -81,6 +81,7 @@ contract sGYD_gnosis_HyperdriveTest is ERC4626HyperdriveInstanceTest {
                 roundTripShortMaturityWithBaseTolerance: 1e5,
                 roundTripPairInstantaneousWithBaseUpperBoundTolerance: 1e3,
                 roundTripPairInstantaneousWithBaseTolerance: 1e5,
+                roundTripPairMaturityWithBaseUpperBoundTolerance: 1e3,
                 roundTripPairMaturityWithBaseTolerance: 1e5,
                 // The share test tolerances.
                 closeLongWithSharesTolerance: 20,
@@ -97,6 +98,7 @@ contract sGYD_gnosis_HyperdriveTest is ERC4626HyperdriveInstanceTest {
                 roundTripShortMaturityWithSharesTolerance: 1e5,
                 roundTripPairInstantaneousWithSharesUpperBoundTolerance: 1e3,
                 roundTripPairInstantaneousWithSharesTolerance: 1e5,
+                roundTripPairMaturityWithSharesUpperBoundTolerance: 1e3,
                 roundTripPairMaturityWithSharesTolerance: 1e5,
                 // The verification tolerances.
                 verifyDepositTolerance: 2,

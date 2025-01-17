@@ -77,6 +77,7 @@ contract MorphoBlue_sUSDe_DAI_HyperdriveTest is
                 roundTripPairInstantaneousWithBaseUpperBoundTolerance: 1e3,
                 // FIXME: Why is this higher than the other tolernances?
                 roundTripPairInstantaneousWithBaseTolerance: 1e13,
+                roundTripPairMaturityWithBaseUpperBoundTolerance: 1e3,
                 roundTripPairMaturityWithBaseTolerance: 1e10,
                 // NOTE: Share deposits and withdrawals are disabled, so these are
                 // 0.
@@ -96,6 +97,7 @@ contract MorphoBlue_sUSDe_DAI_HyperdriveTest is
                 roundTripShortMaturityWithSharesTolerance: 0,
                 roundTripPairInstantaneousWithSharesUpperBoundTolerance: 0,
                 roundTripPairInstantaneousWithSharesTolerance: 0,
+                roundTripPairMaturityWithSharesUpperBoundTolerance: 0,
                 roundTripPairMaturityWithSharesTolerance: 0,
                 // The verification tolerances.
                 verifyDepositTolerance: 2,

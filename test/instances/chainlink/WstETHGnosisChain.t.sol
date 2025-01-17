@@ -71,6 +71,7 @@ contract WstETHGnosisChainTest is ChainlinkHyperdriveInstanceTest {
                 roundTripShortMaturityWithBaseTolerance: 0,
                 roundTripPairInstantaneousWithBaseUpperBoundTolerance: 0,
                 roundTripPairInstantaneousWithBaseTolerance: 0,
+                roundTripPairMaturityWithBaseUpperBoundTolerance: 0,
                 roundTripPairMaturityWithBaseTolerance: 0,
                 // The share test tolerances.
                 closeLongWithSharesTolerance: 20,
@@ -87,6 +88,7 @@ contract WstETHGnosisChainTest is ChainlinkHyperdriveInstanceTest {
                 roundTripShortMaturityWithSharesTolerance: 1e3,
                 roundTripPairInstantaneousWithSharesUpperBoundTolerance: 1e3,
                 roundTripPairInstantaneousWithSharesTolerance: 1e3,
+                roundTripPairMaturityWithSharesUpperBoundTolerance: 1e3,
                 roundTripPairMaturityWithSharesTolerance: 1e3,
                 // The verification tolerances.
                 verifyDepositTolerance: 2,

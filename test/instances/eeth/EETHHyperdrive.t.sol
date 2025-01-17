@@ -91,6 +91,7 @@ contract EETHHyperdriveTest is InstanceTest {
                 roundTripShortMaturityWithBaseTolerance: 0,
                 roundTripPairInstantaneousWithBaseUpperBoundTolerance: 0,
                 roundTripPairInstantaneousWithBaseTolerance: 0,
+                roundTripPairMaturityWithBaseUpperBoundTolerance: 0,
                 roundTripPairMaturityWithBaseTolerance: 0,
                 // The share test tolerances.
                 closeLongWithSharesTolerance: 20,
@@ -107,6 +108,7 @@ contract EETHHyperdriveTest is InstanceTest {
                 roundTripShortMaturityWithSharesTolerance: 1e4,
                 roundTripPairInstantaneousWithSharesUpperBoundTolerance: 1e3,
                 roundTripPairInstantaneousWithSharesTolerance: 1e5,
+                roundTripPairMaturityWithSharesUpperBoundTolerance: 1e3,
                 roundTripPairMaturityWithSharesTolerance: 1e4,
                 // The verification tolerances.
                 verifyDepositTolerance: 2,

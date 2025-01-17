@@ -92,6 +92,7 @@ contract SnARSHyperdriveTest is ERC4626HyperdriveInstanceTest {
                 roundTripShortMaturityWithBaseTolerance: 0,
                 roundTripPairInstantaneousWithBaseUpperBoundTolerance: 0,
                 roundTripPairInstantaneousWithBaseTolerance: 0,
+                roundTripPairMaturityWithBaseUpperBoundTolerance: 0,
                 roundTripPairMaturityWithBaseTolerance: 0,
                 // The share test tolerances.
                 closeLongWithSharesTolerance: 20,
@@ -108,6 +109,7 @@ contract SnARSHyperdriveTest is ERC4626HyperdriveInstanceTest {
                 roundTripShortMaturityWithSharesTolerance: 1e5,
                 roundTripPairInstantaneousWithSharesUpperBoundTolerance: 1e3,
                 roundTripPairInstantaneousWithSharesTolerance: 1e5,
+                roundTripPairMaturityWithSharesUpperBoundTolerance: 1e3,
                 roundTripPairMaturityWithSharesTolerance: 1e5,
                 // The verification tolerances.
                 verifyDepositTolerance: 2,
