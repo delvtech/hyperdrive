@@ -93,7 +93,6 @@ contract sxDaiHyperdriveTest is ERC4626HyperdriveInstanceTest {
                 roundTripShortInstantaneousWithSharesTolerance: 1e5,
                 roundTripShortMaturityWithSharesTolerance: 1e5,
                 roundTripPairInstantaneousWithSharesUpperBoundTolerance: 1e3,
-                // FIXME: Why is this higher?
                 roundTripPairInstantaneousWithSharesTolerance: 1e6,
                 roundTripPairMaturityWithSharesUpperBoundTolerance: 1e3,
                 roundTripPairMaturityWithSharesTolerance: 1e5,

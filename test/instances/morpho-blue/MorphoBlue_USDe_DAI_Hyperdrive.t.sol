@@ -75,7 +75,6 @@ contract MorphoBlue_USDe_DAI_HyperdriveTest is
                 roundTripShortInstantaneousWithBaseTolerance: 1e7,
                 roundTripShortMaturityWithBaseTolerance: 1e10,
                 roundTripPairInstantaneousWithBaseUpperBoundTolerance: 1e3,
-                // FIXME: Why is this higher than the other tolerances?
                 roundTripPairInstantaneousWithBaseTolerance: 1e13,
                 roundTripPairMaturityWithBaseUpperBoundTolerance: 1e3,
                 roundTripPairMaturityWithBaseTolerance: 1e10,
