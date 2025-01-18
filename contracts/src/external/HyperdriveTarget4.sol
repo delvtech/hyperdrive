@@ -90,8 +90,6 @@ abstract contract HyperdriveTarget4 is
 
     /// Pairs ///
 
-    // FIXME: Where does this fit?
-    //
     /// @notice Mints a pair of long and short positions that directly match
     ///         each other. The amount of long and short positions that are
     ///         created is equal to the base value of the deposit. These
@@ -116,8 +114,6 @@ abstract contract HyperdriveTarget4 is
         return _mint(_amount, _minOutput, _minVaultSharePrice, _options);
     }
 
-    // FIXME: Where does this fit?
-    //
     /// @dev Burns a pair of long and short positions that directly match each
     ///      other. The capital underlying these positions is released to the
     ///      trader burning the positions.

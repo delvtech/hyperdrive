@@ -37,7 +37,7 @@ evm_version = "cancun"
 deny_warnings = true
 # optimizer settings
 optimizer = true
-optimizer_runs = 13000
+optimizer_runs = 9000
 via_ir = false
 # Enable gas-reporting for all contracts
 gas_reports = ["*"]
