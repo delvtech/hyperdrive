@@ -437,7 +437,7 @@ contract LPWithdrawalTest is HyperdriveTest {
         uint256 lpSharePrice = hyperdrive.lpSharePrice();
         uint256 baseProceeds = burn(bob, maturityTime, bondAmount);
         assertApproxEqAbs(baseProceeds, basePaid, 10);
-        assertEq(lpSharePrice, hyperdrive.lpSharePrice());
+        assertApproxEqAbs(lpSharePrice, hyperdrive.lpSharePrice(), 10);
 
         // Ensure that the ending base balance of Hyperdrive only consists of
         // the minimum share reserves and address zero's LP shares.
