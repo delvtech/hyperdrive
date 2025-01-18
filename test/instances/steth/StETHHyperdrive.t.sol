@@ -101,7 +101,6 @@ contract StETHHyperdriveTest is InstanceTest {
                 roundTripShortInstantaneousWithSharesTolerance: 1e3,
                 roundTripShortMaturityWithSharesTolerance: 1e3,
                 roundTripPairInstantaneousWithSharesUpperBoundTolerance: 1e3,
-                // FIXME: Why is this higher than the other tolerances?
                 roundTripPairInstantaneousWithSharesTolerance: 1e5,
                 roundTripPairMaturityWithSharesUpperBoundTolerance: 100,
                 roundTripPairMaturityWithSharesTolerance: 1e3,
