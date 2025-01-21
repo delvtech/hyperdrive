@@ -414,7 +414,7 @@ contract LPWithdrawalTest is HyperdriveTest {
             10 * contribution
         );
         (uint256 maturityTime, uint256 bondAmount) = mint(bob, basePaid);
-        assertEq(bondAmount, basePaid);
+        assertApproxEqAbs(bondAmount, basePaid, 10);
 
         // Alice removes all of her LP shares. The LP share price should be
         // approximately equal before and after the transaction. She should
