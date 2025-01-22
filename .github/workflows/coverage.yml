@@ -53,7 +53,7 @@ jobs:
         run: |
           FOUNDRY_PROFILE=lite FOUNDRY_FUZZ_RUNS=100 forge coverage --report lcov
           sudo apt-get install lcov
-          lcov --remove lcov.info  -o lcov.info 'test/*' 'script/*'
+          lcov --remove lcov.info  -o lcov.info 'test/*'
 
       - name: Edit lcov.info
         run: |
