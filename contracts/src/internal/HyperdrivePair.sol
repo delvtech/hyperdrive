@@ -124,7 +124,7 @@ abstract contract HyperdrivePair is IHyperdriveEvents, HyperdriveLP {
         uint256 bondAmount_ = bondAmount; // avoid stack-too-deep
         uint256 amount = _amount; // avoid stack-too-deep
         IHyperdrive.PairOptions calldata options = _options; // avoid stack-too-deep
-        emit Mint(
+        emit MintBonds(
             options.longDestination,
             options.shortDestination,
             maturityTime,
@@ -252,7 +252,7 @@ abstract contract HyperdrivePair is IHyperdriveEvents, HyperdriveLP {
         // Emit a Burn event.
         uint256 bondAmount = _bondAmount; // avoid stack-too-deep
         IHyperdrive.Options calldata options = _options; // avoid stack-too-deep
-        emit Burn(
+        emit BurnBonds(
             msg.sender,
             options.destination,
             _maturityTime,
