@@ -179,6 +179,8 @@ contract HyperdriveMatchingEngineTest is HyperdriveTest {
         // Create an order that can be used for testing several cases.
         IHyperdriveMatchingEngine.OrderIntent memory order = _createOrderIntent(
             alice,
+            address(0),
+            address(0),
             100_000e18,
             105_000e18,
             IHyperdriveMatchingEngine.OrderType.OpenLong
@@ -207,6 +209,8 @@ contract HyperdriveMatchingEngineTest is HyperdriveTest {
         // Create an order that can be used for testing several cases.
         IHyperdriveMatchingEngine.OrderIntent memory order = _createOrderIntent(
             alice,
+            address(0),
+            address(0),
             100_000e18,
             105_000e18,
             IHyperdriveMatchingEngine.OrderType.OpenLong
@@ -244,6 +248,8 @@ contract HyperdriveMatchingEngineTest is HyperdriveTest {
         // Create an EOA order.
         IHyperdriveMatchingEngine.OrderIntent memory order = _createOrderIntent(
             alice,
+            address(0),
+            address(0),
             100_000e18,
             105_000e18,
             IHyperdriveMatchingEngine.OrderType.OpenLong
@@ -272,6 +278,8 @@ contract HyperdriveMatchingEngineTest is HyperdriveTest {
         // Create an EOA order.
         IHyperdriveMatchingEngine.OrderIntent memory order = _createOrderIntent(
             address(signer),
+            address(0),
+            address(0),
             100_000e18,
             105_000e18,
             IHyperdriveMatchingEngine.OrderType.OpenLong
@@ -305,6 +313,8 @@ contract HyperdriveMatchingEngineTest is HyperdriveTest {
                 memory orders = new IHyperdriveMatchingEngine.OrderIntent[](3);
             orders[0] = _createOrderIntent(
                 address(alice),
+                address(0),
+                address(0),
                 100_000e18,
                 105_000e18,
                 IHyperdriveMatchingEngine.OrderType.OpenLong
@@ -312,6 +322,8 @@ contract HyperdriveMatchingEngineTest is HyperdriveTest {
             orders[0].signature = _signOrderIntent(orders[0], alicePK);
             orders[1] = _createOrderIntent(
                 address(alice),
+                address(0),
+                address(0),
                 100_000e18,
                 200_000e18,
                 IHyperdriveMatchingEngine.OrderType.OpenLong
@@ -319,6 +331,8 @@ contract HyperdriveMatchingEngineTest is HyperdriveTest {
             orders[1].signature = _signOrderIntent(orders[1], alicePK);
             orders[2] = _createOrderIntent(
                 address(alice),
+                address(0),
+                address(0),
                 100_000e18,
                 105_000e18,
                 IHyperdriveMatchingEngine.OrderType.OpenLong
@@ -348,6 +362,8 @@ contract HyperdriveMatchingEngineTest is HyperdriveTest {
                 memory orders = new IHyperdriveMatchingEngine.OrderIntent[](3);
             orders[0] = _createOrderIntent(
                 address(signer),
+                address(0),
+                address(0),
                 100_000e18,
                 105_000e18,
                 IHyperdriveMatchingEngine.OrderType.OpenLong
@@ -355,6 +371,8 @@ contract HyperdriveMatchingEngineTest is HyperdriveTest {
             orders[0].signature = hex"deadbeef";
             orders[1] = _createOrderIntent(
                 address(signer),
+                address(0),
+                address(0),
                 100_000e18,
                 200_000e18,
                 IHyperdriveMatchingEngine.OrderType.OpenLong
@@ -362,6 +380,8 @@ contract HyperdriveMatchingEngineTest is HyperdriveTest {
             orders[1].signature = hex"deadbeef";
             orders[2] = _createOrderIntent(
                 address(signer),
+                address(0),
+                address(0),
                 100_000e18,
                 105_000e18,
                 IHyperdriveMatchingEngine.OrderType.OpenLong
@@ -392,6 +412,8 @@ contract HyperdriveMatchingEngineTest is HyperdriveTest {
         IHyperdriveMatchingEngine.OrderIntent
             memory longOrder = _createOrderIntent(
                 alice,
+                address(0),
+                address(0),
                 100_000e18,
                 0,
                 IHyperdriveMatchingEngine.OrderType.OpenLong
@@ -399,6 +421,8 @@ contract HyperdriveMatchingEngineTest is HyperdriveTest {
         IHyperdriveMatchingEngine.OrderIntent
             memory shortOrder = _createOrderIntent(
                 bob,
+                address(0),
+                address(0),
                 105_000e18,
                 type(uint256).max,
                 IHyperdriveMatchingEngine.OrderType.OpenShort
@@ -488,13 +512,17 @@ contract HyperdriveMatchingEngineTest is HyperdriveTest {
         );
     }
 
-    /// @dev Ensures that order matching fails when one or both of the orders
-    ///      are expired.
-    function test_matchOrders_failure_alreadyExpired() external {
-        // Create two orders that can be used for this test.
+    /// @dev Ensures that order matching fails when the order counterparties
+    ///      aren't compatible.
+    function test_matchOrders_failure_invalidCounterparty() external {
+        // Ensure that the orders can't be matched when the long order's
+        // counterparty isn't equal to the short order's trader.
         IHyperdriveMatchingEngine.OrderIntent
             memory longOrder = _createOrderIntent(
                 alice,
+                // A different counterparty than Bob.
+                celine,
+                address(0),
                 100_000e18,
                 0,
                 IHyperdriveMatchingEngine.OrderType.OpenLong
@@ -502,6 +530,194 @@ contract HyperdriveMatchingEngineTest is HyperdriveTest {
         IHyperdriveMatchingEngine.OrderIntent
             memory shortOrder = _createOrderIntent(
                 bob,
+                address(0),
+                address(0),
+                105_000e18,
+                type(uint256).max,
+                IHyperdriveMatchingEngine.OrderType.OpenShort
+            );
+        vm.expectRevert(IHyperdriveMatchingEngine.InvalidCounterparty.selector);
+        matchingEngine.matchOrders(
+            // long order
+            longOrder,
+            // short order
+            shortOrder,
+            // LP amount
+            2_000_000e18,
+            // add liquidity options
+            IHyperdrive.Options({
+                asBase: true,
+                destination: address(matchingEngine),
+                extraData: ""
+            }),
+            // remove liquidity options
+            IHyperdrive.Options({
+                asBase: true,
+                destination: address(matchingEngine),
+                extraData: ""
+            }),
+            // fee recipient
+            celine,
+            true
+        );
+
+        // Ensure that the orders can't be matched when the short order's
+        // counterparty isn't equal to the long order's trader.
+        longOrder = _createOrderIntent(
+            alice,
+            address(0),
+            address(0),
+            100_000e18,
+            0,
+            IHyperdriveMatchingEngine.OrderType.OpenLong
+        );
+        shortOrder = _createOrderIntent(
+            bob,
+            // A different counterparty than Alice.
+            celine,
+            address(0),
+            105_000e18,
+            type(uint256).max,
+            IHyperdriveMatchingEngine.OrderType.OpenShort
+        );
+        vm.expectRevert(IHyperdriveMatchingEngine.InvalidCounterparty.selector);
+        matchingEngine.matchOrders(
+            // long order
+            longOrder,
+            // short order
+            shortOrder,
+            // LP amount
+            2_000_000e18,
+            // add liquidity options
+            IHyperdrive.Options({
+                asBase: true,
+                destination: address(matchingEngine),
+                extraData: ""
+            }),
+            // remove liquidity options
+            IHyperdrive.Options({
+                asBase: true,
+                destination: address(matchingEngine),
+                extraData: ""
+            }),
+            // fee recipient
+            celine,
+            true
+        );
+    }
+
+    /// @dev Ensures that order matching fails when the order counterparties
+    ///      aren't compatible.
+    function test_matchOrders_failure_invalidFeeRecipient() external {
+        // Ensure that the orders can't be matched when the long order's
+        // fee recipient isn't equal to the fee recipient.
+        IHyperdriveMatchingEngine.OrderIntent
+            memory longOrder = _createOrderIntent(
+                alice,
+                address(0),
+                // A different fee recipient than Celine.
+                bob,
+                100_000e18,
+                0,
+                IHyperdriveMatchingEngine.OrderType.OpenLong
+            );
+        IHyperdriveMatchingEngine.OrderIntent
+            memory shortOrder = _createOrderIntent(
+                bob,
+                address(0),
+                address(0),
+                105_000e18,
+                type(uint256).max,
+                IHyperdriveMatchingEngine.OrderType.OpenShort
+            );
+        vm.expectRevert(IHyperdriveMatchingEngine.InvalidFeeRecipient.selector);
+        matchingEngine.matchOrders(
+            // long order
+            longOrder,
+            // short order
+            shortOrder,
+            // LP amount
+            2_000_000e18,
+            // add liquidity options
+            IHyperdrive.Options({
+                asBase: true,
+                destination: address(matchingEngine),
+                extraData: ""
+            }),
+            // remove liquidity options
+            IHyperdrive.Options({
+                asBase: true,
+                destination: address(matchingEngine),
+                extraData: ""
+            }),
+            // fee recipient
+            celine,
+            true
+        );
+
+        // Ensure that the orders can't be matched when the short order's
+        // fee recipient isn't equal to the fee recipient.
+        longOrder = _createOrderIntent(
+            alice,
+            address(0),
+            address(0),
+            100_000e18,
+            0,
+            IHyperdriveMatchingEngine.OrderType.OpenLong
+        );
+        shortOrder = _createOrderIntent(
+            bob,
+            address(0),
+            // A different fee recipient than Celine.
+            bob,
+            105_000e18,
+            type(uint256).max,
+            IHyperdriveMatchingEngine.OrderType.OpenShort
+        );
+        vm.expectRevert(IHyperdriveMatchingEngine.InvalidFeeRecipient.selector);
+        matchingEngine.matchOrders(
+            // long order
+            longOrder,
+            // short order
+            shortOrder,
+            // LP amount
+            2_000_000e18,
+            // add liquidity options
+            IHyperdrive.Options({
+                asBase: true,
+                destination: address(matchingEngine),
+                extraData: ""
+            }),
+            // remove liquidity options
+            IHyperdrive.Options({
+                asBase: true,
+                destination: address(matchingEngine),
+                extraData: ""
+            }),
+            // fee recipient
+            celine,
+            true
+        );
+    }
+
+    /// @dev Ensures that order matching fails when one or both of the orders
+    ///      are expired.
+    function test_matchOrders_failure_alreadyExpired() external {
+        // Create two orders that can be used for this test.
+        IHyperdriveMatchingEngine.OrderIntent
+            memory longOrder = _createOrderIntent(
+                alice,
+                address(0),
+                address(0),
+                100_000e18,
+                0,
+                IHyperdriveMatchingEngine.OrderType.OpenLong
+            );
+        IHyperdriveMatchingEngine.OrderIntent
+            memory shortOrder = _createOrderIntent(
+                bob,
+                address(0),
+                address(0),
                 105_000e18,
                 type(uint256).max,
                 IHyperdriveMatchingEngine.OrderType.OpenShort
@@ -599,6 +815,8 @@ contract HyperdriveMatchingEngineTest is HyperdriveTest {
         IHyperdriveMatchingEngine.OrderIntent
             memory longOrder = _createOrderIntent(
                 alice,
+                address(0),
+                address(0),
                 100_000e18,
                 0,
                 IHyperdriveMatchingEngine.OrderType.OpenLong
@@ -606,6 +824,8 @@ contract HyperdriveMatchingEngineTest is HyperdriveTest {
         IHyperdriveMatchingEngine.OrderIntent
             memory shortOrder = _createOrderIntent(
                 bob,
+                address(0),
+                address(0),
                 105_000e18,
                 type(uint256).max,
                 IHyperdriveMatchingEngine.OrderType.OpenShort
@@ -649,6 +869,8 @@ contract HyperdriveMatchingEngineTest is HyperdriveTest {
         IHyperdriveMatchingEngine.OrderIntent
             memory longOrder = _createOrderIntent(
                 alice,
+                address(0),
+                address(0),
                 100_000e18,
                 0,
                 IHyperdriveMatchingEngine.OrderType.OpenLong
@@ -656,6 +878,8 @@ contract HyperdriveMatchingEngineTest is HyperdriveTest {
         IHyperdriveMatchingEngine.OrderIntent
             memory shortOrder = _createOrderIntent(
                 bob,
+                address(0),
+                address(0),
                 105_000e18,
                 type(uint256).max,
                 IHyperdriveMatchingEngine.OrderType.OpenShort
@@ -791,6 +1015,8 @@ contract HyperdriveMatchingEngineTest is HyperdriveTest {
         IHyperdriveMatchingEngine.OrderIntent
             memory longOrder = _createOrderIntent(
                 alice,
+                address(0),
+                address(0),
                 100_000e18,
                 101_000e18,
                 IHyperdriveMatchingEngine.OrderType.OpenLong
@@ -798,6 +1024,8 @@ contract HyperdriveMatchingEngineTest is HyperdriveTest {
         IHyperdriveMatchingEngine.OrderIntent
             memory shortOrder = _createOrderIntent(
                 bob,
+                address(0),
+                address(0),
                 101_000e18,
                 100e18,
                 IHyperdriveMatchingEngine.OrderType.OpenShort
@@ -837,6 +1065,8 @@ contract HyperdriveMatchingEngineTest is HyperdriveTest {
         IHyperdriveMatchingEngine.OrderIntent
             memory longOrder = _createOrderIntent(
                 alice,
+                address(0),
+                address(0),
                 100_000e18,
                 0,
                 IHyperdriveMatchingEngine.OrderType.OpenLong
@@ -845,6 +1075,8 @@ contract HyperdriveMatchingEngineTest is HyperdriveTest {
         IHyperdriveMatchingEngine.OrderIntent
             memory shortOrder = _createOrderIntent(
                 bob,
+                address(0),
+                address(0),
                 101_000e18,
                 type(uint256).max,
                 IHyperdriveMatchingEngine.OrderType.OpenShort
@@ -977,6 +1209,8 @@ contract HyperdriveMatchingEngineTest is HyperdriveTest {
         IHyperdriveMatchingEngine.OrderIntent
             memory longOrder = _createOrderIntent(
                 alice,
+                address(0),
+                address(0),
                 100_000e18,
                 0,
                 IHyperdriveMatchingEngine.OrderType.OpenLong
@@ -985,6 +1219,8 @@ contract HyperdriveMatchingEngineTest is HyperdriveTest {
         IHyperdriveMatchingEngine.OrderIntent
             memory shortOrder = _createOrderIntent(
                 address(signer),
+                address(0),
+                address(0),
                 101_000e18,
                 type(uint256).max,
                 IHyperdriveMatchingEngine.OrderType.OpenShort
@@ -1087,6 +1323,8 @@ contract HyperdriveMatchingEngineTest is HyperdriveTest {
         IHyperdriveMatchingEngine.OrderIntent
             memory longOrder = _createOrderIntent(
                 alice,
+                address(0),
+                address(0),
                 100_000e18,
                 0,
                 IHyperdriveMatchingEngine.OrderType.OpenLong
@@ -1095,6 +1333,8 @@ contract HyperdriveMatchingEngineTest is HyperdriveTest {
         IHyperdriveMatchingEngine.OrderIntent
             memory shortOrder = _createOrderIntent(
                 bob,
+                address(0),
+                address(0),
                 101_000e18,
                 type(uint256).max,
                 IHyperdriveMatchingEngine.OrderType.OpenShort
@@ -1192,6 +1432,8 @@ contract HyperdriveMatchingEngineTest is HyperdriveTest {
         IHyperdriveMatchingEngine.OrderIntent
             memory longOrder = _createOrderIntent(
                 alice,
+                bob,
+                celine,
                 100_000e18,
                 0,
                 IHyperdriveMatchingEngine.OrderType.OpenLong
@@ -1200,6 +1442,8 @@ contract HyperdriveMatchingEngineTest is HyperdriveTest {
         IHyperdriveMatchingEngine.OrderIntent
             memory shortOrder = _createOrderIntent(
                 bob,
+                alice,
+                celine,
                 101_000e18,
                 101_000e18,
                 IHyperdriveMatchingEngine.OrderType.OpenShort
@@ -1329,6 +1573,8 @@ contract HyperdriveMatchingEngineTest is HyperdriveTest {
         IHyperdriveMatchingEngine.OrderIntent
             memory longOrder = _createOrderIntent(
                 alice,
+                bob,
+                celine,
                 100_000e18,
                 0,
                 IHyperdriveMatchingEngine.OrderType.OpenLong
@@ -1337,6 +1583,8 @@ contract HyperdriveMatchingEngineTest is HyperdriveTest {
         IHyperdriveMatchingEngine.OrderIntent
             memory shortOrder = _createOrderIntent(
                 bob,
+                alice,
+                celine,
                 101_000e18,
                 101_000e18,
                 IHyperdriveMatchingEngine.OrderType.OpenShort
@@ -1465,6 +1713,8 @@ contract HyperdriveMatchingEngineTest is HyperdriveTest {
         IHyperdriveMatchingEngine.OrderIntent
             memory longOrder = _createOrderIntent(
                 alice,
+                address(0),
+                address(0),
                 100_000e18,
                 0,
                 IHyperdriveMatchingEngine.OrderType.OpenLong
@@ -1473,6 +1723,8 @@ contract HyperdriveMatchingEngineTest is HyperdriveTest {
         IHyperdriveMatchingEngine.OrderIntent
             memory shortOrder = _createOrderIntent(
                 bob,
+                address(0),
+                address(0),
                 101_000e18,
                 101_000e18,
                 IHyperdriveMatchingEngine.OrderType.OpenShort
@@ -1512,6 +1764,8 @@ contract HyperdriveMatchingEngineTest is HyperdriveTest {
 
     /// @dev Creates an unsigned order intent with default parameters.
     /// @param _trader The trader creating the order.
+    /// @param _counterparty The counterparty of the trade.
+    /// @param _feeRecipient The fee recipient of the trade.
     /// @param _amount The amount that should be traded. This is the base
     ///        deposit when opening a long and the bond deposit when opening a
     ///        short.
@@ -1522,6 +1776,8 @@ contract HyperdriveMatchingEngineTest is HyperdriveTest {
     ///        `OpenShort`.
     function _createOrderIntent(
         address _trader,
+        address _counterparty,
+        address _feeRecipient,
         uint256 _amount,
         uint256 _slippageGuard,
         IHyperdriveMatchingEngine.OrderType _orderType
@@ -1530,6 +1786,8 @@ contract HyperdriveMatchingEngineTest is HyperdriveTest {
         return
             IHyperdriveMatchingEngine.OrderIntent({
                 trader: _trader,
+                counterparty: _counterparty,
+                feeRecipient: _feeRecipient,
                 hyperdrive: hyperdrive,
                 amount: _amount,
                 slippageGuard: _slippageGuard,
