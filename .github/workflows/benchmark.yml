@@ -29,7 +29,7 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
-          version: nightly
+          version: nightly-75fc63be4fc9241a1981a55c12b6e300fd82a51b
       - name: Install Dependencies
         run: forge install
       - uses: actions/setup-python@v4
