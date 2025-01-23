@@ -1,5 +1,5 @@
 # Global Code Owners
-* @jalextowle @jrhea @Sean329 @dpaiton @slundqui
+* @jalextowle @jrhea @Sean329
 
 # Instance Owners
 contracts/src/deployers/ @jalextowle @jrhea @Sean329 @cashd @sentilesdal
