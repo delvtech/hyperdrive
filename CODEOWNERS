@@ -1,9 +1,9 @@
 # Global Code Owners
-* @jalextowle @jrhea @mcclurejt @dpaiton @slundqui
+* @jalextowle @jrhea @Sean329 @dpaiton @slundqui
 
 # Instance Owners
-contracts/src/deployers/ @jalextowle @jrhea @mcclurejt @cashd @sentilesdal
-contracts/src/instances/ @jalextowle @jrhea @mcclurejt @cashd @sentilesdal
-contracts/src/interfaces/ @jalextowle @jrhea @mcclurejt @cashd @sentilesdal
-contracts/test/ @jalextowle @jrhea @mcclurejt @cashd @sentilesdal
-test/ @jalextowle @jrhea @mcclurejt @cashd @sentilesdal
+contracts/src/deployers/ @jalextowle @jrhea @Sean329 @cashd @sentilesdal
+contracts/src/instances/ @jalextowle @jrhea @Sean329 @cashd @sentilesdal
+contracts/src/interfaces/ @jalextowle @jrhea @Sean329 @cashd @sentilesdal
+contracts/test/ @jalextowle @jrhea @Sean329 @cashd @sentilesdal
+test/ @jalextowle @jrhea @Sean329 @cashd @sentilesdal
