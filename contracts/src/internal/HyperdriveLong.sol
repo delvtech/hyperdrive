@@ -55,7 +55,8 @@ abstract contract HyperdriveLong is IHyperdriveEvents, HyperdriveLP {
         // Deposit the user's input amount.
         (uint256 sharesDeposited, uint256 vaultSharePrice) = _deposit(
             _amount,
-            _options
+            _options.asBase,
+            _options.extraData
         );
 
         // Enforce the minimum user outputs and the minimum vault share price.

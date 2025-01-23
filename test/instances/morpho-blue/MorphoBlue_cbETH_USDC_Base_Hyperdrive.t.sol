@@ -65,6 +65,7 @@ contract MorphoBlue_cbETH_USDC_Base_HyperdriveTest is
                 closeLongWithBaseTolerance: 2,
                 closeShortWithBaseUpperBoundTolerance: 10,
                 closeShortWithBaseTolerance: 100,
+                burnWithBaseTolerance: 2,
                 roundTripLpInstantaneousWithBaseTolerance: 1e3,
                 roundTripLpWithdrawalSharesWithBaseTolerance: 1e5,
                 roundTripLongInstantaneousWithBaseUpperBoundTolerance: 100,
@@ -76,12 +77,17 @@ contract MorphoBlue_cbETH_USDC_Base_HyperdriveTest is
                 // NOTE: Since the curve fee isn't zero, this check is ignored.
                 roundTripShortInstantaneousWithBaseTolerance: 0,
                 roundTripShortMaturityWithBaseTolerance: 1e3,
+                roundTripPairInstantaneousWithBaseUpperBoundTolerance: 100,
+                roundTripPairInstantaneousWithBaseTolerance: 1e3,
+                roundTripPairMaturityWithBaseUpperBoundTolerance: 100,
+                roundTripPairMaturityWithBaseTolerance: 1e3,
                 // NOTE: Share deposits and withdrawals are disabled, so these are
                 // 0.
                 //
                 // The share test tolerances.
                 closeLongWithSharesTolerance: 0,
                 closeShortWithSharesTolerance: 0,
+                burnWithSharesTolerance: 0,
                 roundTripLpInstantaneousWithSharesTolerance: 0,
                 roundTripLpWithdrawalSharesWithSharesTolerance: 0,
                 roundTripLongInstantaneousWithSharesUpperBoundTolerance: 0,
@@ -91,6 +97,10 @@ contract MorphoBlue_cbETH_USDC_Base_HyperdriveTest is
                 roundTripShortInstantaneousWithSharesUpperBoundTolerance: 0,
                 roundTripShortInstantaneousWithSharesTolerance: 0,
                 roundTripShortMaturityWithSharesTolerance: 0,
+                roundTripPairInstantaneousWithSharesUpperBoundTolerance: 0,
+                roundTripPairInstantaneousWithSharesTolerance: 0,
+                roundTripPairMaturityWithSharesUpperBoundTolerance: 0,
+                roundTripPairMaturityWithSharesTolerance: 0,
                 // The verification tolerances.
                 verifyDepositTolerance: 2,
                 verifyWithdrawalTolerance: 3
@@ -129,10 +139,6 @@ contract MorphoBlue_cbETH_USDC_Base_HyperdriveTest is
         uint256 _amount
     ) internal override {
         bytes32 balanceLocation = keccak256(abi.encode(address(_recipient), 9));
-        vm.store(
-            IFiatTokenProxy(LOAN_TOKEN).implementation(),
-            balanceLocation,
-            bytes32(_amount)
-        );
+        vm.store(LOAN_TOKEN, balanceLocation, bytes32(_amount));
     }
 }

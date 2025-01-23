@@ -155,6 +155,83 @@ contract IntraCheckpointNettingTest is HyperdriveTest {
         assertEq(poolInfo.shareReserves, expectedShareReserves);
     }
 
+    // This test was designed to show that a netted long and short created
+    // through minting can be burned at maturity even if all liquidity is
+    // removed.
+    function test_netting_mint_and_burn_at_maturity() external {
+        uint256 initialVaultSharePrice = 1e18;
+        int256 variableInterest = 0;
+        uint256 timeElapsed = 10220546; //~118 days between each trade
+        uint256 tradeSize = 100e18;
+
+        // initialize the market
+        uint256 aliceLpShares = 0;
+        {
+            uint256 apr = 0.05e18;
+            deploy(alice, apr, initialVaultSharePrice, 0, 0, 0, 0);
+            uint256 contribution = 500_000_000e18;
+            aliceLpShares = initialize(alice, apr, contribution);
+
+            // fast forward time and accrue interest
+            advanceTime(POSITION_DURATION, 0);
+        }
+
+        // Celine adds liquidity. This is needed to allow the positions to be
+        // closed out.
+        addLiquidity(celine, 500_000_000e18);
+
+        // open a long
+        uint256 basePaidLong = tradeSize;
+        (uint256 maturityTimeLong, uint256 bondAmountLong) = openLong(
+            bob,
+            basePaidLong
+        );
+
+        // fast forward time, create checkpoints and accrue interest
+        advanceTimeWithCheckpoints(timeElapsed, variableInterest);
+
+        // mint some bonds
+        uint256 basePaidPair = tradeSize;
+        (uint256 maturityTimePair, uint256 bondAmountPair) = mint(
+            bob,
+            basePaidPair
+        );
+
+        // fast forward time, create checkpoints and accrue interest
+        advanceTimeWithCheckpoints(timeElapsed, variableInterest);
+
+        // remove liquidity
+        (, uint256 withdrawalShares) = removeLiquidity(alice, aliceLpShares);
+
+        // wait for the positions to mature
+        IHyperdrive.PoolInfo memory poolInfo = hyperdrive.getPoolInfo();
+        while (
+            poolInfo.shortsOutstanding > 0 || poolInfo.longsOutstanding > 0
+        ) {
+            advanceTimeWithCheckpoints(POSITION_DURATION, variableInterest);
+            poolInfo = hyperdrive.getPoolInfo();
+        }
+
+        // close the long positions
+        closeLong(bob, maturityTimeLong, bondAmountLong);
+
+        // close the pair positions
+        closeShort(bob, maturityTimePair, bondAmountPair);
+
+        // longExposure should be 0
+        poolInfo = hyperdrive.getPoolInfo();
+        assertApproxEqAbs(poolInfo.longExposure, 0, 1);
+
+        redeemWithdrawalShares(alice, withdrawalShares);
+
+        // idle should be equal to shareReserves
+        uint256 expectedShareReserves = MockHyperdrive(address(hyperdrive))
+            .calculateIdleShareReserves(
+                hyperdrive.getPoolInfo().vaultSharePrice
+            ) + hyperdrive.getPoolConfig().minimumShareReserves;
+        assertEq(poolInfo.shareReserves, expectedShareReserves);
+    }
+
     function test_netting_mismatched_exposure_maturities() external {
         uint256 initialVaultSharePrice = 1e18;
         int256 variableInterest = 0e18;

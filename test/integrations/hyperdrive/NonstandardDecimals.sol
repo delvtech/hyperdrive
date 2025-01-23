@@ -367,6 +367,102 @@ contract NonstandardDecimalsTest is HyperdriveTest {
         }
     }
 
+    function test_nonstandard_decimals_pair(
+        uint256 basePaid,
+        uint256 holdTime,
+        int256 variableRate
+    ) external {
+        // Normalize the fuzzed variables.
+        initialize(alice, 0.02e18, 500_000_000e6);
+        basePaid = basePaid.normalizeToRange(
+            hyperdrive.getPoolConfig().minimumTransactionAmount,
+            1_000_000_000e6
+        );
+        holdTime = holdTime.normalizeToRange(0, POSITION_DURATION);
+        variableRate = variableRate.normalizeToRange(0, 2e18);
+
+        // Bob mints and burns bonds immediately. He should receive essentially
+        // all of his capital back.
+        {
+            // Deploy and initialize the pool.
+            IHyperdrive.PoolConfig memory config = testConfig(
+                0.02e18,
+                POSITION_DURATION
+            );
+            config.minimumShareReserves = 1e6;
+            config.minimumTransactionAmount = 1e6;
+            deploy(deployer, config);
+            initialize(alice, 0.02e18, 500_000_000e6);
+
+            // Bob mints some bonds.
+            (uint256 maturityTime, uint256 bondAmount) = mint(bob, basePaid);
+
+            // Bob burns the bonds.
+            uint256 baseProceeds = burn(bob, maturityTime, bondAmount);
+            assertApproxEqAbs(basePaid, baseProceeds, 1e2);
+        }
+
+        // Bob mints bonds and holds for a random time less than the position
+        // duration. He should receive the base he paid plus variable interest.
+        {
+            // Deploy and initialize the pool.
+            IHyperdrive.PoolConfig memory config = testConfig(
+                0.02e18,
+                POSITION_DURATION
+            );
+            config.minimumShareReserves = 1e6;
+            config.minimumTransactionAmount = 1e6;
+            deploy(deployer, config);
+            initialize(alice, 0.02e18, 500_000_000e6);
+
+            // Bob mints some bonds.
+            (uint256 maturityTime, uint256 bondAmount) = mint(bob, basePaid);
+
+            // The term passes.
+            advanceTime(holdTime, variableRate);
+
+            // Bob burns the bonds.
+            (uint256 expectedBaseProceeds, ) = HyperdriveUtils
+                .calculateCompoundInterest(
+                    basePaid,
+                    int256(variableRate),
+                    holdTime
+                );
+            uint256 baseProceeds = burn(bob, maturityTime, bondAmount);
+            assertApproxEqAbs(baseProceeds, expectedBaseProceeds, 1e2);
+        }
+
+        // Bob opens a long and holds to maturity. He should receive the face
+        // value of the bonds.
+        {
+            // Deploy and initialize the pool.
+            IHyperdrive.PoolConfig memory config = testConfig(
+                0.02e18,
+                POSITION_DURATION
+            );
+            config.minimumShareReserves = 1e6;
+            config.minimumTransactionAmount = 1e6;
+            deploy(deployer, config);
+            initialize(alice, 0.02e18, 500_000_000e6);
+
+            // Bob mints some bonds.
+            (uint256 maturityTime, uint256 bondAmount) = mint(bob, basePaid);
+
+            // The term passes.
+            advanceTime(POSITION_DURATION, variableRate);
+
+            // Bob burns the bonds.
+            (uint256 expectedBaseProceeds, ) = HyperdriveUtils
+                .calculateCompoundInterest(
+                    basePaid,
+                    int256(variableRate),
+                    POSITION_DURATION
+                );
+            uint256 baseProceeds = burn(bob, maturityTime, bondAmount);
+            assertApproxEqAbs(baseProceeds, expectedBaseProceeds, 1e2);
+        }
+    }
+
     struct TestLpWithdrawalParams {
         int256 fixedRate;
         int256 variableRate;

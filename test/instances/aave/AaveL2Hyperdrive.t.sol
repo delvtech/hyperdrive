@@ -23,6 +23,7 @@ import { Lib } from "test/utils/Lib.sol";
 
 contract AaveL2HyperdriveTest is InstanceTest {
     using FixedPointMath for uint256;
+    using HyperdriveUtils for *;
     using Lib for *;
     using stdStorage for StdStorage;
 
@@ -85,6 +86,7 @@ contract AaveL2HyperdriveTest is InstanceTest {
                 closeLongWithBaseTolerance: 20,
                 closeShortWithBaseUpperBoundTolerance: 10,
                 closeShortWithBaseTolerance: 100,
+                burnWithBaseTolerance: 10,
                 roundTripLpInstantaneousWithBaseTolerance: 1e5,
                 roundTripLpWithdrawalSharesWithBaseTolerance: 1e5,
                 roundTripLongInstantaneousWithBaseUpperBoundTolerance: 1e3,
@@ -94,9 +96,14 @@ contract AaveL2HyperdriveTest is InstanceTest {
                 roundTripShortInstantaneousWithBaseUpperBoundTolerance: 1e3,
                 roundTripShortInstantaneousWithBaseTolerance: 1e5,
                 roundTripShortMaturityWithBaseTolerance: 1e5,
+                roundTripPairInstantaneousWithBaseUpperBoundTolerance: 1e3,
+                roundTripPairInstantaneousWithBaseTolerance: 1e5,
+                roundTripPairMaturityWithBaseUpperBoundTolerance: 1e3,
+                roundTripPairMaturityWithBaseTolerance: 1e5,
                 // The share test tolerances.
                 closeLongWithSharesTolerance: 20,
                 closeShortWithSharesTolerance: 100,
+                burnWithSharesTolerance: 20,
                 roundTripLpInstantaneousWithSharesTolerance: 1e5,
                 roundTripLpWithdrawalSharesWithSharesTolerance: 1e3,
                 roundTripLongInstantaneousWithSharesUpperBoundTolerance: 1e3,
@@ -106,6 +113,10 @@ contract AaveL2HyperdriveTest is InstanceTest {
                 roundTripShortInstantaneousWithSharesUpperBoundTolerance: 1e3,
                 roundTripShortInstantaneousWithSharesTolerance: 1e5,
                 roundTripShortMaturityWithSharesTolerance: 1e5,
+                roundTripPairInstantaneousWithSharesUpperBoundTolerance: 1e3,
+                roundTripPairInstantaneousWithSharesTolerance: 1e5,
+                roundTripPairMaturityWithSharesUpperBoundTolerance: 1e3,
+                roundTripPairMaturityWithSharesTolerance: 1e5,
                 // The verification tolerances.
                 verifyDepositTolerance: 2,
                 verifyWithdrawalTolerance: 2
@@ -226,6 +237,9 @@ contract AaveL2HyperdriveTest is InstanceTest {
         uint256 timeDelta,
         int256 variableRate
     ) internal override {
+        // Get the base balance before updating the time.
+        uint256 baseBalance = WETH.balanceOf(address(AWETH));
+
         // Get the normalized income prior to updating the time.
         uint256 reserveNormalizedIncome = POOL.getReserveNormalizedIncome(
             address(WETH)
@@ -240,11 +254,16 @@ contract AaveL2HyperdriveTest is InstanceTest {
         // variable rate plus one. We also need to increase the
         // `lastUpdatedTimestamp` to avoid accruing interest when deposits or
         // withdrawals are processed.
-        (uint256 totalAmount, ) = HyperdriveUtils.calculateInterest(
-            reserveNormalizedIncome,
-            variableRate,
-            timeDelta
-        );
+        uint256 normalizedTime = timeDelta.divDown(365 days);
+        reserveNormalizedIncome = variableRate >= 0
+            ? reserveNormalizedIncome +
+                reserveNormalizedIncome.mulDown(uint256(variableRate)).mulDown(
+                    normalizedTime
+                )
+            : reserveNormalizedIncome -
+                reserveNormalizedIncome.mulDown(uint256(-variableRate)).mulDown(
+                    normalizedTime
+                );
         bytes32 reserveDataLocation = keccak256(abi.encode(address(WETH), 52));
         DataTypes.ReserveDataLegacy memory data = POOL.getReserveData(
             address(WETH)
@@ -254,7 +273,7 @@ contract AaveL2HyperdriveTest is InstanceTest {
             bytes32(uint256(reserveDataLocation) + 1),
             bytes32(
                 (uint256(data.currentLiquidityRate) << 128) |
-                    uint256(totalAmount)
+                    uint256(reserveNormalizedIncome)
             )
         );
         vm.store(
@@ -266,5 +285,14 @@ contract AaveL2HyperdriveTest is InstanceTest {
                     data.currentStableBorrowRate
             )
         );
+
+        // Mint more of the base token to the Aave pool to ensure that it
+        // remains solvent.
+        (baseBalance, ) = baseBalance.calculateInterest(
+            variableRate,
+            timeDelta
+        );
+        bytes32 balanceLocation = keccak256(abi.encode(address(AWETH), 5));
+        vm.store(address(WETH), balanceLocation, bytes32(baseBalance));
     }
 }

@@ -55,7 +55,8 @@ abstract contract HyperdriveLP is
         // their contribution was worth.
         (uint256 shareContribution, uint256 vaultSharePrice) = _deposit(
             _contribution,
-            _options
+            _options.asBase,
+            _options.extraData
         );
 
         // Ensure that the contribution is large enough to set aside the minimum
@@ -210,7 +211,8 @@ abstract contract HyperdriveLP is
         // Deposit for the user, this call also transfers from them
         (uint256 shareContribution, uint256 vaultSharePrice) = _deposit(
             _contribution,
-            _options
+            _options.asBase,
+            _options.extraData
         );
 
         // Perform a checkpoint.
