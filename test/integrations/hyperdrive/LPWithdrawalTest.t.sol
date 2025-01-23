@@ -389,6 +389,173 @@ contract LPWithdrawalTest is HyperdriveTest {
         );
     }
 
+    // This test is designed to ensure that an LP can remove all of their
+    // liquidity immediately after bonds are minted. The amount of bonds minted
+    // can be much larger than the total size of the pool. The LPs will receive
+    // capital paid at the LP share price.
+    function test_lp_withdrawal_pair_immediate_close(
+        uint256 basePaid,
+        int256 preTradingVariableRate
+    ) external {
+        uint256 apr = 0.05e18;
+        uint256 contribution = 500_000_000e18;
+        uint256 lpShares = initialize(alice, apr, contribution);
+
+        // Accrue interest before the trading period.
+        preTradingVariableRate = preTradingVariableRate.normalizeToRange(
+            0e18,
+            1e18
+        );
+        advanceTime(POSITION_DURATION, preTradingVariableRate);
+
+        // Bob mints some bonds.
+        basePaid = basePaid.normalizeToRange(
+            MINIMUM_TRANSACTION_AMOUNT * 2,
+            10 * contribution
+        );
+        (uint256 maturityTime, uint256 bondAmount) = mint(bob, basePaid);
+        assertApproxEqAbs(bondAmount, basePaid, 10);
+
+        // Alice removes all of her LP shares. The LP share price should be
+        // approximately equal before and after the transaction. She should
+        // receive base equal to the value of her LP shares and have zero
+        // withdrawal shares.
+        (
+            uint256 withdrawalProceeds,
+            uint256 withdrawalShares
+        ) = removeLiquidityWithChecks(alice, lpShares);
+        assertApproxEqAbs(
+            withdrawalProceeds,
+            lpShares.mulDown(hyperdrive.lpSharePrice()),
+            10
+        );
+        assertEq(withdrawalShares, 0);
+
+        // Bob burns his bonds. He'll receive approximately the amount that he
+        // put in. The LP share price should be equal before and after the
+        // transaction.
+        uint256 lpSharePrice = hyperdrive.lpSharePrice();
+        uint256 baseProceeds = burn(bob, maturityTime, bondAmount);
+        assertApproxEqAbs(baseProceeds, basePaid, 10);
+        assertApproxEqAbs(lpSharePrice, hyperdrive.lpSharePrice(), 10);
+
+        // Ensure that the ending base balance of Hyperdrive only consists of
+        // the minimum share reserves and address zero's LP shares.
+        assertApproxEqAbs(
+            baseToken.balanceOf(address(hyperdrive)),
+            hyperdrive.getPoolConfig().minimumShareReserves.mulDown(
+                hyperdrive.getPoolInfo().vaultSharePrice +
+                    hyperdrive.lpSharePrice()
+            ),
+            1e10
+        );
+
+        // Ensure that no withdrawal shares are ready for withdrawal and that
+        // the present value of the outstanding withdrawal shares is zero. Most
+        // of the time, all of the withdrawal shares will be completely paid out.
+        // In some edge cases, the ending LP share price is small enough that
+        // the present value of the withdrawal shares is zero, and they won't be
+        // paid out.
+        assertEq(hyperdrive.getPoolInfo().withdrawalSharesReadyToWithdraw, 0);
+        assertApproxEqAbs(
+            hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID).mulDown(
+                hyperdrive.lpSharePrice()
+            ),
+            0,
+            1
+        );
+    }
+
+    // This test is designed to ensure that an LP can remove all of their
+    // liquidity when bonds that were minted are mature. The amount of bonds
+    // minted can be much larger than the total size of the pool. The LPs will
+    // receive capital paid at the LP share price.
+    function test_lp_withdrawal_pair_redemption(
+        uint256 basePaid,
+        int256 variableRate
+    ) external {
+        uint256 apr = 0.05e18;
+        uint256 contribution = 500_000_000e18;
+        uint256 lpShares = initialize(alice, apr, contribution);
+        contribution -= 2 * hyperdrive.getPoolConfig().minimumShareReserves;
+
+        // Bob mints some bonds.
+        basePaid = basePaid.normalizeToRange(
+            MINIMUM_TRANSACTION_AMOUNT,
+            10 * contribution
+        );
+        (uint256 maturityTime, uint256 bondAmount) = mint(bob, basePaid);
+        assertEq(bondAmount, basePaid);
+
+        // Positive interest accrues over the term.
+        variableRate = variableRate.normalizeToRange(0, 2e18);
+        advanceTime(POSITION_DURATION, variableRate);
+
+        // Alice removes all of her LP shares. The LP share price should be
+        // approximately equal before and after the transaction, and the value
+        // of her overall portfolio should be greater than or equal to her
+        // original portfolio value. She should get paid exactly the amount
+        // implied by the LP share price and receive zero withdrawal shares.
+        (
+            uint256 withdrawalProceeds,
+            uint256 withdrawalShares
+        ) = removeLiquidityWithChecks(alice, lpShares);
+        assertApproxEqAbs(
+            withdrawalProceeds,
+            lpShares.mulDown(hyperdrive.lpSharePrice()),
+            1e9
+        );
+        assertEq(withdrawalShares, 0);
+
+        // Bob burns his bonds. He receives the underlying value of the bonds.
+        // The LP share price is the same before and after.
+        uint256 lpSharePrice = hyperdrive.lpSharePrice();
+        uint256 baseProceeds = burn(bob, maturityTime, bondAmount);
+        (uint256 expectedBaseProceeds, ) = HyperdriveUtils
+            .calculateCompoundInterest(
+                bondAmount,
+                variableRate,
+                POSITION_DURATION
+            );
+        assertApproxEqAbs(baseProceeds, expectedBaseProceeds, 1e10);
+        assertApproxEqAbs(
+            lpSharePrice,
+            hyperdrive.lpSharePrice(),
+            lpSharePrice.mulDown(DISTRIBUTE_EXCESS_IDLE_ABSOLUTE_TOLERANCE)
+        );
+        assertLe(
+            lpSharePrice,
+            hyperdrive.lpSharePrice() +
+                DISTRIBUTE_EXCESS_IDLE_DECREASE_TOLERANCE
+        );
+
+        // Ensure that the ending base balance of Hyperdrive only consists of
+        // the minimum share reserves and address zero's LP shares.
+        assertApproxEqAbs(
+            baseToken.balanceOf(address(hyperdrive)),
+            hyperdrive.getPoolConfig().minimumShareReserves.mulDown(
+                hyperdrive.getPoolInfo().vaultSharePrice +
+                    hyperdrive.lpSharePrice()
+            ),
+            1e10
+        );
+
+        // Ensure that no withdrawal shares are ready for withdrawal and that
+        // the present value of the outstanding withdrawal shares is zero. Most
+        // of the time, all of the withdrawal shares will be completely paid out.
+        // In some edge cases, the ending LP share price is small enough that
+        // the present value of the withdrawal shares is zero, and they won't be
+        // paid out.
+        assertEq(hyperdrive.getPoolInfo().withdrawalSharesReadyToWithdraw, 0);
+        assertApproxEqAbs(
+            hyperdrive.totalSupply(AssetId._WITHDRAWAL_SHARE_ASSET_ID).mulDown(
+                hyperdrive.lpSharePrice()
+            ),
+            0,
+            1
+        );
+    }
+
     struct TestLpWithdrawalParams {
         int256 fixedRate;
         int256 variableRate;

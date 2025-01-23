@@ -14,6 +14,8 @@ FUNCTION_NAMES = [
     "closeLong",
     "openShort",
     "closeShort",
+    "mint",
+    "burn",
     "checkpoint",
 ]
 

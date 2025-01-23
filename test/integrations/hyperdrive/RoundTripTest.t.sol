@@ -56,7 +56,6 @@ contract RoundTripTest is HyperdriveTest {
         IHyperdrive.PoolInfo memory poolInfoAfter = hyperdrive.getPoolInfo();
 
         // If they aren't the same, then the pool should be the one that wins.
-
         assertGe(
             poolInfoAfter.shareReserves + 1e12,
             poolInfoBefore.shareReserves
@@ -318,6 +317,161 @@ contract RoundTripTest is HyperdriveTest {
         // Bob immediately closes his short position.
         IHyperdrive.PoolInfo memory infoBefore = hyperdrive.getPoolInfo();
         closeShort(bob, maturityTime, shortAmount);
+
+        // Ensure that the share adjustment wasn't changed.
+        assertEq(
+            hyperdrive.getPoolInfo().shareAdjustment,
+            infoBefore.shareAdjustment
+        );
+    }
+
+    /// forge-config: default.fuzz.runs = 1000
+    function test_pair_round_trip_immediately_at_checkpoint(
+        uint256 fixedRate,
+        uint256 timeStretchFixedRate,
+        uint256 basePaid
+    ) external {
+        // Ensure a feasible fixed rate.
+        fixedRate = fixedRate.normalizeToRange(0.001e18, 0.50e18);
+
+        // Ensure a feasible time stretch fixed rate.
+        uint256 lowerBound = fixedRate.divDown(2e18).max(0.005e18);
+        uint256 upperBound = lowerBound.max(fixedRate).mulDown(2e18);
+        timeStretchFixedRate = timeStretchFixedRate.normalizeToRange(
+            lowerBound,
+            upperBound
+        );
+
+        // Deploy the pool and initialize the market
+        deploy(alice, timeStretchFixedRate, 0, 0, 0, 0);
+        uint256 contribution = 500_000_000e18;
+        initialize(alice, fixedRate, contribution);
+
+        // Ensure a feasible trade size.
+        basePaid = basePaid.normalizeToRange(
+            2 * MINIMUM_TRANSACTION_AMOUNT,
+            2 * contribution
+        );
+
+        // Get the poolInfo before opening the long.
+        IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
+
+        // Mint some bonds.
+        (uint256 maturityTime, uint256 bondAmount) = mint(bob, basePaid);
+
+        // Immediately burn the bonds.
+        burn(bob, maturityTime, bondAmount);
+
+        // Get the poolInfo after closing the long.
+        IHyperdrive.PoolInfo memory poolInfoAfter = hyperdrive.getPoolInfo();
+
+        // If they aren't the same, then the pool should be the one that wins.
+        assertGe(
+            poolInfoAfter.shareReserves + 1e12,
+            poolInfoBefore.shareReserves
+        );
+
+        // Should be exact if out = in.
+        assertEq(poolInfoAfter.bondReserves, poolInfoBefore.bondReserves);
+    }
+
+    /// forge-config: default.fuzz.runs = 1000
+    function test_pair_round_trip_immediately_partially_thru_checkpoint(
+        uint256 fixedRate,
+        uint256 timeStretchFixedRate,
+        uint256 basePaid,
+        uint256 timeDelta
+    ) external {
+        // Ensure a feasible fixed rate.
+        fixedRate = fixedRate.normalizeToRange(0.001e18, 0.50e18);
+
+        // Ensure a feasible time stretch fixed rate.
+        uint256 lowerBound = fixedRate.divDown(2e18).max(0.005e18);
+        uint256 upperBound = lowerBound.max(fixedRate).mulDown(2e18);
+        timeStretchFixedRate = timeStretchFixedRate.normalizeToRange(
+            lowerBound,
+            upperBound
+        );
+
+        // Deploy the pool and initialize the market
+        deploy(alice, timeStretchFixedRate, 0, 0, 0, 0);
+        uint256 contribution = 500_000_000e18;
+        initialize(alice, fixedRate, contribution);
+
+        // Ensure a feasible trade size.
+        basePaid = basePaid.normalizeToRange(
+            2 * MINIMUM_TRANSACTION_AMOUNT,
+            2 * contribution
+        );
+
+        // Calculate time elapsed.
+        timeDelta = timeDelta.normalizeToRange(0, CHECKPOINT_DURATION - 1);
+
+        // Fast forward time.
+        advanceTime(timeDelta, 0);
+
+        // Get the poolInfo before opening the long.
+        IHyperdrive.PoolInfo memory poolInfoBefore = hyperdrive.getPoolInfo();
+
+        // Mint some bonds.
+        (uint256 maturityTime, uint256 bondAmount) = mint(bob, basePaid);
+
+        // Immediately burn the bonds.
+        burn(bob, maturityTime, bondAmount);
+
+        // Get the poolInfo after closing the long.
+        IHyperdrive.PoolInfo memory poolInfoAfter = hyperdrive.getPoolInfo();
+
+        // If they aren't the same, then the pool should be the one that wins.
+        assertGe(
+            poolInfoAfter.shareReserves + 1e12,
+            poolInfoBefore.shareReserves
+        );
+
+        // Should be exact if out = in.
+        assertEq(poolInfoAfter.bondReserves, poolInfoBefore.bondReserves);
+    }
+
+    /// forge-config: default.fuzz.runs = 1000
+    function test_pair_round_trip_immediately_with_fees(
+        uint256 fixedRate,
+        uint256 timeStretchFixedRate,
+        uint256 basePaid
+    ) external {
+        // Ensure a feasible fixed rate.
+        fixedRate = fixedRate.normalizeToRange(0.001e18, 0.50e18);
+
+        // Ensure a feasible time stretch fixed rate.
+        uint256 lowerBound = fixedRate.divDown(2e18).max(0.005e18);
+        uint256 upperBound = lowerBound.max(fixedRate).mulDown(2e18);
+        timeStretchFixedRate = timeStretchFixedRate.normalizeToRange(
+            lowerBound,
+            upperBound
+        );
+
+        // Deploy the pool and initialize the market
+        IHyperdrive.PoolConfig memory config = testConfig(
+            timeStretchFixedRate,
+            POSITION_DURATION
+        );
+        config.fees.curve = 0.1e18;
+        config.fees.governanceLP = 1e18;
+        deploy(alice, config);
+        uint256 contribution = 500_000_000e18;
+        initialize(alice, fixedRate, contribution);
+
+        // Ensure a feasible trade size.
+        basePaid = basePaid.normalizeToRange(
+            2 * MINIMUM_TRANSACTION_AMOUNT,
+            2 * contribution
+        );
+
+        // Bob mints some bonds.
+        (uint256 maturityTime, uint256 bondAmount) = mint(bob, basePaid);
+
+        // Bob immediately burns the bonds.
+        IHyperdrive.PoolInfo memory infoBefore = hyperdrive.getPoolInfo();
+        burn(bob, maturityTime, bondAmount);
 
         // Ensure that the share adjustment wasn't changed.
         assertEq(

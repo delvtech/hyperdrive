@@ -77,6 +77,7 @@ contract RETHHyperdriveTest is InstanceTest {
                 closeLongWithBaseTolerance: 20,
                 closeShortWithBaseUpperBoundTolerance: 10,
                 closeShortWithBaseTolerance: 100,
+                burnWithBaseTolerance: 20,
                 roundTripLpInstantaneousWithBaseTolerance: 1e3,
                 roundTripLpWithdrawalSharesWithBaseTolerance: 1e3,
                 roundTripLongInstantaneousWithBaseUpperBoundTolerance: 1e3,
@@ -86,9 +87,14 @@ contract RETHHyperdriveTest is InstanceTest {
                 roundTripShortInstantaneousWithBaseUpperBoundTolerance: 1e3,
                 roundTripShortInstantaneousWithBaseTolerance: 1e3,
                 roundTripShortMaturityWithBaseTolerance: 1e3,
+                roundTripPairInstantaneousWithBaseUpperBoundTolerance: 1e3,
+                roundTripPairInstantaneousWithBaseTolerance: 1e3,
+                roundTripPairMaturityWithBaseUpperBoundTolerance: 1e3,
+                roundTripPairMaturityWithBaseTolerance: 1e3,
                 // The share test tolerances.
                 closeLongWithSharesTolerance: 20,
                 closeShortWithSharesTolerance: 100,
+                burnWithSharesTolerance: 20,
                 roundTripLpInstantaneousWithSharesTolerance: 2e3,
                 roundTripLpWithdrawalSharesWithSharesTolerance: 2e3,
                 roundTripLongInstantaneousWithSharesUpperBoundTolerance: 1e3,
@@ -98,6 +104,10 @@ contract RETHHyperdriveTest is InstanceTest {
                 roundTripShortInstantaneousWithSharesUpperBoundTolerance: 1e3,
                 roundTripShortInstantaneousWithSharesTolerance: 1e3,
                 roundTripShortMaturityWithSharesTolerance: 1e3,
+                roundTripPairInstantaneousWithSharesUpperBoundTolerance: 1e3,
+                roundTripPairInstantaneousWithSharesTolerance: 1e4,
+                roundTripPairMaturityWithSharesUpperBoundTolerance: 100,
+                roundTripPairMaturityWithSharesTolerance: 1e3,
                 // The verification tolerances.
                 verifyDepositTolerance: 2,
                 verifyWithdrawalTolerance: 2
