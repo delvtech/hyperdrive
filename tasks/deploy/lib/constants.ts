@@ -3,10 +3,20 @@ import { Address } from "viem";
 export const ETH_ADDRESS =
     "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE" as Address;
 
+// The salt for the Create 3 deployment of the Hyperdrive Matching Engine. This will
+// generate the address "0x6662b6e771facd61e33ccafdc23be16b4ead0666".
+export const HYPERDRIVE_MATCHING_ENGINE_SALT =
+    "0xdc32683411729a01a997be000000000000000000000000000000000000000000" as `0x${string}`;
+
 // The salt for the Create 3 deployment of the Hyperdrive Registry. This will
 // generate the address "0x6668310631Ad5a5ac92dC9549353a5BaaE16C666".
 export const REGISTRY_SALT =
     "0x01f4fa8cb977b40332a83c000000000000000000000000000000000000000000" as `0x${string}`;
+
+// The salt for the Create 3 deployment of the Hyperdrive UniV3Zap. This will
+// generate the address "0x6662a80a8d2dea71065cb38ee8b931db0105d666".
+export const UNI_V3_ZAP_SALT =
+    "0xbb06acea8880460066ae5a000000000000000000000000000000000000000000" as `0x${string}`;
 
 // Address for Create 2/3 factory https://github.com/pcaversaccio/createx/tree/main
 export const CREATE_X_FACTORY =

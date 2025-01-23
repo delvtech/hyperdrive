@@ -1,7 +1,12 @@
 import dayjs from "dayjs";
 import _duration from "dayjs/plugin/duration";
 import { HardhatRuntimeEnvironment } from "hardhat/types";
-import { Address, Hex, toHex } from "viem";
+import { Address, Hex, parseEther, toHex } from "viem";
+import {
+    CREATE_X_FACTORY,
+    CREATE_X_FACTORY_DEPLOYER,
+    CREATE_X_PRESIGNED_TRANSACTION,
+} from "./constants";
 import { HyperdriveDeployRuntimeOptions } from "./environment-extensions";
 import {
     DurationString,
@@ -11,6 +16,30 @@ import {
 } from "./types";
 
 dayjs.extend(_duration);
+
+/**
+ * Deploys the CreateX contract on anvil networks if it hasn't already been
+ * deployed.
+ */
+export async function deployCreateX(hre: HardhatRuntimeEnvironment) {
+    // If the network is anvil, we need to deploy the CREATEX factory if it
+    // hasn't been deployed before.
+    let pc = await hre.viem.getPublicClient();
+    let bytecode = await pc.getBytecode({
+        address: CREATE_X_FACTORY as Address,
+    });
+    if (hre.network.name == "anvil" && !bytecode) {
+        let tc = await hre.viem.getTestClient();
+        await tc.setBalance({
+            value: parseEther("1"),
+            address: CREATE_X_FACTORY_DEPLOYER,
+        });
+        let wc = await hre.viem.getWalletClient(CREATE_X_FACTORY_DEPLOYER);
+        await wc.sendRawTransaction({
+            serializedTransaction: CREATE_X_PRESIGNED_TRANSACTION,
+        });
+    }
+}
 
 /**
  * Generates a 32-byte hex string from the input value.
