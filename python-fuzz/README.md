@@ -7,7 +7,7 @@ This directory details how to install and run fuzzing on hyperdrive with mint/bu
 First, compile the solidity contracts and make python types locally via `make`.
 
 Next, follow the prerequisites installation instructions of [agent0](https://github.com/delvtech/agent0/blob/main/INSTALL.md).
-Then install [uv](https://github.com/astral-sh/uv) for package management. No need to clone the repo locally 
+Then install [uv](https://github.com/astral-sh/uv) for package management. No need to clone the repo locally
 (unless developing on agent0).
 
 From the base directory of the `hyperdrive` repo, set up a python virtual environment:

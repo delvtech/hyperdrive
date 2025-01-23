@@ -200,61 +200,58 @@ def main(argv: Sequence[str] | None = None) -> None:
                 trade = chain.config.rng.choice(["mint", "burn"])  # type: ignore
                 match trade:
                     case "mint":
-                        # FIXME: Need to add the pool that I need to call.
                         balance = agent.get_wallet(hyperdrive_pool).balance.amount
-                        # FIXME: Double check this.
                         if balance > hyperdrive_config.minimum_transaction_amount:
                             # TODO can't use numpy rng since it doesn't support uint256.
                             # Need to use the state from the chain config to use the same rng object.
-                            amount = random.randint(0, balance.scaled_value)
-                            logging.info(f"Agent {agent.address} is calling minting with {amount}")
-
-                            # FIXME: This should work
-                            #
-                            # FIXME figure out what these options are
+                            amount = random.randint(hyperdrive_config.minimum_transaction_amount.scaled_value, balance.scaled_value)
                             pair_options = PairOptions(
                                 longDestination=agent.address,
                                 shortDestination=agent.address,
                                 asBase=True,
                                 extraData=bytes(0),
                             )
-
-                            # FIXME: I need to make sure that agent0 knows that
-                            # the minted positions are owned.
                             hyperdrive_contract.functions.mint(
                                 _amount=amount, _minOutput=0, _minVaultSharePrice=0, _options=pair_options
                             ).sign_transact_and_wait(account=agent.account, validate_transaction=True)
 
-                    # FIXME: Add this case back.
-                    #
-                    # case "burn":
-                    #     # FIXME: Update this to ensure that they have an equal
-                    #     # amount of longs and shorts in a given maturity. Can
-                    #     # also burn a partial amount
-                    #     #
-                    #     # FIXME figure out in what cases an agent can burn tokens
-                    #     #
-                    #     # FIXME: This may return a list, but I can look at other
-                    #     # functions to get a dictionary keyed by maturity time
-                    #     agent_longs = agent.get_longs(hyperdrive_pool)
-                    #     num_longs = len(agent_longs)
-                    #     if num_longs > 0 and agent_longs[0].balance > 0:
-                    #         amount = random.randint(0, balance.scaled_value)
-                    #         logging.info(f"Agent {agent.address} is calling burn with {amount}")
-                    #         options = Options(
-                    #             destination=agent.address,
-                    #             asBase=True,
-                    #             extraData=bytes(0),
-                    #         )
+                    case "burn":
+                        wallet = agent.get_wallet(hyperdrive_pool)
 
-                    #         # FIXME: Update the parameters. Fuzz over the amount
-                    #         # of bonds to burn.
-                    #         #
-                    #         # FIXME figure out what _maturityTime is
-                    #         # FIXME burn is expecting `Options`, not `PairOptions`
-                    #         hyperdrive_contract.functions.burn(
-                    #             _maturityTime=0, _bondAmount=0, _minOutput=0, _options=options
-                    #         ).sign_transact_and_wait(account=agent.account, validate_transaction=True)
+                        # Find maturity times that have both long and short positions
+                        matching_maturities = set(wallet.longs.keys()) & set(wallet.shorts.keys())
+
+                        if matching_maturities:
+                            selected_maturity = random.choice(list(matching_maturities))
+
+                            # Get positions for selected maturity
+                            long_balance = wallet.longs[selected_maturity].balance
+                            short_balance = wallet.shorts[selected_maturity].balance
+                            max_burnable = min(long_balance, short_balance)
+
+                            if max_burnable > hyperdrive_config.minimum_transaction_amount:
+                                burn_amount = random.randint(
+                                    hyperdrive_config.minimum_transaction_amount.scaled_value,
+                                    max_burnable.scaled_value
+                                )
+                                logging.info(
+                                    f"Agent {agent.address} is burning {burn_amount} of positions "
+                                    f"with maturity time {selected_maturity}"
+                                )
+                                options = Options(
+                                    destination=agent.address,
+                                    asBase=True,
+                                    extraData=bytes(0)
+                                )
+                                hyperdrive_contract.functions.burn(
+                                    _maturityTime=selected_maturity,
+                                    _bondAmount=burn_amount,
+                                    _minOutput=0,
+                                    _options=options
+                                ).sign_transact_and_wait(
+                                    account=agent.account,
+                                    validate_transaction=True
+                                )
 
             # FIXME add any additional invariance checks specific to mint/burn here.
             #
