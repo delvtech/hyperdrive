@@ -84,12 +84,9 @@ contract HyperdriveMatchingEngineV2 is
             // Case 1: Long + Short creation using mint()
 
             // Get necessary pool parameters
-            (uint256 checkpointDuration, 
-             uint256 positionDuration, 
-             uint256 flatFee, 
-             uint256 governanceLPFee) = _getHyperdriveDurationsAndFees(hyperdrive);
+            IHyperdrive.PoolConfig memory config = _getHyperdriveDurationsAndFees(hyperdrive);
             
-            uint256 latestCheckpoint = _latestCheckpoint(checkpointDuration);
+            uint256 latestCheckpoint = _latestCheckpoint(config.checkpointDuration);
             // @dev TODO: there is another way to get the info without calling getPoolInfo()?
             uint256 vaultSharePrice = hyperdrive.getPoolInfo().vaultSharePrice;
 
@@ -102,8 +99,8 @@ contract HyperdriveMatchingEngineV2 is
             // Stack cycling to avoid stack-too-deep
             // @dev TODO: Is there a better workaround? This approach increases the gas cost.
             //      Because it used memory while it could have used calldata
-            OrderIntent memory order1 = _order1;
-            OrderIntent memory order2 = _order2;
+            OrderIntent calldata order1 = _order1;
+            OrderIntent calldata order2 = _order2;
             bytes32 order1Hash_ = order1Hash;
             bytes32 order2Hash_ = order2Hash;
             address surplusRecipient = _surplusRecipient;
@@ -111,15 +108,20 @@ contract HyperdriveMatchingEngineV2 is
             // Calculate matching amount
             // @dev TODO: This could have been placed before the control flow for
             //      shorter code, but it's put here to avoid stack-too-deep
-            uint256 bondMatchAmount = _calculateBondMatchAmount(order1, order2, order1Hash_, order2Hash_);
+            uint256 bondMatchAmount = _calculateBondMatchAmount(
+                order1, 
+                order2, 
+                order1Hash, 
+                order2Hash
+            );
 
             
             // Get the sufficient funding amount to mint the bonds.
             uint256 cost = bondMatchAmount.mulDivDown(
                 vaultSharePrice.max(openVaultSharePrice), 
                 openVaultSharePrice) + 
-                bondMatchAmount.mulUp(flatFee) +
-                2 * bondMatchAmount.mulUp(flatFee).mulDown(governanceLPFee);
+                bondMatchAmount.mulUp(config.fees.flat) +
+                2 * bondMatchAmount.mulUp(config.fees.flat).mulDown(config.fees.governanceLP);
 
             // Calculate the amount of base tokens to transfer based on the bondMatchAmount
             uint256 baseTokenAmountOrder1 = order1.fundAmount.mulDivDown(bondMatchAmount, order1.bondAmount);
@@ -138,11 +140,11 @@ contract HyperdriveMatchingEngineV2 is
 
             // Calculate the maturity time of newly minted positions
             
-            uint256 maturityTime = latestCheckpoint + positionDuration;
+            uint256 maturityTime = latestCheckpoint + config.positionDuration;
 
             // Check if the maturity time is within the range
             if (maturityTime < order1.minMaturityTime || maturityTime > order1.maxMaturityTime ||
-                maturityTime < order1.minMaturityTime || maturityTime > order1.maxMaturityTime) {
+                maturityTime < order2.minMaturityTime || maturityTime > order2.maxMaturityTime) {
                 revert InvalidMaturityTime();
             }
 
@@ -153,7 +155,7 @@ contract HyperdriveMatchingEngineV2 is
 
             uint256 bondAmount = _handleMint(
                 order1, 
-                order1, 
+                order2, 
                 baseTokenAmountOrder1, 
                 baseTokenAmountOrder2,
                 cost, 
@@ -393,8 +395,8 @@ contract HyperdriveMatchingEngineV2 is
     }
 
     function _calculateBondMatchAmount(
-        OrderIntent memory _order1,
-        OrderIntent memory _order2,
+        OrderIntent calldata _order1,
+        OrderIntent calldata _order2,
         bytes32 _order1Hash,
         bytes32 _order2Hash
     ) internal view returns (
@@ -414,8 +416,8 @@ contract HyperdriveMatchingEngineV2 is
     }
 
     function _handleMint(
-        OrderIntent memory _longOrder,
-        OrderIntent memory _shortOrder,
+        OrderIntent calldata _longOrder,
+        OrderIntent calldata _shortOrder,
         uint256 _baseTokenAmountLongOrder,
         uint256 _baseTokenAmountShortOrder,
         uint256 _cost,
@@ -477,15 +479,11 @@ contract HyperdriveMatchingEngineV2 is
 
     /// @notice Get checkpoint and position durations from Hyperdrive contract
     /// @param _hyperdrive The Hyperdrive contract to query
-    /// @return checkpointDuration The duration between checkpoints
-    /// @return positionDuration The duration of positions
-    /// @return flat The flat fee
-    /// @return governanceLP The governance fee
+    /// @return config The pool config
     function _getHyperdriveDurationsAndFees(IHyperdrive _hyperdrive) internal view returns (
-        uint256,uint256,uint256,uint256 
+        IHyperdrive.PoolConfig memory config
     ) {
-        IHyperdrive.PoolConfig memory config = _hyperdrive.getPoolConfig();
-        return (config.checkpointDuration, config.positionDuration, config.fees.flat, config.fees.governanceLP);
+        config = _hyperdrive.getPoolConfig();
     }
 
     /// @dev Gets the most recent checkpoint time.
