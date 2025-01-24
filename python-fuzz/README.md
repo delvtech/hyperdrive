@@ -30,6 +30,3 @@ To run fuzzing, simply run the `fuzz_mint_burn.py` script:
 ```
 python fuzz_mint_burn.py
 ```
-
-
-
