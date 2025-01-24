@@ -78,10 +78,6 @@ contract HyperdriveMatchingEngineV2 is
         // isCancelled[order2Hash] = true;
 
         IHyperdrive hyperdrive = _order1.hyperdrive;
-        ERC20 baseToken = ERC20(hyperdrive.baseToken());
-
-        // Calculate matching amount
-        uint256 bondMatchAmount = _calculateBondMatchAmount(_order1, _order2, order1Hash, order2Hash);
 
         // Handle different order type combinations
         if (_order1.orderType == OrderType.OpenLong && _order2.orderType == OrderType.OpenShort) {
@@ -94,6 +90,7 @@ contract HyperdriveMatchingEngineV2 is
              uint256 governanceLPFee) = _getHyperdriveDurationsAndFees(hyperdrive);
             
             uint256 latestCheckpoint = _latestCheckpoint(checkpointDuration);
+            // @dev TODO: there is another way to get the info without calling getPoolInfo()?
             uint256 vaultSharePrice = hyperdrive.getPoolInfo().vaultSharePrice;
 
             // Calculate the amount of base tokens to transfer based on the bondMatchAmount
@@ -102,9 +99,21 @@ contract HyperdriveMatchingEngineV2 is
                 openVaultSharePrice = vaultSharePrice;
             }
 
-            uint256 baseTokenAmountOrder1 = order1.fundAmount.mulDivDown(bondMatchAmount, order1.bondAmount);
-            uint256 baseTokenAmountOrder2 = order2.fundAmount.mulDivDown(bondMatchAmount, order2.bondAmount);
+            // Stack cycling to avoid stack-too-deep
+            // @dev TODO: Is there a better workaround? This approach increases the gas cost.
+            //      Because it used memory while it could have used calldata
+            OrderIntent memory order1 = _order1;
+            OrderIntent memory order2 = _order2;
+            bytes32 order1Hash_ = order1Hash;
+            bytes32 order2Hash_ = order2Hash;
+            address surplusRecipient = _surplusRecipient;
 
+            // Calculate matching amount
+            // @dev TODO: This could have been placed before the control flow for
+            //      shorter code, but it's put here to avoid stack-too-deep
+            uint256 bondMatchAmount = _calculateBondMatchAmount(order1, order2, order1Hash_, order2Hash_);
+
+            
             // Get the sufficient funding amount to mint the bonds.
             uint256 cost = bondMatchAmount.mulDivDown(
                 vaultSharePrice.max(openVaultSharePrice), 
@@ -112,55 +121,63 @@ contract HyperdriveMatchingEngineV2 is
                 bondMatchAmount.mulUp(flatFee) +
                 2 * bondMatchAmount.mulUp(flatFee).mulDown(governanceLPFee);
 
-            // Update order fund amount used
-            orderFundAmountUsed[order1Hash] += baseTokenAmountOrder1;
-            orderFundAmountUsed[order2Hash] += baseTokenAmountOrder2;
+            // Calculate the amount of base tokens to transfer based on the bondMatchAmount
+            uint256 baseTokenAmountOrder1 = order1.fundAmount.mulDivDown(bondMatchAmount, order1.bondAmount);
+            uint256 baseTokenAmountOrder2 = order2.fundAmount.mulDivDown(bondMatchAmount, order2.bondAmount);
 
-            if (orderFundAmountUsed[order1Hash] > order1.fundAmount || 
-                orderFundAmountUsed[order2Hash] > order2.fundAmount) {
+            // Update order fund amount used
+            orderFundAmountUsed[order1Hash_] += baseTokenAmountOrder1;
+            orderFundAmountUsed[order2Hash_] += baseTokenAmountOrder2;
+
+            if (orderFundAmountUsed[order1Hash_] > order1.fundAmount || 
+                orderFundAmountUsed[order2Hash_] > order2.fundAmount) {
                 revert InvalidFundAmount();
             }
-            emit OrderFundAmountUsedUpdated(order1Hash, orderFundAmountUsed[order1Hash]);
-            emit OrderFundAmountUsedUpdated(order2Hash, orderFundAmountUsed[order2Hash]);
+            emit OrderFundAmountUsedUpdated(order1Hash_, orderFundAmountUsed[order1Hash_]);
+            emit OrderFundAmountUsedUpdated(order2Hash_, orderFundAmountUsed[order2Hash_]);
 
             // Calculate the maturity time of newly minted positions
             
             uint256 maturityTime = latestCheckpoint + positionDuration;
 
             // Check if the maturity time is within the range
-            if (maturityTime < _order1.minMaturityTime || maturityTime > _order1.maxMaturityTime ||
-                maturityTime < _order2.minMaturityTime || maturityTime > _order2.maxMaturityTime) {
+            if (maturityTime < order1.minMaturityTime || maturityTime > order1.maxMaturityTime ||
+                maturityTime < order1.minMaturityTime || maturityTime > order1.maxMaturityTime) {
                 revert InvalidMaturityTime();
             }
 
+            // @dev TODO: This could have been placed before the control flow for
+            //      shorter code, but it's put here to avoid stack-too-deep
+            IHyperdrive hyperdrive_ = order1.hyperdrive;
+            ERC20 baseToken = ERC20(hyperdrive_.baseToken());
 
             uint256 bondAmount = _handleMint(
-                _order1, 
-                _order2, 
+                order1, 
+                order1, 
                 baseTokenAmountOrder1, 
                 baseTokenAmountOrder2,
                 cost, 
                 bondMatchAmount, 
                 baseToken, 
-                hyperdrive);
+                hyperdrive_);
             
             // Update order bond amount used
-            orderBondAmountUsed[order1Hash] += bondAmount;
-            orderBondAmountUsed[order2Hash] += bondAmount;
-            emit OrderBondAmountUsedUpdated(order1Hash, orderBondAmountUsed[order1Hash]);
-            emit OrderBondAmountUsedUpdated(order2Hash, orderBondAmountUsed[order2Hash]);
+            orderBondAmountUsed[order1Hash_] += bondAmount;
+            orderBondAmountUsed[order2Hash_] += bondAmount;
+            emit OrderBondAmountUsedUpdated(order1Hash_, orderBondAmountUsed[order1Hash_]);
+            emit OrderBondAmountUsedUpdated(order2Hash_, orderBondAmountUsed[order2Hash_]);
 
             // Mark fully executed orders as cancelled 
-            if (orderBondAmountUsed[order1Hash] >= _order1.bondAmount || orderFundAmountUsed[order1Hash] >= _order1.fundAmount) {
-                isCancelled[order1Hash] = true;
+            if (orderBondAmountUsed[order1Hash_] >= order1.bondAmount || orderFundAmountUsed[order1Hash_] >= order1.fundAmount) {
+                isCancelled[order1Hash_] = true;
             }
-            if (orderBondAmountUsed[order2Hash] >= _order2.bondAmount || orderFundAmountUsed[order2Hash] >= _order2.fundAmount) {
-                isCancelled[order2Hash] = true;
+            if (orderBondAmountUsed[order2Hash_] >= order2.bondAmount || orderFundAmountUsed[order2Hash_] >= order2.fundAmount) {
+                isCancelled[order2Hash_] = true;
             }
 
             // Transfer the remaining base tokens back to the surplus recipient
             baseToken.safeTransfer(
-                _surplusRecipient,
+                surplusRecipient,
                 baseToken.balanceOf(address(this))
             );
         } 
@@ -231,8 +248,8 @@ contract HyperdriveMatchingEngineV2 is
                     _order.counterparty,
                     _order.feeRecipient,
                     address(_order.hyperdrive),
-                    _order.amount,
-                    _order.slippageGuard,
+                    _order.fundAmount,
+                    _order.bondAmount,
                     _order.minVaultSharePrice,
                     keccak256(
                         abi.encode(
@@ -277,13 +294,10 @@ contract HyperdriveMatchingEngineV2 is
     }
 
     /// @dev Validates orders before matching
-    /// @param _longOrder The long order to validate
-    /// @param _shortOrder The short order to validate
-    /// @param _addLiquidityOptions The add liquidity options
-    /// @param _removeLiquidityOptions The remove liquidity options
-    /// @param _feeRecipient The fee recipient address
-    /// @return longOrderHash The hash of the long order
-    /// @return shortOrderHash The hash of the short order
+    /// @param _order1 The long order to validate
+    /// @param _order2 The short order to validate
+    /// @return order1Hash The hash of the long order
+    /// @return order2Hash The hash of the short order
     function _validateOrders(
         OrderIntent calldata _order1,
         OrderIntent calldata _order2
@@ -379,11 +393,11 @@ contract HyperdriveMatchingEngineV2 is
     }
 
     function _calculateBondMatchAmount(
-        OrderIntent calldata _order1,
-        OrderIntent calldata _order2,
+        OrderIntent memory _order1,
+        OrderIntent memory _order2,
         bytes32 _order1Hash,
         bytes32 _order2Hash
-    ) internal pure returns (
+    ) internal view returns (
         uint256 bondMatchAmount
     ) {
         uint256 order1BondAmountUsed = orderBondAmountUsed[_order1Hash];
@@ -396,12 +410,12 @@ contract HyperdriveMatchingEngineV2 is
         uint256 _order1BondAmount = _order1.bondAmount - order1BondAmountUsed;
         uint256 _order2BondAmount = _order2.bondAmount - order2BondAmountUsed;
             
-        bondMatchAmount = _order1BondAmount.min(order2BondAmount);
+        bondMatchAmount = _order1BondAmount.min(_order2BondAmount);
     }
 
     function _handleMint(
-        OrderIntent calldata _longOrder,
-        OrderIntent calldata _shortOrder,
+        OrderIntent memory _longOrder,
+        OrderIntent memory _shortOrder,
         uint256 _baseTokenAmountLongOrder,
         uint256 _baseTokenAmountShortOrder,
         uint256 _cost,
@@ -457,9 +471,9 @@ contract HyperdriveMatchingEngineV2 is
     }
 
     // TODO: Implement these functions
-    function _handleBurn(){}
-    function _handleLongTransfer(){}
-    function _handleShortTransfer(){}
+    function _handleBurn() internal {}
+    function _handleLongTransfer() internal {}
+    function _handleShortTransfer() internal {}
 
     /// @notice Get checkpoint and position durations from Hyperdrive contract
     /// @param _hyperdrive The Hyperdrive contract to query
