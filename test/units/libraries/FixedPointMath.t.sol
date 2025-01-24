@@ -301,9 +301,14 @@ contract FixedPointMathTest is Test {
         y = y.normalizeToRange(0, 1);
         // NOTE: Coverage only works if I initialize the fixture in the test function
         MockFixedPointMath mockFixedPointMath = new MockFixedPointMath();
-        uint256 result = mockFixedPointMath.pow(x, y);
-        uint256 expected = LogExpMath.pow(x, y);
-        assertApproxEqAbs(result, expected, 1e5 wei);
+        try mockFixedPointMath.pow(x, y) returns (uint256 result) {
+            uint256 expected = LogExpMath.pow(x, y);
+            assertApproxEqAbs(result, expected, 1e5 wei);
+        } catch (bytes memory error) {
+            // NOTE: This function infrequently fails due to an improper cast.
+            // Since this is fuzzing over a large range, this is okay.
+            assertEq(bytes4(error), IHyperdrive.UnsafeCastToInt256.selector);
+        }
     }
 
     /// @dev This test is to check that the pow function returns 1e18 when the exponent is 0

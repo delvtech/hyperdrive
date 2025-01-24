@@ -14,9 +14,17 @@ interface IHyperdriveMatchingEngine is IMorphoFlashLoanCallback {
     /// @notice Thrown when an order is already expired.
     error AlreadyExpired();
 
+    /// @notice Thrown when the counterparty doesn't match the counterparty
+    ///         signed into the order.
+    error InvalidCounterparty();
+
     /// @notice Thrown when the destination for the add or remove liquidity
     ///         options isn't configured to this contract.
     error InvalidDestination();
+
+    /// @notice Thrown when the fee recipient doesn't match the fee recipient
+    ///         signed into the order.
+    error InvalidFeeRecipient();
 
     /// @notice Thrown when orders that don't cross are matched.
     error InvalidMatch();
@@ -40,6 +48,10 @@ interface IHyperdriveMatchingEngine is IMorphoFlashLoanCallback {
     ///         Hyperdrive instance.
     error MismatchedHyperdrive();
 
+    /// @notice Thrown when the `onMorphoFlashLoan` function is called by an
+    ///         address other than Morpho.
+    error SenderNotMorpho();
+
     /// @notice Emitted when orders are cancelled.
     event OrdersCancelled(address indexed trader, bytes32[] orderHashes);
 
@@ -62,6 +74,13 @@ interface IHyperdriveMatchingEngine is IMorphoFlashLoanCallback {
     struct OrderIntent {
         /// @dev The trader address that will be charged when orders are matched.
         address trader;
+        /// @dev The counterparty of the trade. If left as zero, the validation
+        ///      is skipped.
+        address counterparty;
+        /// @dev The fee recipient of the trade. This is the address that will
+        ///      receive any excess trading fees on the match. If left as zero,
+        ///      the validation is skipped.
+        address feeRecipient;
         /// @dev The Hyperdrive address where the trade will be executed.
         IHyperdrive hyperdrive;
         /// @dev The amount to be used in the trade. In the case of `OpenLong`,
