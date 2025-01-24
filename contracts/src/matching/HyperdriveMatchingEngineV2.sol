@@ -116,11 +116,12 @@ contract HyperdriveMatchingEngineV2 is
             orderFundAmountUsed[order1Hash] += baseTokenAmountOrder1;
             orderFundAmountUsed[order2Hash] += baseTokenAmountOrder2;
 
-
             if (orderFundAmountUsed[order1Hash] > order1.fundAmount || 
                 orderFundAmountUsed[order2Hash] > order2.fundAmount) {
                 revert InvalidFundAmount();
             }
+            emit OrderFundAmountUsedUpdated(order1Hash, orderFundAmountUsed[order1Hash]);
+            emit OrderFundAmountUsedUpdated(order2Hash, orderFundAmountUsed[order2Hash]);
 
             // Calculate the maturity time of newly minted positions
             
@@ -143,9 +144,11 @@ contract HyperdriveMatchingEngineV2 is
                 baseToken, 
                 hyperdrive);
             
-            // Update order bond amount used again to be accurate
+            // Update order bond amount used
             orderBondAmountUsed[order1Hash] += bondAmount;
             orderBondAmountUsed[order2Hash] += bondAmount;
+            emit OrderBondAmountUsedUpdated(order1Hash, orderBondAmountUsed[order1Hash]);
+            emit OrderBondAmountUsedUpdated(order2Hash, orderBondAmountUsed[order2Hash]);
 
             // Mark fully executed orders as cancelled 
             if (orderBondAmountUsed[order1Hash] >= _order1.bondAmount || orderFundAmountUsed[order1Hash] >= _order1.fundAmount) {
@@ -166,15 +169,15 @@ contract HyperdriveMatchingEngineV2 is
         //TODOs
         else if (_order1.orderType == OrderType.CloseLong && _order2.orderType == OrderType.CloseShort) {
             // Case 2: Long + Short closing using burn()
-            _handleCloseLongShort(_order1, _order2, matchAmount, baseToken, hyperdrive);
+            _handleBurn();
         }
         else if (_order1.orderType == OrderType.OpenLong && _order2.orderType == OrderType.CloseLong) {
             // Case 3: Long transfer between traders
-            _handleLongTransfer(_order1, _order2, matchAmount, baseToken);
+            _handleLongTransfer();
         }
         else if (_order1.orderType == OrderType.OpenShort && _order2.orderType == OrderType.CloseShort) {
             // Case 4: Short transfer between traders
-            _handleShortTransfer(_order1, _order2, matchAmount, baseToken);
+            _handleShortTransfer();
         }
         else {
             revert InvalidOrderCombination();
@@ -452,6 +455,11 @@ contract HyperdriveMatchingEngineV2 is
         // Return the bondAmount   
         return bondAmount;
     }
+
+    // TODO: Implement these functions
+    function _handleBurn(){}
+    function _handleLongTransfer(){}
+    function _handleShortTransfer(){}
 
     /// @notice Get checkpoint and position durations from Hyperdrive contract
     /// @param _hyperdrive The Hyperdrive contract to query
