@@ -61,6 +61,9 @@ interface IHyperdriveMatchingEngineV2 {
     /// @notice Thrown when the funding amount is insufficient to cover the cost.
     error InsufficientFunding();
 
+    /// @notice Thrown when the order combination is invalid.
+    error InvalidOrderCombination();
+
     /// @notice Emitted when orders are cancelled.
     event OrdersCancelled(address indexed trader, bytes32[] orderHashes);
 
@@ -69,6 +72,7 @@ interface IHyperdriveMatchingEngineV2 {
 
     /// @notice Emitted when the amount of bonds used for an order is updated.
     event OrderBondAmountUsedUpdated(bytes32 indexed orderHash, uint256 amountUsed);
+
 
     /// @notice Emitted when orders are matched.
     event OrdersMatched(
@@ -179,23 +183,14 @@ interface IHyperdriveMatchingEngineV2 {
 
     /// @notice Directly matches a long and a short order using a flash loan for
     ///         liquidity.
-    /// @param _longOrder The order intent to open a long.
-    /// @param _shortOrder The order intent to open a short.
-    /// @param _lpAmount The amount to flash borrow and LP.
-    /// @param _addLiquidityOptions The options used when adding liquidity.
-    /// @param _removeLiquidityOptions The options used when removing liquidity.
-    /// @param _feeRecipient The address that receives the LP fees from matching
+    /// @param _order1 The order intent to open a long.
+    /// @param _order2 The order intent to open a short.
+    /// @param _surplusRecipient The address that receives the surplus funds from matching
     ///        the trades.
-    /// @param _isLongFirst A flag indicating whether the long or short should be
-    ///        opened first.
     function matchOrders(
-        OrderIntent calldata _longOrder,
-        OrderIntent calldata _shortOrder,
-        uint256 _lpAmount,
-        IHyperdrive.Options calldata _addLiquidityOptions,
-        IHyperdrive.Options calldata _removeLiquidityOptions,
-        address _feeRecipient,
-        bool _isLongFirst
+        OrderIntent calldata _order1,
+        OrderIntent calldata _order2,
+        address _surplusRecipient
     ) external;
 
     /// @notice Hashes an order intent according to EIP-712.
