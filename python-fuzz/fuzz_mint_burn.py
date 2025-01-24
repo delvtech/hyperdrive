@@ -132,142 +132,131 @@ def main(argv: Sequence[str] | None = None) -> None:
         gas_limit=int(1e6),  # Plenty of gas limit for transactions
     )
 
-    # FIXME wrap all of this in a try catch to catch any exceptions thrown in fuzzing.
-    # When an error occurs, we likely want to pause the chain to allow for remote connection
-    # for debugging
     while True:
         # Build interactive local hyperdrive
         # TODO can likely reuse some of these resources
         # instead, we start from scratch every time.
         chain = LocalChain(local_chain_config)
 
-        # Fuzz over config values
-        hyperdrive_config = generate_fuzz_hyperdrive_config(rng, lp_share_price_test=False, steth=False)
-
         try:
-            hyperdrive_pool = LocalHyperdrive(chain, hyperdrive_config)
-        except Exception as e:  # pylint: disable=broad-except
-            logging.error(
-                "Error deploying hyperdrive: %s",
-                repr(e),
-            )
-            log_rollbar_exception(
-                e,
-                log_level=logging.ERROR,
-                rollbar_log_prefix="Error deploying hyperdrive poolError deploying hyperdrive pool",
-            )
+            # Fuzz over config values
+            hyperdrive_config = generate_fuzz_hyperdrive_config(rng, lp_share_price_test=False, steth=False)
+
+            try:
+                hyperdrive_pool = LocalHyperdrive(chain, hyperdrive_config)
+            except Exception as e:  # pylint: disable=broad-except
+                logging.error(
+                    "Error deploying hyperdrive: %s",
+                    repr(e),
+                )
+                log_rollbar_exception(
+                    e,
+                    log_level=logging.ERROR,
+                    rollbar_log_prefix="Error deploying hyperdrive poolError deploying hyperdrive pool",
+                )
+                chain.cleanup()
+                continue
+
+            agents = None
+
+            # Run the fuzzing bot for an episode
+            for _ in range(parsed_args.num_iterations_per_episode):
+                # Run fuzzing via agent0 function on underlying hyperdrive pool.
+                # By default, this sets up 4 agents.
+                # `check_invariance` also runs the pool's invariance checks after trades.
+                # We only run for 1 iteration here, as we want to make additional random trades
+                # wrt mint/burn.
+                agents = run_fuzz_bots(
+                    chain,
+                    hyperdrive_pools=[hyperdrive_pool],
+                    # We pass in the same agents when running fuzzing
+                    agents=agents,
+                    check_invariance=True,
+                    raise_error_on_failed_invariance_checks=True,
+                    raise_error_on_crash=True,
+                    log_to_rollbar=log_to_rollbar,
+                    ignore_raise_error_func=_fuzz_ignore_errors,
+                    random_advance_time=True,
+                    random_variable_rate=True, # Variable rate can change between 0% and 100%
+                    lp_share_price_test=False,
+                    base_budget_per_bot=FixedPoint(1_000_000),
+                    num_iterations=1,
+                    minimum_avg_agent_base=FixedPoint(100_000),
+                )
+
+                # Get access to the underlying hyperdrive contract for pypechain calls
+                hyperdrive_contract = hyperdrive_pool.interface.hyperdrive_contract
+
+                # Run random vault mint/burn
+                for agent in agents:
+                    # Pick mint or burn at random
+                    trade = chain.config.rng.choice(["mint", "burn"])  # type: ignore
+                    match trade:
+                        case "mint":
+                            balance = agent.get_wallet(hyperdrive_pool).balance.amount
+                            if balance > hyperdrive_config.minimum_transaction_amount:
+                                # TODO can't use numpy rng since it doesn't support uint256.
+                                # Need to use the state from the chain config to use the same rng object.
+                                amount = random.randint(hyperdrive_config.minimum_transaction_amount.scaled_value, balance.scaled_value)
+                                pair_options = PairOptions(
+                                    longDestination=agent.address,
+                                    shortDestination=agent.address,
+                                    asBase=True,
+                                    extraData=bytes(0),
+                                )
+                                hyperdrive_contract.functions.mint(
+                                    _amount=amount, _minOutput=0, _minVaultSharePrice=0, _options=pair_options
+                                ).sign_transact_and_wait(account=agent.account, validate_transaction=True)
+
+                        case "burn":
+                            wallet = agent.get_wallet(hyperdrive_pool)
+
+                            # Find maturity times that have both long and short positions
+                            matching_maturities = set(wallet.longs.keys()) & set(wallet.shorts.keys())
+
+                            if matching_maturities:
+                                selected_maturity = random.choice(list(matching_maturities))
+
+                                # Get positions for selected maturity
+                                long_balance = wallet.longs[selected_maturity].balance
+                                short_balance = wallet.shorts[selected_maturity].balance
+                                max_burnable = min(long_balance, short_balance)
+
+                                if max_burnable > hyperdrive_config.minimum_transaction_amount:
+                                    burn_amount = random.randint(
+                                        hyperdrive_config.minimum_transaction_amount.scaled_value,
+                                        max_burnable.scaled_value
+                                    )
+                                    logging.info(
+                                        f"Agent {agent.address} is burning {burn_amount} of positions "
+                                        f"with maturity time {selected_maturity}"
+                                    )
+                                    options = Options(
+                                        destination=agent.address,
+                                        asBase=True,
+                                        extraData=bytes(0)
+                                    )
+                                    hyperdrive_contract.functions.burn(
+                                        _maturityTime=selected_maturity,
+                                        _bondAmount=burn_amount,
+                                        _minOutput=0,
+                                        _options=options
+                                    ).sign_transact_and_wait(
+                                        account=agent.account,
+                                        validate_transaction=True
+                                    )
+
+        # Catch any exceptions and pause until user input is provided.
+        except Exception as e:
+            logging.error("Error during fuzzing: %s", repr(e))
+            log_rollbar_exception(e, log_level=logging.ERROR, rollbar_log_prefix="Fuzzing error")
+
+            # Keep anvil running and wait for debug connection
+            input("Press Enter to continue after debugging...")
+
+            # Cleanup and start fresh iteration
             chain.cleanup()
             continue
-
-        agents = None
-
-        # Run the fuzzing bot for an episode
-        for _ in range(parsed_args.num_iterations_per_episode):
-            # Run fuzzing via agent0 function on underlying hyperdrive pool.
-            # By default, this sets up 4 agents.
-            # `check_invariance` also runs the pool's invariance checks after trades.
-            # We only run for 1 iteration here, as we want to make additional random trades
-            # wrt mint/burn.
-            agents = run_fuzz_bots(
-                chain,
-                hyperdrive_pools=[hyperdrive_pool],
-                # We pass in the same agents when running fuzzing
-                agents=agents,
-                check_invariance=True,
-                raise_error_on_failed_invariance_checks=True,
-                raise_error_on_crash=True,
-                log_to_rollbar=log_to_rollbar,
-                ignore_raise_error_func=_fuzz_ignore_errors,
-                random_advance_time=False,  # We take care of advancing time in the outer loop
-                # FIXME: Parameterize this. Would be good to go up to 250%.
-                #
-                # FIXME: Might be better to just call this myself.
-                #
-                # https://github.com/delvtech/agent0/blob/f3bc4c71b98d3cf407a18f62de85dab3fc63eb62/src/agent0/hyperfuzz/system_fuzz/run_fuzz_bots.py#L415
-                random_variable_rate=True, # Variable rate can change between 0% and 100%
-                lp_share_price_test=False,
-                base_budget_per_bot=FixedPoint(1_000_000),
-                num_iterations=1,
-                minimum_avg_agent_base=FixedPoint(100_000),
-            )
-
-            # Get access to the underlying hyperdrive contract for pypechain calls
-            hyperdrive_contract = hyperdrive_pool.interface.hyperdrive_contract
-
-            # Run random vault mint/burn
-            for agent in agents:
-                # Pick mint or burn at random
-                trade = chain.config.rng.choice(["mint", "burn"])  # type: ignore
-                match trade:
-                    case "mint":
-                        balance = agent.get_wallet(hyperdrive_pool).balance.amount
-                        if balance > hyperdrive_config.minimum_transaction_amount:
-                            # TODO can't use numpy rng since it doesn't support uint256.
-                            # Need to use the state from the chain config to use the same rng object.
-                            amount = random.randint(hyperdrive_config.minimum_transaction_amount.scaled_value, balance.scaled_value)
-                            pair_options = PairOptions(
-                                longDestination=agent.address,
-                                shortDestination=agent.address,
-                                asBase=True,
-                                extraData=bytes(0),
-                            )
-                            hyperdrive_contract.functions.mint(
-                                _amount=amount, _minOutput=0, _minVaultSharePrice=0, _options=pair_options
-                            ).sign_transact_and_wait(account=agent.account, validate_transaction=True)
-
-                    case "burn":
-                        wallet = agent.get_wallet(hyperdrive_pool)
-
-                        # Find maturity times that have both long and short positions
-                        matching_maturities = set(wallet.longs.keys()) & set(wallet.shorts.keys())
-
-                        if matching_maturities:
-                            selected_maturity = random.choice(list(matching_maturities))
-
-                            # Get positions for selected maturity
-                            long_balance = wallet.longs[selected_maturity].balance
-                            short_balance = wallet.shorts[selected_maturity].balance
-                            max_burnable = min(long_balance, short_balance)
-
-                            if max_burnable > hyperdrive_config.minimum_transaction_amount:
-                                burn_amount = random.randint(
-                                    hyperdrive_config.minimum_transaction_amount.scaled_value,
-                                    max_burnable.scaled_value
-                                )
-                                logging.info(
-                                    f"Agent {agent.address} is burning {burn_amount} of positions "
-                                    f"with maturity time {selected_maturity}"
-                                )
-                                options = Options(
-                                    destination=agent.address,
-                                    asBase=True,
-                                    extraData=bytes(0)
-                                )
-                                hyperdrive_contract.functions.burn(
-                                    _maturityTime=selected_maturity,
-                                    _bondAmount=burn_amount,
-                                    _minOutput=0,
-                                    _options=options
-                                ).sign_transact_and_wait(
-                                    account=agent.account,
-                                    validate_transaction=True
-                                )
-
-            # FIXME add any additional invariance checks specific to mint/burn here.
-            #
-            # FIXME: I don't think there are any other invariant checks. I just
-            # need to make sure that I can run the existing invariant checks.
-            #
-            # FIXME: Invariant checks are abstracted into a function. I should
-            # call that function here. Here's the link:
-            #
-            # https://github.com/delvtech/agent0/blob/f3bc4c71b98d3cf407a18f62de85dab3fc63eb62/src/agent0/hyperfuzz/system_fuzz/run_fuzz_bots.py#L460
-
-        # FIXME: Tweak this time.
-        #
-        # Advance time for a day
-        # TODO parameterize the amount of time to advance.
-        chain.advance_time(60 * 60 * 24)
 
 
 class Args(NamedTuple):
