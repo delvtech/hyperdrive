@@ -64,8 +64,11 @@ interface IHyperdriveMatchingEngineV2 {
     /// @notice Emitted when orders are cancelled.
     event OrdersCancelled(address indexed trader, bytes32[] orderHashes);
 
-    /// @notice Emitted when the amount of base used for an order is updated.
-    event OrderAmountUpdated(bytes32 indexed orderHash, uint256 amountUsed);
+    /// @notice Emitted when the amount of funds used for an order is updated.
+    event OrderFundAmountUsedUpdated(bytes32 indexed orderHash, uint256 amountUsed);
+
+    /// @notice Emitted when the amount of bonds used for an order is updated.
+    event OrderBondAmountUsedUpdated(bytes32 indexed orderHash, uint256 amountUsed);
 
     /// @notice Emitted when orders are matched.
     event OrdersMatched(
