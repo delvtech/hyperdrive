@@ -1,22 +1,28 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.24;
 
-import { IERC1271 } from "lib/openzeppelin-contracts/contracts/interfaces/IERC1271.sol";
-import { ERC20 } from "lib/openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
-import { SafeERC20 } from "lib/openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
 import { ECDSA } from "lib/openzeppelin-contracts/contracts/utils/cryptography/ECDSA.sol";
 import { EIP712 } from "lib/openzeppelin-contracts/contracts/utils/cryptography/EIP712.sol";
+import { ERC20 } from "lib/openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
+import { IERC1271 } from "lib/openzeppelin-contracts/contracts/interfaces/IERC1271.sol";
 import { ReentrancyGuard } from "lib/openzeppelin-contracts/contracts/utils/ReentrancyGuard.sol";
+import { SafeERC20 } from "lib/openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
+import { AssetId } from "../libraries/AssetId.sol";
+import { FixedPointMath } from "../libraries/FixedPointMath.sol";
+import { HYPERDRIVE_MATCHING_ENGINE_KIND, VERSION } from "../libraries/Constants.sol";
+import { HyperdriveMath } from "../libraries/HyperdriveMath.sol";
 import { IHyperdrive } from "../interfaces/IHyperdrive.sol";
 import { IHyperdriveMatchingEngineV2 } from "../interfaces/IHyperdriveMatchingEngineV2.sol";
-import { AssetId } from "../libraries/AssetId.sol";
-import { HYPERDRIVE_MATCHING_ENGINE_KIND, VERSION } from "../libraries/Constants.sol";
-import { FixedPointMath } from "../libraries/FixedPointMath.sol";
-import { HyperdriveMath } from "../libraries/HyperdriveMath.sol";
 
+/// @author DELV
 /// @title HyperdriveMatchingEngine
-/// @notice A matching engine that processes order intents and settles trades on the Hyperdrive AMM
-/// @dev This version uses direct Hyperdrive mint/burn functions instead of flash loans
+/// @notice A matching engine that processes order intents and settles trades on 
+///         the Hyperdrive AMM.
+/// @dev This version uses direct Hyperdrive mint/burn functions instead of flash 
+///      loans.
+/// @custom:disclaimer The language used in this code is for coding convenience
+///                    only, and is not intended to, and does not, have any
+///                    particular legal or regulatory significance.
 contract HyperdriveMatchingEngineV2 is 
     IHyperdriveMatchingEngineV2,
     ReentrancyGuard,
@@ -25,7 +31,7 @@ contract HyperdriveMatchingEngineV2 is
     using FixedPointMath for uint256;
     using SafeERC20 for ERC20;
 
-    /// @notice The EIP712 typehash of the OrderIntent struct
+    /// @notice The EIP712 typehash of the OrderIntent struct.
     bytes32 public constant ORDER_INTENT_TYPEHASH =
         keccak256(
             "OrderIntent(address trader,address counterparty,address feeRecipient,address hyperdrive,uint256 amount,uint256 slippageGuard,uint256 minVaultSharePrice,Options options,uint8 orderType,uint256 minMaturityTime,uint256 maxMaturityTime,uint256 expiry,bytes32 salt)"
@@ -44,7 +50,7 @@ contract HyperdriveMatchingEngineV2 is
     /// @notice The version of this matching engine
     string public constant version = VERSION;
 
-    /// @notice The buffer amount used for cost related calculations
+    /// @notice The buffer amount used for cost related calculations.
     uint256 public constant TOKEN_AMOUNT_BUFFER = 10;
 
     /// @notice Mapping to track cancelled orders
@@ -62,6 +68,11 @@ contract HyperdriveMatchingEngineV2 is
         name = _name;
     }
 
+    /// @notice Matches two orders
+    /// @param _order1 The first order to match
+    /// @param _order2 The second order to match
+    /// @param _surplusRecipient The address that receives the surplus funds 
+    ///         from matching the trades
     function matchOrders(
         OrderIntent calldata _order1,
         OrderIntent calldata _order2,
@@ -73,10 +84,6 @@ contract HyperdriveMatchingEngineV2 is
             _order2
         );
 
-        // Cancel orders to prevent replay
-        // isCancelled[order1Hash] = true;
-        // isCancelled[order2Hash] = true;
-
         IHyperdrive hyperdrive = _order1.hyperdrive;
 
         // Handle different order type combinations
@@ -87,18 +94,18 @@ contract HyperdriveMatchingEngineV2 is
             IHyperdrive.PoolConfig memory config = _getHyperdriveDurationsAndFees(hyperdrive);
             
             uint256 latestCheckpoint = _latestCheckpoint(config.checkpointDuration);
-            // @dev TODO: there is another way to get the info without calling getPoolInfo()?
+            // @dev TODO: there is another way to get the info without calling
+            //          getPoolInfo()?
             uint256 vaultSharePrice = hyperdrive.getPoolInfo().vaultSharePrice;
 
-            // Calculate the amount of base tokens to transfer based on the bondMatchAmount
+            // Calculate the amount of base tokens to transfer based on the 
+            // bondMatchAmount
             uint256 openVaultSharePrice = hyperdrive.getCheckpoint(latestCheckpoint).vaultSharePrice;
             if (openVaultSharePrice == 0) {
                 openVaultSharePrice = vaultSharePrice;
             }
 
             // Stack cycling to avoid stack-too-deep
-            // @dev TODO: Is there a better workaround? This approach increases the gas cost.
-            //      Because it used memory while it could have used calldata
             OrderIntent calldata order1 = _order1;
             OrderIntent calldata order2 = _order2;
             bytes32 order1Hash_ = order1Hash;
@@ -106,24 +113,30 @@ contract HyperdriveMatchingEngineV2 is
             address surplusRecipient = _surplusRecipient;
 
             // Calculate matching amount
-            // @dev TODO: This could have been placed before the control flow for
+            // @dev This could have been placed before the control flow for
             //      shorter code, but it's put here to avoid stack-too-deep
             uint256 bondMatchAmount = _calculateBondMatchAmount(
                 order1, 
                 order2, 
-                order1Hash, 
-                order2Hash
+                order1Hash_, 
+                order2Hash_
             );
 
             
             // Get the sufficient funding amount to mint the bonds.
-            uint256 cost = bondMatchAmount.mulDivDown(
+            // NOTE: Round the requred fund amount up to overestimate the cost.
+            //       Round the flat fee calculation up and the governance fee
+            //       calculation down to match the rounding used in the other flows.
+            uint256 cost = bondMatchAmount.mulDivUp(
                 vaultSharePrice.max(openVaultSharePrice), 
                 openVaultSharePrice) + 
                 bondMatchAmount.mulUp(config.fees.flat) +
                 2 * bondMatchAmount.mulUp(config.fees.flat).mulDown(config.fees.governanceLP);
 
-            // Calculate the amount of base tokens to transfer based on the bondMatchAmount
+            // Calculate the amount of base tokens to transfer based on the 
+            // bondMatchAmount
+            // NOTE: Round the requred fund amount down to prevent overspending and
+            //       possible reverting at a later step.
             uint256 baseTokenAmountOrder1 = order1.fundAmount.mulDivDown(bondMatchAmount, order1.bondAmount);
             uint256 baseTokenAmountOrder2 = order2.fundAmount.mulDivDown(bondMatchAmount, order2.bondAmount);
 
@@ -131,6 +144,7 @@ contract HyperdriveMatchingEngineV2 is
             orderFundAmountUsed[order1Hash_] += baseTokenAmountOrder1;
             orderFundAmountUsed[order2Hash_] += baseTokenAmountOrder2;
 
+            // Check if the fund amount used is greater than the order amount
             if (orderFundAmountUsed[order1Hash_] > order1.fundAmount || 
                 orderFundAmountUsed[order2Hash_] > order2.fundAmount) {
                 revert InvalidFundAmount();
@@ -139,7 +153,6 @@ contract HyperdriveMatchingEngineV2 is
             emit OrderFundAmountUsedUpdated(order2Hash_, orderFundAmountUsed[order2Hash_]);
 
             // Calculate the maturity time of newly minted positions
-            
             uint256 maturityTime = latestCheckpoint + config.positionDuration;
 
             // Check if the maturity time is within the range
@@ -148,11 +161,12 @@ contract HyperdriveMatchingEngineV2 is
                 revert InvalidMaturityTime();
             }
 
-            // @dev TODO: This could have been placed before the control flow for
+            // @dev This could have been placed before the control flow for
             //      shorter code, but it's put here to avoid stack-too-deep
             IHyperdrive hyperdrive_ = order1.hyperdrive;
             ERC20 baseToken = ERC20(hyperdrive_.baseToken());
 
+            // Mint the bonds
             uint256 bondAmount = _handleMint(
                 order1, 
                 order2, 
@@ -295,11 +309,11 @@ contract HyperdriveMatchingEngineV2 is
         return ECDSA.recover(_hash, _signature) == _signer;
     }
 
-    /// @dev Validates orders before matching
-    /// @param _order1 The long order to validate
-    /// @param _order2 The short order to validate
-    /// @return order1Hash The hash of the long order
-    /// @return order2Hash The hash of the short order
+    /// @dev Validates orders before matching them.
+    /// @param _order1 The first order to validate.
+    /// @param _order2 The second order to validate.
+    /// @return order1Hash The hash of the first order.
+    /// @return order2Hash The hash of the second order.
     function _validateOrders(
         OrderIntent calldata _order1,
         OrderIntent calldata _order2
@@ -315,16 +329,6 @@ contract HyperdriveMatchingEngineV2 is
         ) {
             revert InvalidCounterparty();
         }
-
-        // // Verify fee recipients
-        // if (
-        //     (_order1.feeRecipient != address(0) &&
-        //         _order1.feeRecipient != _feeRecipient) ||
-        //     (_order2.feeRecipient != address(0) &&
-        //         _order2.feeRecipient != _feeRecipient)
-        // ) {
-        //     revert InvalidFeeRecipient();
-        // }
 
         // Check expiry
         if (
@@ -380,20 +384,14 @@ contract HyperdriveMatchingEngineV2 is
             revert InvalidSignature();
         }
 
-        // // Verify price matching
-        // if (
-        //     _order1.slippageGuard != 0 &&
-        //     _order2.slippageGuard < _order2.amount &&
-        //     _order1.amount.divDown(_order1.slippageGuard) <
-        //     (_order2.amount - _order2.slippageGuard).divDown(
-        //         _order2.amount
-        //     )
-        // ) {
-        //     revert InvalidMatch();
-        // }
-
     }
 
+    /// @dev Calculates the amount of bonds that can be matched between two orders.
+    /// @param _order1 The first order to match.
+    /// @param _order2 The second order to match.
+    /// @param _order1Hash The hash of the first order.
+    /// @param _order2Hash The hash of the second order.
+    /// @return bondMatchAmount The amount of bonds that can be matched.
     function _calculateBondMatchAmount(
         OrderIntent calldata _order1,
         OrderIntent calldata _order2,
@@ -415,6 +413,18 @@ contract HyperdriveMatchingEngineV2 is
         bondMatchAmount = _order1BondAmount.min(_order2BondAmount);
     }
 
+    /// @dev Handles the minting of matching positions.
+    /// @param _longOrder The order for opening a long position.
+    /// @param _shortOrder The order for opening a short position.
+    /// @param _baseTokenAmountLongOrder The amount of base tokens from the long 
+    ///        order.
+    /// @param _baseTokenAmountShortOrder The amount of base tokens from the short 
+    ///        order.
+    /// @param _cost The total cost of the operation.
+    /// @param _bondMatchAmount The amount of bonds to mint.
+    /// @param _baseToken The base token being used.
+    /// @param _hyperdrive The Hyperdrive contract instance.
+    /// @return The amount of bonds minted.
     function _handleMint(
         OrderIntent calldata _longOrder,
         OrderIntent calldata _shortOrder,
@@ -440,8 +450,9 @@ contract HyperdriveMatchingEngineV2 is
         );
 
         // Approve Hyperdrive
-        // @dev Use balanceOf to get the total amount of base tokens instead of summing up the two amounts,
-        //      in order to open the door for poential donation to help match orders.
+        // @dev Use balanceOf to get the total amount of base tokens instead of 
+        //      summing up the two amounts, in order to open the door for poential 
+        //      donation to help match orders.
         uint256 totalBaseTokenAmount = _baseToken.balanceOf(address(this));
         uint256 baseTokenAmountToUse = _cost + TOKEN_AMOUNT_BUFFER;
         if (totalBaseTokenAmount < baseTokenAmountToUse) {
@@ -477,7 +488,7 @@ contract HyperdriveMatchingEngineV2 is
     function _handleLongTransfer() internal {}
     function _handleShortTransfer() internal {}
 
-    /// @notice Get checkpoint and position durations from Hyperdrive contract
+    /// @dev Get checkpoint and position durations from Hyperdrive contract
     /// @param _hyperdrive The Hyperdrive contract to query
     /// @return config The pool config
     function _getHyperdriveDurationsAndFees(IHyperdrive _hyperdrive) internal view returns (
@@ -487,6 +498,7 @@ contract HyperdriveMatchingEngineV2 is
     }
 
     /// @dev Gets the most recent checkpoint time.
+    /// @param _checkpointDuration The duration of the checkpoint.
     /// @return latestCheckpoint The latest checkpoint.
     function _latestCheckpoint(uint256 _checkpointDuration)
         internal
