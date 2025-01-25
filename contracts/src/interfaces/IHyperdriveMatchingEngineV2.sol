@@ -65,16 +65,26 @@ interface IHyperdriveMatchingEngineV2 {
     error InvalidOrderCombination();
 
     /// @notice Emitted when orders are cancelled.
+    /// @param trader The address of the trader who cancelled the orders.
+    /// @param orderHashes The hashes of the cancelled orders.
     event OrdersCancelled(address indexed trader, bytes32[] orderHashes);
 
     /// @notice Emitted when the amount of funds used for an order is updated.
+    /// @param orderHash The hash of the order.
+    /// @param amountUsed The new total amount of funds used.
     event OrderFundAmountUsedUpdated(bytes32 indexed orderHash, uint256 amountUsed);
 
     /// @notice Emitted when the amount of bonds used for an order is updated.
+    /// @param orderHash The hash of the order.
+    /// @param amountUsed The new total amount of bonds used.
     event OrderBondAmountUsedUpdated(bytes32 indexed orderHash, uint256 amountUsed);
 
-
     /// @notice Emitted when orders are matched.
+    /// @param hyperdrive The Hyperdrive contract where the trade occurred.
+    /// @param order1Hash The hash of the first order.
+    /// @param order2Hash The hash of the second order.
+    /// @param order1Trader The trader of the first order.
+    /// @param order2Trader The trader of the second order.
     event OrdersMatched(
         IHyperdrive indexed hyperdrive,
         bytes32 indexed order1Hash,
@@ -92,6 +102,7 @@ interface IHyperdriveMatchingEngineV2 {
     }
 
     /// @notice The order intent struct that encodes a trader's desire to trade.
+    /// @dev All monetary values use the same decimals as the base token.
     struct OrderIntent {
         /// @dev The trader address that will be charged when orders are matched.
         address trader;
@@ -162,11 +173,24 @@ interface IHyperdriveMatchingEngineV2 {
     /// @return The version string.
     function version() external view returns (string memory);
 
+    /// @notice Get the buffer amount used for cost calculations.
+    /// @return The buffer amount.
+    function TOKEN_AMOUNT_BUFFER() external view returns (uint256);
 
     /// @notice Returns whether or not an order has been cancelled.
     /// @param orderHash The hash of the order.
     /// @return True if the order was cancelled and false otherwise.
     function isCancelled(bytes32 orderHash) external view returns (bool);
+
+    /// @notice Get the amount of bonds used for a specific order.
+    /// @param orderHash The hash of the order.
+    /// @return The amount of bonds used.
+    function orderBondAmountUsed(bytes32 orderHash) external view returns (uint256);
+
+    /// @notice Get the amount of funds used for a specific order.
+    /// @param orderHash The hash of the order.
+    /// @return The amount of funds used.
+    function orderFundAmountUsed(bytes32 orderHash) external view returns (uint256);
 
     /// @notice Get the EIP712 typehash for the
     ///         `IHyperdriveMatchingEngine.OrderIntent` struct.
@@ -185,8 +209,8 @@ interface IHyperdriveMatchingEngineV2 {
     ///         liquidity.
     /// @param _order1 The order intent to open a long.
     /// @param _order2 The order intent to open a short.
-    /// @param _surplusRecipient The address that receives the surplus funds from matching
-    ///        the trades.
+    /// @param _surplusRecipient The address that receives the surplus funds from
+    ///        matching the trades.
     function matchOrders(
         OrderIntent calldata _order1,
         OrderIntent calldata _order2,
