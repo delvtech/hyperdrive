@@ -146,15 +146,10 @@ interface IHyperdriveMatchingEngineV2 {
         /// @dev The minimum and maximum maturity time for the order.
         ///      For `OpenLong` or `OpenShort` orders where the `onlyNewPositions`
         ///      is false, these values are checked for match validation.
-        ///      For `CloseLong` or `CloseShort` orders, these values are ignored
-        ///      and will not be checked during match; however, the general order
-        ///      validation will still check the values to be reasonable.
+        ///      For `CloseLong` or `CloseShort` orders, these values must be equal
+        ///      and specify the maturity time of the position to close.
         uint256 minMaturityTime;
         uint256 maxMaturityTime;
-
-        /// @dev The maturity time of the position to close. This is only used for 
-        ///      CloseLong and CloseShort orders.
-        uint256 closePositionMaturityTime;
 
         /// @dev The signature that demonstrates the source's intent to complete
         ///      the trade.
