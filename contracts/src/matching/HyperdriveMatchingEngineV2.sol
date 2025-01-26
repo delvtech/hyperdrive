@@ -34,7 +34,7 @@ contract HyperdriveMatchingEngineV2 is
     /// @notice The EIP712 typehash of the OrderIntent struct.
     bytes32 public constant ORDER_INTENT_TYPEHASH =
         keccak256(
-            "OrderIntent(address trader,address counterparty,address feeRecipient,address hyperdrive,uint256 amount,uint256 slippageGuard,uint256 minVaultSharePrice,Options options,uint8 orderType,uint256 minMaturityTime,uint256 maxMaturityTime,uint256 expiry,bytes32 salt)"
+            "OrderIntent(address trader,address counterparty,address feeRecipient,address hyperdrive,uint256 amount,uint256 slippageGuard,uint256 minVaultSharePrice,Options options,uint8 orderType,uint256 minMaturityTime,uint256 maxMaturityTime,uint256 closePositionMaturityTime,uint256 expiry,bytes32 salt)"
         );
 
     /// @notice The EIP712 typehash of the Options struct
@@ -87,7 +87,8 @@ contract HyperdriveMatchingEngineV2 is
         IHyperdrive hyperdrive = _order1.hyperdrive;
 
         // Handle different order type combinations
-        if (_order1.orderType == OrderType.OpenLong && _order2.orderType == OrderType.OpenShort) {
+        if (_order1.orderType == OrderType.OpenLong && 
+            _order2.orderType == OrderType.OpenShort) {
             // Case 1: Long + Short creation using mint()
 
             // Get necessary pool parameters
@@ -199,11 +200,75 @@ contract HyperdriveMatchingEngineV2 is
         } 
 
 
-        //TODOs
-        else if (_order1.orderType == OrderType.CloseLong && _order2.orderType == OrderType.CloseShort) {
+        else if (_order1.orderType == OrderType.CloseLong && 
+                 _order2.orderType == OrderType.CloseShort) {
             // Case 2: Long + Short closing using burn()
-            _handleBurn();
+            
+            // Verify both orders have the same maturity time
+            if (_order1.closePositionMaturityTime != _order2.closePositionMaturityTime) {
+                revert InvalidMaturityTime();
+            }
+            
+            // Calculate matching amount
+            uint256 bondMatchAmount = _calculateBondMatchAmount(
+                _order1, 
+                _order2, 
+                order1Hash, 
+                order2Hash
+            );
+
+            // Update order bond amount used
+            // @dev After the update, there is no need to check if the bond
+            //      amount used is greater than the order amount, as the order
+            //      amount is already used to calculate the bondMatchAmount.
+            orderBondAmountUsed[order1Hash] += bondMatchAmount;
+            orderBondAmountUsed[order2Hash] += bondMatchAmount;
+            emit OrderBondAmountUsedUpdated(order1Hash, orderBondAmountUsed[order1Hash]);
+            emit OrderBondAmountUsedUpdated(order2Hash, orderBondAmountUsed[order2Hash]);
+
+            // Get the min fund output according to the bondMatchAmount
+            // NOTE: Round the requred fund amount up to respect the order specified
+            //       min fund output.
+            uint256 minFundAmountOrder1 = (_order1.fundAmount - orderFundAmountUsed[order1Hash]).mulDivUp(bondMatchAmount, _order1.bondAmount);
+            uint256 minFundAmountOrder2 = (_order2.fundAmount - orderFundAmountUsed[order2Hash]).mulDivUp(bondMatchAmount, _order2.bondAmount);
+
+            // Get the base token
+            ERC20 baseToken = ERC20(hyperdrive.baseToken());
+
+            // Handle burn operation through helper function
+            _handleBurn(
+                _order1,
+                _order2,
+                minFundAmountOrder1,
+                minFundAmountOrder2,
+                bondMatchAmount,
+                baseToken,
+                hyperdrive
+            );
+            
+            // Update order fund amount used
+            orderFundAmountUsed[order1Hash] += minFundAmountOrder1;
+            orderFundAmountUsed[order2Hash] += minFundAmountOrder2;
+            emit OrderFundAmountUsedUpdated(order1Hash, orderFundAmountUsed[order1Hash]);
+            emit OrderFundAmountUsedUpdated(order2Hash, orderFundAmountUsed[order2Hash]);
+
+            // Mark fully executed orders as cancelled
+            if (orderBondAmountUsed[order1Hash] >= _order1.bondAmount || 
+                orderFundAmountUsed[order1Hash] >= _order1.fundAmount) {
+                isCancelled[order1Hash] = true;
+            }
+            if (orderBondAmountUsed[order2Hash] >= _order2.bondAmount || 
+                orderFundAmountUsed[order2Hash] >= _order2.fundAmount) {
+                isCancelled[order2Hash] = true;
+            }
+
+            // Transfer the remaining base tokens back to the surplus recipient
+            baseToken.safeTransfer(
+                _surplusRecipient,
+                baseToken.balanceOf(address(this))
+            );
         }
+
         else if (_order1.orderType == OrderType.OpenLong && _order2.orderType == OrderType.CloseLong) {
             // Case 3: Long transfer between traders
             _handleLongTransfer();
@@ -256,29 +321,34 @@ contract HyperdriveMatchingEngineV2 is
     function hashOrderIntent(
         OrderIntent calldata _order
     ) public view returns (bytes32) {
+        // Stack cycling to avoid stack-too-deep
+        OrderIntent calldata order = _order;
+
         return _hashTypedDataV4(
             keccak256(
                 abi.encode(
                     ORDER_INTENT_TYPEHASH,
-                    _order.trader,
-                    _order.counterparty,
-                    _order.feeRecipient,
-                    address(_order.hyperdrive),
-                    _order.fundAmount,
-                    _order.bondAmount,
-                    _order.minVaultSharePrice,
+                    order.trader,
+                    order.counterparty,
+                    order.feeRecipient,
+                    address(order.hyperdrive),
+                    order.fundAmount,
+                    order.bondAmount,
+                    order.minVaultSharePrice,
                     keccak256(
                         abi.encode(
                             OPTIONS_TYPEHASH,
-                            _order.options.destination,
-                            _order.options.asBase
+                            order.options.destination,
+                            order.options.asBase
                         )
                     ),
-                    uint8(_order.orderType),
-                    _order.minMaturityTime,
-                    _order.maxMaturityTime,
-                    _order.expiry,
-                    _order.salt
+                    uint8(order.orderType),
+                    order.minMaturityTime,
+                    order.maxMaturityTime,
+                    // @dev TODO: Adding one extra element will cause stack-too-deep
+                    order.closePositionMaturityTime,
+                    order.expiry,
+                    order.salt
                 )
             )
         );
@@ -483,8 +553,72 @@ contract HyperdriveMatchingEngineV2 is
         return bondAmount;
     }
 
+    /// @dev Handles the burning of matching positions.
+    /// @param _longOrder The first order (CloseLong).
+    /// @param _shortOrder The second order (CloseShort).
+    /// @param _minFundAmountLongOrder The minimum fund amount for the long order.
+    /// @param _minFundAmountShortOrder The minimum fund amount for the short order.
+    /// @param _bondMatchAmount The amount of bonds to burn.
+    /// @param _baseToken The base token being used.
+    /// @param _hyperdrive The Hyperdrive contract instance.
+    function _handleBurn(
+        OrderIntent calldata _longOrder,
+        OrderIntent calldata _shortOrder,
+        uint256 _minFundAmountLongOrder,
+        uint256 _minFundAmountShortOrder,
+        uint256 _bondMatchAmount,
+        ERC20 _baseToken,
+        IHyperdrive _hyperdrive
+    ) internal {
+        
+        // Get asset IDs for the long and short positions
+        uint256 longAssetId = AssetId.encodeAssetId(
+            AssetId.AssetIdPrefix.Long,
+            _longOrder.closePositionMaturityTime
+        );
+        uint256 shortAssetId = AssetId.encodeAssetId(
+            AssetId.AssetIdPrefix.Short,
+            _shortOrder.closePositionMaturityTime
+        );
+        
+        // This contract needs to take custody of the bonds before burning
+        _hyperdrive.transferFrom(
+            longAssetId,
+            _longOrder.trader,
+            address(this),
+            _bondMatchAmount
+        );
+        _hyperdrive.transferFrom(
+            shortAssetId,
+            _shortOrder.trader,
+            address(this),
+            _bondMatchAmount
+        );
+
+        // Calculate minOutput and consider the potential donation to help match
+        // orders.
+        uint256 minOutput = (_minFundAmountLongOrder + _minFundAmountShortOrder) > _baseToken.balanceOf(address(this)) ? 
+            _minFundAmountLongOrder + _minFundAmountShortOrder - _baseToken.balanceOf(address(this)) : 0;
+        
+        // Burn the matching positions
+        _hyperdrive.burn(
+            _longOrder.closePositionMaturityTime,
+            _bondMatchAmount,
+            minOutput, 
+            IHyperdrive.Options({
+                destination: address(this),
+                asBase: true,
+                extraData: ""
+            })
+        );
+        
+        // Transfer proceeds to traders
+        _baseToken.safeTransfer(_longOrder.trader, _minFundAmountLongOrder);
+        _baseToken.safeTransfer(_shortOrder.trader, _minFundAmountShortOrder);
+        
+    }
+
     // TODO: Implement these functions
-    function _handleBurn() internal {}
     function _handleLongTransfer() internal {}
     function _handleShortTransfer() internal {}
 

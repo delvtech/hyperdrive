@@ -55,7 +55,9 @@ interface IHyperdriveMatchingEngineV2 {
     /// @notice Thrown when the used fund amount is greater than the order specified.
     error InvalidFundAmount();
 
-    /// @notice Thrown when the maturity time is not within the range.
+    /// @notice Thrown when the maturity time is not within the asked range
+    ///         in minting or transferring situations; or the maturity time
+    ///         is not the same for both orders in burning situations.
     error InvalidMaturityTime();
 
     /// @notice Thrown when the funding amount is insufficient to cover the cost.
@@ -149,6 +151,10 @@ interface IHyperdriveMatchingEngineV2 {
         ///      validation will still check the values to be reasonable.
         uint256 minMaturityTime;
         uint256 maxMaturityTime;
+
+        /// @dev The maturity time of the position to close. This is only used for 
+        ///      CloseLong and CloseShort orders.
+        uint256 closePositionMaturityTime;
 
         /// @dev The signature that demonstrates the source's intent to complete
         ///      the trade.
