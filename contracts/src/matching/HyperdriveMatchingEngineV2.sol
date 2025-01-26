@@ -613,8 +613,8 @@ contract HyperdriveMatchingEngineV2 is
         );
         
         // Transfer proceeds to traders
-        _baseToken.safeTransfer(_longOrder.trader, _minFundAmountLongOrder);
-        _baseToken.safeTransfer(_shortOrder.trader, _minFundAmountShortOrder);
+        _baseToken.safeTransfer(_longOrder.options.destination, _minFundAmountLongOrder);
+        _baseToken.safeTransfer(_shortOrder.options.destination, _minFundAmountShortOrder);
         
     }
 
