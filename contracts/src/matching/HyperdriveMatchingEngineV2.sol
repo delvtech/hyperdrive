@@ -34,7 +34,7 @@ contract HyperdriveMatchingEngineV2 is
     /// @notice The EIP712 typehash of the OrderIntent struct.
     bytes32 public constant ORDER_INTENT_TYPEHASH =
         keccak256(
-            "OrderIntent(address trader,address counterparty,address feeRecipient,address hyperdrive,uint256 amount,uint256 slippageGuard,uint256 minVaultSharePrice,Options options,uint8 orderType,uint256 minMaturityTime,uint256 maxMaturityTime,uint256 closePositionMaturityTime,uint256 expiry,bytes32 salt)"
+            "OrderIntent(address trader,address counterparty,address hyperdrive,uint256 amount,uint256 slippageGuard,uint256 minVaultSharePrice,Options options,uint8 orderType,uint256 minMaturityTime,uint256 maxMaturityTime,uint256 expiry,bytes32 salt)"
         );
 
     /// @notice The EIP712 typehash of the Options struct
@@ -205,7 +205,7 @@ contract HyperdriveMatchingEngineV2 is
             // Case 2: Long + Short closing using burn()
             
             // Verify both orders have the same maturity time
-            if (_order1.closePositionMaturityTime != _order2.closePositionMaturityTime) {
+            if (_order1.maxMaturityTime != _order2.maxMaturityTime) {
                 revert InvalidMaturityTime();
             }
             
@@ -322,33 +322,31 @@ contract HyperdriveMatchingEngineV2 is
         OrderIntent calldata _order
     ) public view returns (bytes32) {
         // Stack cycling to avoid stack-too-deep
-        OrderIntent calldata order = _order;
+        // OrderIntent calldata order = _order;
 
         return _hashTypedDataV4(
             keccak256(
                 abi.encode(
                     ORDER_INTENT_TYPEHASH,
-                    order.trader,
-                    order.counterparty,
-                    order.feeRecipient,
-                    address(order.hyperdrive),
-                    order.fundAmount,
-                    order.bondAmount,
-                    order.minVaultSharePrice,
+                    _order.trader,
+                    _order.counterparty,
+                    _order.feeRecipient,
+                    address(_order.hyperdrive),
+                    _order.fundAmount,
+                    _order.bondAmount,
+                    _order.minVaultSharePrice,
                     keccak256(
                         abi.encode(
                             OPTIONS_TYPEHASH,
-                            order.options.destination,
-                            order.options.asBase
+                            _order.options.destination,
+                            _order.options.asBase
                         )
                     ),
-                    uint8(order.orderType),
-                    order.minMaturityTime,
-                    order.maxMaturityTime,
-                    // @dev TODO: Adding one extra element will cause stack-too-deep
-                    order.closePositionMaturityTime,
-                    order.expiry,
-                    order.salt
+                    uint8(_order.orderType),
+                    _order.minMaturityTime,
+                    _order.maxMaturityTime,
+                    _order.expiry,
+                    _order.salt
                 )
             )
         );
@@ -426,6 +424,20 @@ contract HyperdriveMatchingEngineV2 is
             _order2.minMaturityTime > _order2.maxMaturityTime 
             ) {
             revert InvalidMaturityTime();
+        }
+
+        // For close orders, minMaturityTime must equal maxMaturityTime
+        if (_order1.orderType == OrderType.CloseLong || 
+            _order1.orderType == OrderType.CloseShort) {
+            if (_order1.minMaturityTime != _order1.maxMaturityTime) {
+                revert InvalidMaturityTime();
+            }
+        }
+        if (_order2.orderType == OrderType.CloseLong || 
+            _order2.orderType == OrderType.CloseShort) {
+            if (_order2.minMaturityTime != _order2.maxMaturityTime) {
+                revert InvalidMaturityTime();
+            }
         }
 
         // Hash orders
@@ -574,11 +586,11 @@ contract HyperdriveMatchingEngineV2 is
         // Get asset IDs for the long and short positions
         uint256 longAssetId = AssetId.encodeAssetId(
             AssetId.AssetIdPrefix.Long,
-            _longOrder.closePositionMaturityTime
+            _longOrder.maxMaturityTime
         );
         uint256 shortAssetId = AssetId.encodeAssetId(
             AssetId.AssetIdPrefix.Short,
-            _shortOrder.closePositionMaturityTime
+            _shortOrder.maxMaturityTime
         );
         
         // This contract needs to take custody of the bonds before burning
@@ -602,9 +614,9 @@ contract HyperdriveMatchingEngineV2 is
         
         // Burn the matching positions
         _hyperdrive.burn(
-            _longOrder.closePositionMaturityTime,
+            _longOrder.maxMaturityTime,
             _bondMatchAmount,
-            minOutput, 
+            minOutput,
             IHyperdrive.Options({
                 destination: address(this),
                 asBase: true,
