@@ -136,8 +136,8 @@ contract HyperdriveMatchingEngineV2 is
 
             // Calculate the amount of base tokens to transfer based on the 
             // bondMatchAmount
-            // NOTE: Round the requred fund amount down to prevent overspending and
-            //       possible reverting at a later step.
+            // NOTE: Round the requred fund amount down to prevent overspending
+            //       and possible reverting at a later step.
             uint256 baseTokenAmountOrder1 = order1.fundAmount.mulDivDown(bondMatchAmount, order1.bondAmount);
             uint256 baseTokenAmountOrder2 = order2.fundAmount.mulDivDown(bondMatchAmount, order2.bondAmount);
 

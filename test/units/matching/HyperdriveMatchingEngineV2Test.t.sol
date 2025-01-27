@@ -198,9 +198,11 @@ contract HyperdriveMatchingEngineV2Test is HyperdriveTest {
         matchingEngine.matchOrders(longOrder, shortOrder, celine);
     }
 
-    /// @dev Tests matching orders with valid but different bond amounts (partial match)
+    /// @dev Tests matching orders with valid but different bond amounts 
+    ///      (partial match)
     function test_matchOrders_differentBondAmounts() public {
-        // Create orders with different bond amounts - this should succeed with partial matching
+        // Create orders with different bond amounts - this should succeed with
+        // partial matching
         IHyperdriveMatchingEngineV2.OrderIntent memory longOrder = _createOrderIntent(
             alice,
             address(0),
@@ -234,7 +236,8 @@ contract HyperdriveMatchingEngineV2Test is HyperdriveTest {
         assertEq(_getShortBalance(bob) - bobShortBalanceBefore, 90_000e18);
     }
 
-    /// @dev Tests matching orders with invalid bond amounts (exceeds available balance)
+    /// @dev Tests matching orders with invalid bond amounts (exceeds available
+    ///      balance)
     function test_matchOrders_failure_invalidBondAmount() public {
         // First create some positions
         test_matchOrders_openLongAndOpenShort();
