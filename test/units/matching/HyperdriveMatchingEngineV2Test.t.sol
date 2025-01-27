@@ -417,6 +417,7 @@ contract HyperdriveMatchingEngineV2Test is HyperdriveTest {
             95_000e18,
             IHyperdriveMatchingEngineV2.OrderType.OpenShort
         );
+        shortOrder.minVaultSharePrice = type(uint256).max; // Unreasonably high min vault share price
 
         longOrder.signature = _signOrderIntent(longOrder, alicePK);
         shortOrder.signature = _signOrderIntent(shortOrder, bobPK);
