@@ -94,6 +94,18 @@ contract HyperdriveMatchingEngineV2Test is HyperdriveTest {
 
         uint256 maturityTime = hyperdrive.latestCheckpoint() + hyperdrive.getPoolConfig().positionDuration;
         
+        // Approve Hyperdrive bonds positions to the matching engine
+        uint256 longAssetId = AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime);
+        uint256 shortAssetId = AssetId.encodeAssetId(AssetId.AssetIdPrefix.Short, maturityTime);
+
+        vm.startPrank(alice);
+        hyperdrive.setApproval(longAssetId, address(matchingEngine), type(uint256).max);
+        vm.stopPrank();
+
+        vm.startPrank(bob);
+        hyperdrive.setApproval(shortAssetId, address(matchingEngine), type(uint256).max);
+        vm.stopPrank();
+
         // Create close orders
         IHyperdriveMatchingEngineV2.OrderIntent memory closeLongOrder = _createOrderIntent(
             alice,
@@ -110,7 +122,7 @@ contract HyperdriveMatchingEngineV2Test is HyperdriveTest {
             bob,
             address(0),
             address(0),
-            90_000e18,   // min fund amount to receive
+            5_001e18,   // min fund amount to receive
             95_000e18,   // bond amount to close
             IHyperdriveMatchingEngineV2.OrderType.CloseShort
         );
