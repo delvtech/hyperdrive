@@ -551,7 +551,7 @@ contract HyperdriveMatchingEngineV2 is
         });
 
         // Calculate minVaultSharePrice
-        uint256 minVaultSharePrice = _longOrder.minVaultSharePrice.min(_shortOrder.minVaultSharePrice);
+        uint256 minVaultSharePrice = _longOrder.minVaultSharePrice.max(_shortOrder.minVaultSharePrice);
 
         // Mint matching positions
         ( , uint256 bondAmount) = _hyperdrive.mint(
