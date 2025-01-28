@@ -135,11 +135,13 @@ contract HyperdriveMatchingEngineV2 is
                 2 * bondMatchAmount.mulUp(config.fees.flat).mulDown(config.fees.governanceLP);
 
             // Calculate the amount of base tokens to transfer based on the 
-            // bondMatchAmount.
+            // bondMatchAmount using dynamic pricing. During a series of partial 
+            // matching, the pricing requirements can go easier as needed for each 
+            // new match, hence increasing the match likelihood.
             // NOTE: Round the required fund amount down to prevent overspending
             //       and possible reverting at a later step.
-            uint256 baseTokenAmountOrder1 = order1.fundAmount.mulDivDown(bondMatchAmount, order1.bondAmount);
-            uint256 baseTokenAmountOrder2 = order2.fundAmount.mulDivDown(bondMatchAmount, order2.bondAmount);
+            uint256 baseTokenAmountOrder1 = (order1.fundAmount - orderFundAmountUsed[order1Hash_]).mulDivDown(bondMatchAmount, (order1.bondAmount - orderBondAmountUsed[order1Hash_]));
+            uint256 baseTokenAmountOrder2 = (order2.fundAmount - orderFundAmountUsed[order2Hash_]).mulDivDown(bondMatchAmount, (order2.bondAmount - orderBondAmountUsed[order2Hash_]));
 
             // Update order fund amount used.
             orderFundAmountUsed[order1Hash_] += baseTokenAmountOrder1;
@@ -180,14 +182,6 @@ contract HyperdriveMatchingEngineV2 is
             orderBondAmountUsed[order1Hash_] += bondAmount;
             orderBondAmountUsed[order2Hash_] += bondAmount;
 
-            // Mark fully executed orders as cancelled.
-            if (orderBondAmountUsed[order1Hash_] >= order1.bondAmount || orderFundAmountUsed[order1Hash_] >= order1.fundAmount) {
-                isCancelled[order1Hash_] = true;
-            }
-            if (orderBondAmountUsed[order2Hash_] >= order2.bondAmount || orderFundAmountUsed[order2Hash_] >= order2.fundAmount) {
-                isCancelled[order2Hash_] = true;
-            }
-
             // Transfer the remaining base tokens back to the surplus recipient.
             baseToken.safeTransfer(
                 surplusRecipient,
@@ -211,18 +205,18 @@ contract HyperdriveMatchingEngineV2 is
                 order2Hash
             );
 
+            // Get the min fund output according to the bondMatchAmount.
+            // NOTE: Round the required fund amount up to respect the order specified
+            //       min fund output.
+            uint256 minFundAmountOrder1 = (_order1.fundAmount - orderFundAmountUsed[order1Hash]).mulDivUp(bondMatchAmount, (_order1.bondAmount - orderBondAmountUsed[order1Hash]));
+            uint256 minFundAmountOrder2 = (_order2.fundAmount - orderFundAmountUsed[order2Hash]).mulDivUp(bondMatchAmount, (_order2.bondAmount - orderBondAmountUsed[order2Hash]));
+
             // Update order bond amount used.
             // @dev After the update, there is no need to check if the bond
             //      amount used is greater than the order amount, as the order
             //      amount is already used to calculate the bondMatchAmount.
             orderBondAmountUsed[order1Hash] += bondMatchAmount;
             orderBondAmountUsed[order2Hash] += bondMatchAmount;
-
-            // Get the min fund output according to the bondMatchAmount.
-            // NOTE: Round the required fund amount up to respect the order specified
-            //       min fund output.
-            uint256 minFundAmountOrder1 = (_order1.fundAmount - orderFundAmountUsed[order1Hash]).mulDivUp(bondMatchAmount, _order1.bondAmount);
-            uint256 minFundAmountOrder2 = (_order2.fundAmount - orderFundAmountUsed[order2Hash]).mulDivUp(bondMatchAmount, _order2.bondAmount);
 
             // Get the base token.
             ERC20 baseToken = ERC20(hyperdrive.baseToken());
@@ -241,16 +235,6 @@ contract HyperdriveMatchingEngineV2 is
             // Update order fund amount used.
             orderFundAmountUsed[order1Hash] += minFundAmountOrder1;
             orderFundAmountUsed[order2Hash] += minFundAmountOrder2;
-
-            // Mark fully executed orders as cancelled.
-            if (orderBondAmountUsed[order1Hash] >= _order1.bondAmount || 
-                orderFundAmountUsed[order1Hash] >= _order1.fundAmount) {
-                isCancelled[order1Hash] = true;
-            }
-            if (orderBondAmountUsed[order2Hash] >= _order2.bondAmount || 
-                orderFundAmountUsed[order2Hash] >= _order2.fundAmount) {
-                isCancelled[order2Hash] = true;
-            }
 
             // Transfer the remaining base tokens back to the surplus recipient.
             baseToken.safeTransfer(
@@ -444,6 +428,16 @@ contract HyperdriveMatchingEngineV2 is
         // Hash orders.
         order1Hash = hashOrderIntent(_order1);
         order2Hash = hashOrderIntent(_order2);
+
+        // Check if orders are fully executed.
+        if (orderBondAmountUsed[order1Hash] >= _order1.bondAmount || 
+            orderFundAmountUsed[order1Hash] >= _order1.fundAmount) {
+            revert AlreadyFullyExecuted();
+            }
+        if (orderBondAmountUsed[order2Hash] >= _order2.bondAmount || 
+            orderFundAmountUsed[order2Hash] >= _order2.fundAmount) {
+            revert AlreadyFullyExecuted();
+        }
 
         // Check if orders are cancelled.
         if (isCancelled[order1Hash] || isCancelled[order2Hash]) {
