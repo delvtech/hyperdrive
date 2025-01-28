@@ -34,7 +34,7 @@ contract HyperdriveMatchingEngineV2 is
     /// @notice The EIP712 typehash of the OrderIntent struct.
     bytes32 public constant ORDER_INTENT_TYPEHASH =
         keccak256(
-            "OrderIntent(address trader,address counterparty,address hyperdrive,uint256 amount,uint256 slippageGuard,uint256 minVaultSharePrice,Options options,uint8 orderType,uint256 minMaturityTime,uint256 maxMaturityTime,uint256 expiry,bytes32 salt)"
+            "OrderIntent(address trader,address counterparty,address feeRecipient,address hyperdrive,uint256 fundAmount,uint256 bondAmount,uint256 minVaultSharePrice,Options options,uint8 orderType,uint256 minMaturityTime,uint256 maxMaturityTime,uint256 expiry,bytes32 salt)"
         );
 
     /// @notice The EIP712 typehash of the Options struct
