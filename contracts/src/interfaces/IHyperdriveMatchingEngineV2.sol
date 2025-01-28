@@ -127,7 +127,6 @@ interface IHyperdriveMatchingEngineV2 {
         /// @dev The type of the order. Legal values are `OpenLong`, `OpenShort`,
         ///      `CloseLong`, or `CloseShort`.
         OrderType orderType;
-
         /// @dev The minimum and maximum maturity time for the order.
         ///      For `OpenLong` or `OpenShort` orders where the `onlyNewPositions`
         ///      is false, these values are checked for match validation.
@@ -135,7 +134,6 @@ interface IHyperdriveMatchingEngineV2 {
         ///      and specify the maturity time of the position to close.
         uint256 minMaturityTime;
         uint256 maxMaturityTime;
-
         /// @dev The signature that demonstrates the source's intent to complete
         ///      the trade.
         bytes signature;
