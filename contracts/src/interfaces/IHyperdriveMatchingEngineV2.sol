@@ -53,6 +53,9 @@ interface IHyperdriveMatchingEngineV2 {
     /// @notice Thrown when the order combination is invalid.
     error InvalidOrderCombination();
 
+    /// @notice Thrown when the order is already fully executed.
+    error AlreadyFullyExecuted();
+
     /// @notice Emitted when orders are cancelled.
     /// @param trader The address of the trader who cancelled the orders.
     /// @param orderHashes The hashes of the cancelled orders.
