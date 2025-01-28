@@ -20,20 +20,10 @@ interface IHyperdriveMatchingEngineV2 {
     ///         options isn't configured to this contract.
     error InvalidDestination();
 
-    /// @notice Thrown when the fee recipient doesn't match the fee recipient
-    ///         signed into the order.
-    error InvalidFeeRecipient();
-
-    /// @notice Thrown when orders that don't cross are matched.
-    error InvalidMatch();
-
-    /// @notice Thrown when the order type doesn't match the expected type.
-    error InvalidOrderType();
-
     /// @notice Thrown when an address that didn't create an order tries to
     ///         cancel it.
     error InvalidSender();
-
+    
     /// @notice Thrown when `asBase = false` is used. This implementation is
     ///         opinionated to keep the implementation simple.
     error InvalidSettlementAsset();
@@ -45,9 +35,6 @@ interface IHyperdriveMatchingEngineV2 {
     /// @notice Thrown when the long and short orders don't refer to the same
     ///         Hyperdrive instance.
     error MismatchedHyperdrive();
-
-    /// @notice Thrown when the pool config is invalid.
-    error InvalidPoolConfig();
     
     /// @notice Thrown when the bond match amount is zero.
     error NoBondMatchAmount();

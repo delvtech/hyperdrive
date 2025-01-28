@@ -440,6 +440,12 @@ contract HyperdriveMatchingEngineV2 is
             }
         }
 
+        // Check that the destination is not the zero address
+        if (_order1.options.destination == address(0) || 
+            _order2.options.destination == address(0)) {
+            revert InvalidDestination();
+        }
+
         // Hash orders
         order1Hash = hashOrderIntent(_order1);
         order2Hash = hashOrderIntent(_order2);
@@ -551,6 +557,8 @@ contract HyperdriveMatchingEngineV2 is
         });
 
         // Calculate minVaultSharePrice
+        // @dev Take the larger of the two minVaultSharePrice as the min guard
+        //      price to prevent slippage, so that it satisfies both orders.
         uint256 minVaultSharePrice = _longOrder.minVaultSharePrice.max(_shortOrder.minVaultSharePrice);
 
         // Mint matching positions
