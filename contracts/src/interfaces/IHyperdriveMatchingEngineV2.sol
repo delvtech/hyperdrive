@@ -23,7 +23,7 @@ interface IHyperdriveMatchingEngineV2 {
     /// @notice Thrown when an address that didn't create an order tries to
     ///         cancel it.
     error InvalidSender();
-    
+
     /// @notice Thrown when `asBase = false` is used. This implementation is
     ///         opinionated to keep the implementation simple.
     error InvalidSettlementAsset();
@@ -58,28 +58,26 @@ interface IHyperdriveMatchingEngineV2 {
     /// @param orderHashes The hashes of the cancelled orders.
     event OrdersCancelled(address indexed trader, bytes32[] orderHashes);
 
-    /// @notice Emitted when the amount of funds used for an order is updated.
-    /// @param orderHash The hash of the order.
-    /// @param amountUsed The new total amount of funds used.
-    event OrderFundAmountUsedUpdated(bytes32 indexed orderHash, uint256 amountUsed);
-
-    /// @notice Emitted when the amount of bonds used for an order is updated.
-    /// @param orderHash The hash of the order.
-    /// @param amountUsed The new total amount of bonds used.
-    event OrderBondAmountUsedUpdated(bytes32 indexed orderHash, uint256 amountUsed);
-
     /// @notice Emitted when orders are matched.
     /// @param hyperdrive The Hyperdrive contract where the trade occurred.
     /// @param order1Hash The hash of the first order.
     /// @param order2Hash The hash of the second order.
     /// @param order1Trader The trader of the first order.
     /// @param order2Trader The trader of the second order.
+    /// @param order1BondAmountUsed The amount of bonds used for the first order.
+    /// @param order2BondAmountUsed The amount of bonds used for the second order.
+    /// @param order1FundAmountUsed The amount of funds used for the first order.
+    /// @param order2FundAmountUsed The amount of funds used for the second order.
     event OrdersMatched(
         IHyperdrive indexed hyperdrive,
         bytes32 indexed order1Hash,
         bytes32 indexed order2Hash,
         address order1Trader,
-        address order2Trader
+        address order2Trader,
+        uint256 order1BondAmountUsed,
+        uint256 order2BondAmountUsed,
+        uint256 order1FundAmountUsed,
+        uint256 order2FundAmountUsed
     );
 
     /// @notice The type of an order intent.
