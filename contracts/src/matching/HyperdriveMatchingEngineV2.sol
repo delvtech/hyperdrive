@@ -150,8 +150,6 @@ contract HyperdriveMatchingEngineV2 is
                 orderFundAmountUsed[order2Hash_] > order2.fundAmount) {
                 revert InvalidFundAmount();
             }
-            emit OrderFundAmountUsedUpdated(order1Hash_, orderFundAmountUsed[order1Hash_]);
-            emit OrderFundAmountUsedUpdated(order2Hash_, orderFundAmountUsed[order2Hash_]);
 
             // Calculate the maturity time of newly minted positions
             uint256 maturityTime = latestCheckpoint + config.positionDuration;
@@ -181,8 +179,6 @@ contract HyperdriveMatchingEngineV2 is
             // Update order bond amount used
             orderBondAmountUsed[order1Hash_] += bondAmount;
             orderBondAmountUsed[order2Hash_] += bondAmount;
-            emit OrderBondAmountUsedUpdated(order1Hash_, orderBondAmountUsed[order1Hash_]);
-            emit OrderBondAmountUsedUpdated(order2Hash_, orderBondAmountUsed[order2Hash_]);
 
             // Mark fully executed orders as cancelled 
             if (orderBondAmountUsed[order1Hash_] >= order1.bondAmount || orderFundAmountUsed[order1Hash_] >= order1.fundAmount) {
@@ -223,8 +219,6 @@ contract HyperdriveMatchingEngineV2 is
             //      amount is already used to calculate the bondMatchAmount.
             orderBondAmountUsed[order1Hash] += bondMatchAmount;
             orderBondAmountUsed[order2Hash] += bondMatchAmount;
-            emit OrderBondAmountUsedUpdated(order1Hash, orderBondAmountUsed[order1Hash]);
-            emit OrderBondAmountUsedUpdated(order2Hash, orderBondAmountUsed[order2Hash]);
 
             // Get the min fund output according to the bondMatchAmount
             // NOTE: Round the requred fund amount up to respect the order specified
@@ -249,8 +243,6 @@ contract HyperdriveMatchingEngineV2 is
             // Update order fund amount used
             orderFundAmountUsed[order1Hash] += minFundAmountOrder1;
             orderFundAmountUsed[order2Hash] += minFundAmountOrder2;
-            emit OrderFundAmountUsedUpdated(order1Hash, orderFundAmountUsed[order1Hash]);
-            emit OrderFundAmountUsedUpdated(order2Hash, orderFundAmountUsed[order2Hash]);
 
             // Mark fully executed orders as cancelled
             if (orderBondAmountUsed[order1Hash] >= _order1.bondAmount || 
@@ -286,7 +278,11 @@ contract HyperdriveMatchingEngineV2 is
             order1Hash,
             order2Hash,
             _order1.trader,
-            _order2.trader
+            _order2.trader,
+            orderBondAmountUsed[order1Hash],
+            orderBondAmountUsed[order2Hash],
+            orderFundAmountUsed[order1Hash],
+            orderFundAmountUsed[order2Hash]
         );
     }
 
