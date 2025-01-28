@@ -181,6 +181,39 @@ abstract contract HyperdriveTarget0 is
         _batchTransferFrom(from, to, ids, values);
     }
 
+    /// @dev Safely transfers tokens, checking if recipient is a contract and
+    ///      can handle ERC1155 tokens.
+    /// @param _from The source address.
+    /// @param _to The destination address.
+    /// @param _id The token identifier.
+    /// @param _amount The amount to transfer.
+    /// @param _data Additional data to pass to recipient if it's a contract.
+    function safeTransferFrom(
+        address _from,
+        address _to,
+        uint256 _id,
+        uint256 _amount,
+        bytes calldata _data
+    ) external {
+        _safeTransferFrom(_from, _to, _id, _amount, _data);
+    }
+
+    /// @dev Safely transfers multiple tokens in a batch.
+    /// @param _from The source address.
+    /// @param _to The destination address.
+    /// @param _ids Array of token identifiers.
+    /// @param _amounts Array of amounts to transfer for each token.
+    /// @param _data Additional data to pass to recipient if it's a contract.
+    function safeBatchTransferFrom(
+        address _from,
+        address _to,
+        uint256[] calldata _ids,
+        uint256[] calldata _amounts,
+        bytes memory _data
+    ) external {
+        _safeBatchTransferFrom(_from, _to, _ids, _amounts, _data);
+    }
+
     /// @notice Allows a caller who is not the owner of an account to execute
     ///         the functionality of 'approve' for all assets with the owner's
     ///         signature.
@@ -453,14 +486,36 @@ abstract contract HyperdriveTarget0 is
     }
 
     /// @notice Gets an account's balance of a sub-token.
-    /// @param tokenId The sub-token id.
-    /// @param account The account.
+    /// @param _tokenId The sub-token id.
+    /// @param _account The account.
     /// @return The balance.
     function balanceOf(
-        uint256 tokenId,
-        address account
+        uint256 _tokenId,
+        address _account
     ) external view returns (uint256) {
-        _revert(abi.encode(_balanceOf[tokenId][account]));
+        _revert(abi.encode(_balanceOf[_tokenId][_account]));
+    }
+
+    /// @notice Gets multiple accounts' balances for multiple token IDs.
+    /// @param _accounts Array of addresses to check balances for.
+    /// @param _ids Array of token IDs to check balances of.
+    /// @return Array of token balances.
+    function balanceOfBatch(
+        address[] calldata _accounts,
+        uint256[] calldata _ids
+    ) external view returns (uint256[] memory) {
+        // Check that input arrays match in length.
+        if (_accounts.length != _ids.length) {
+            revert IHyperdrive.ArrayLengthMismatch();
+        }
+
+        // Load the balances.
+        uint256[] memory batchBalances = new uint256[](_accounts.length);
+        for (uint256 i = 0; i < _accounts.length; ++i) {
+            batchBalances[i] = _balanceOf[_ids[i]][_accounts[i]];
+        }
+
+        _revert(abi.encode(batchBalances));
     }
 
     /// @notice Gets the total supply of a sub-token.

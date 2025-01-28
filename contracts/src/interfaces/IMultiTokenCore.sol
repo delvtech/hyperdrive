@@ -74,6 +74,35 @@ interface IMultiTokenCore {
         uint256[] calldata values
     ) external;
 
+    /// @dev Safely transfers tokens, checking if recipient is a contract and
+    ///      can handle ERC1155 tokens.
+    /// @param _from The source address.
+    /// @param _to The destination address.
+    /// @param _id The token identifier.
+    /// @param _amount The amount to transfer.
+    /// @param _data Additional data to pass to recipient if it's a contract.
+    function safeTransferFrom(
+        address _from,
+        address _to,
+        uint256 _id,
+        uint256 _amount,
+        bytes calldata _data
+    ) external;
+
+    /// @dev Safely transfers multiple tokens in a batch.
+    /// @param _from The source address.
+    /// @param _to The destination address.
+    /// @param _ids Array of token identifiers.
+    /// @param _amounts Array of amounts to transfer for each token.
+    /// @param _data Additional data to pass to recipient if it's a contract.
+    function safeBatchTransferFrom(
+        address _from,
+        address _to,
+        uint256[] calldata _ids,
+        uint256[] calldata _amounts,
+        bytes memory _data
+    ) external;
+
     /// @notice Allows a caller who is not the owner of an account to execute the
     ///         functionality of 'approve' for all assets with the owner's
     ///         signature.

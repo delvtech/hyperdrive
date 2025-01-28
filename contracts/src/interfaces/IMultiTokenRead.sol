@@ -51,6 +51,15 @@ interface IMultiTokenRead {
         address owner
     ) external view returns (uint256);
 
+    /// @notice Gets multiple accounts' balances for multiple token IDs.
+    /// @param _accounts Array of addresses to check balances for.
+    /// @param _ids Array of token IDs to check balances of.
+    /// @return Array of token balances.
+    function balanceOfBatch(
+        address[] calldata _accounts,
+        uint256[] calldata _ids
+    ) external view returns (uint256[] memory);
+
     /// @notice Gets the permit nonce for an account.
     /// @param owner The owner of the tokens.
     /// @return The permit nonce of the owner.

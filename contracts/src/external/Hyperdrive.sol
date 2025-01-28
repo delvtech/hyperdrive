@@ -345,6 +345,28 @@ abstract contract Hyperdrive is
         _delegate(target0);
     }
 
+    /// @inheritdoc IMultiTokenCore
+    function safeTransferFrom(
+        address _from,
+        address _to,
+        uint256 _id,
+        uint256 _amount,
+        bytes calldata _data
+    ) external {
+        _delegate(target0);
+    }
+
+    /// @inheritdoc IMultiTokenCore
+    function safeBatchTransferFrom(
+        address _from,
+        address _to,
+        uint256[] calldata _ids,
+        uint256[] calldata _amounts,
+        bytes memory _data
+    ) external {
+        _delegate(target0);
+    }
+
     /// @notice Allows a caller who is not the owner of an account to execute the
     ///      functionality of 'approve' for all assets with the owners signature.
     /// @param owner The owner of the account which is having the new approval set.
