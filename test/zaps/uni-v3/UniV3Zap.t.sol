@@ -20,6 +20,8 @@ import { ERC20Mintable } from "../../../contracts/test/ERC20Mintable.sol";
 import { MockERC4626 } from "../../../contracts/test/MockERC4626.sol";
 import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
 
+// FIXME: I need to update this test suite to support `safeTransferFrom`
+//        and `safeBatchTransferFrom`.
 contract UniV3ZapTest is HyperdriveTest {
     /// @dev The name of the zap contract.
     string internal constant NAME = "DELV Uniswap v3 Zap";

@@ -92,21 +92,6 @@ abstract contract HyperdriveTarget0 is
 
     /// MultiToken ///
 
-    /// @notice Transfers an amount of assets from the source to the destination.
-    /// @param tokenID The token identifier.
-    /// @param from The address whose balance will be reduced.
-    /// @param to The address whose balance will be increased.
-    /// @param amount The amount of token to move.
-    function transferFrom(
-        uint256 tokenID,
-        address from,
-        address to,
-        uint256 amount
-    ) external {
-        // Forward to our internal version
-        _transferFrom(tokenID, from, to, amount, msg.sender);
-    }
-
     /// @notice Permissioned transfer for the bridge to access, only callable by
     ///         the ERC20 linking bridge.
     /// @param tokenID The token identifier.
@@ -165,20 +150,6 @@ abstract contract HyperdriveTarget0 is
         uint256 amount
     ) external {
         _setApproval(tokenID, operator, amount, msg.sender);
-    }
-
-    /// @notice Transfers several assets from one account to another.
-    /// @param from The source account.
-    /// @param to The destination account.
-    /// @param ids The array of token ids of the asset to transfer.
-    /// @param values The amount of each token to transfer.
-    function batchTransferFrom(
-        address from,
-        address to,
-        uint256[] calldata ids,
-        uint256[] calldata values
-    ) external {
-        _batchTransferFrom(from, to, ids, values);
     }
 
     /// @dev Safely transfers tokens, checking if recipient is a contract and
@@ -506,7 +477,7 @@ abstract contract HyperdriveTarget0 is
     ) external view returns (uint256[] memory) {
         // Check that input arrays match in length.
         if (_accounts.length != _ids.length) {
-            revert IHyperdrive.ArrayLengthMismatch();
+            revert IHyperdrive.BatchInputLengthMismatch();
         }
 
         // Load the balances.

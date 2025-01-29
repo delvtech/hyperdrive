@@ -157,8 +157,8 @@ contract Debug is BaseTest, EtchingUtils {
             return ("setPauser", true);
         } else if (selector == IHyperdriveCore.sweep.selector) {
             return ("sweep", true);
-        } else if (selector == IMultiTokenCore.transferFrom.selector) {
-            return ("transferFrom", true);
+        } else if (selector == IMultiTokenCore.safeTransferFrom.selector) {
+            return ("safeTransferFrom", true);
         } else if (selector == IMultiTokenCore.transferFromBridge.selector) {
             return ("transferFromBridge", true);
         } else if (selector == IMultiTokenCore.setApproval.selector) {
@@ -167,8 +167,8 @@ contract Debug is BaseTest, EtchingUtils {
             return ("setApprovalBridge", true);
         } else if (selector == IMultiTokenCore.setApprovalForAll.selector) {
             return ("setApprovalForAll", true);
-        } else if (selector == IMultiTokenCore.batchTransferFrom.selector) {
-            return ("batchTransferFrom", true);
+        } else if (selector == IMultiTokenCore.safeBatchTransferFrom.selector) {
+            return ("safeBatchTransferFrom", true);
         } else if (selector == IMultiTokenCore.permitForAll.selector) {
             return ("permitForAll", true);
         }

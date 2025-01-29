@@ -45,6 +45,11 @@ contract UniV3Zap is IUniV3Zap, ReentrancyGuard {
     address internal constant LEGACY_STETH_HYPERDRIVE =
         address(0xd7e470043241C10970953Bd8374ee6238e77D735);
 
+    /// @dev The address of the Hyperdrive contract that is currently being
+    ///      interacted with. This is only set before we expect a transfer of
+    ///      ERC1155 tokens.
+    address internal hyperdrive = address(0x1);
+
     /// @notice The Uniswap swap router.
     ISwapRouter public immutable swapRouter;
 
@@ -190,12 +195,15 @@ contract UniV3Zap is IUniV3Zap, ReentrancyGuard {
         );
 
         // Take custody of the LP shares.
-        _hyperdrive.transferFrom(
-            AssetId._LP_ASSET_ID,
+        hyperdrive = address(_hyperdrive);
+        _hyperdrive.safeTransferFrom(
             msg.sender,
             address(this),
-            _lpShares
+            AssetId._LP_ASSET_ID,
+            _lpShares,
+            ""
         );
+        hyperdrive = address(0x1);
 
         // Remove the liquidity, zap the proceeds into the target asset, and
         // send them to the LP.
@@ -254,12 +262,15 @@ contract UniV3Zap is IUniV3Zap, ReentrancyGuard {
         );
 
         // Take custody of the LP shares.
-        _hyperdrive.transferFrom(
-            AssetId._WITHDRAWAL_SHARE_ASSET_ID,
+        hyperdrive = address(_hyperdrive);
+        _hyperdrive.safeTransferFrom(
             msg.sender,
             address(this),
-            _withdrawalShares
+            AssetId._WITHDRAWAL_SHARE_ASSET_ID,
+            _withdrawalShares,
+            ""
         );
+        hyperdrive = address(0x1);
 
         // Redeem the withdrawal shares, zap the proceeds into the target asset,
         // and send them to the LP.
@@ -379,12 +390,15 @@ contract UniV3Zap is IUniV3Zap, ReentrancyGuard {
         );
 
         // Take custody of the long position.
-        _hyperdrive.transferFrom(
-            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, _maturityTime),
+        // hyperdrive = address(_hyperdrive);
+        _hyperdrive.safeTransferFrom(
             msg.sender,
             address(this),
-            _bondAmount
+            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, _maturityTime),
+            _bondAmount,
+            ""
         );
+        hyperdrive = address(0x1);
 
         // Close the long, zap the proceeds into the target asset, and send
         // them to the trader.
@@ -517,12 +531,15 @@ contract UniV3Zap is IUniV3Zap, ReentrancyGuard {
         );
 
         // Take custody of the short position.
-        _hyperdrive.transferFrom(
-            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Short, _maturityTime),
+        hyperdrive = address(_hyperdrive);
+        _hyperdrive.safeTransferFrom(
             msg.sender,
             address(this),
-            _bondAmount
+            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Short, _maturityTime),
+            _bondAmount,
+            ""
         );
+        hyperdrive = address(0x1);
 
         // Close the short, zap the proceeds into the target asset, and send
         // them to the trader.
@@ -947,6 +964,67 @@ contract UniV3Zap is IUniV3Zap, ReentrancyGuard {
         // Otherwise, we can use the built-in `convertToShares` function.
         else {
             return _hyperdrive.convertToShares(_baseAmount);
+        }
+    }
+
+    /// IERC1155Receiver ///
+
+    // FIXME: Add a test for the transfer of a non-Hyperdrive ERC1155.
+    //
+    /// @notice Handles the receipt of a single ERC1155 token type. This
+    ///         function is called at the end of a `safeTransferFrom` after the
+    ///         balance has been updated.
+    /// @return The magic function selector if the transfer is allowed, and the
+    ///         the 0 bytes4 otherwise.
+    function onERC1155Received(
+        address,
+        address,
+        uint256,
+        uint256,
+        bytes calldata
+    ) external returns (bytes4) {
+        // If the sender is the right Hyperdrive contract, we accept the transfer.
+        if (msg.sender == hyperdrive) {
+            return
+                bytes4(
+                    keccak256(
+                        "onERC1155Received(address,address,uint256,uint256,bytes)"
+                    )
+                );
+        }
+        // Otherwise, we don't accept the transfer.
+        else {
+            return bytes4(0);
+        }
+    }
+
+    // FIXME: Add a test for the batch transfer of a non-Hyperdrive ERC1155.
+    //
+    /// @notice Handles the receipt of a multiple ERC1155 token types. This
+    ///         function is called at the end of a `safeBatchTransferFrom` after
+    ///         the balances have been updated.
+    /// @return The magic function selector if the transfer is allowed, and the
+    ///         the 0 bytes4 otherwise.
+    function onERC1155BatchReceived(
+        address,
+        address,
+        uint256[] calldata,
+        uint256[] calldata,
+        bytes calldata
+    ) external returns (bytes4) {
+        // If the sender is the right Hyperdrive contract, we accept the batch
+        // transfer.
+        if (msg.sender == hyperdrive) {
+            return
+                bytes4(
+                    keccak256(
+                        "onERC1155BatchReceived(address,address,uint256[],uint256[],bytes)"
+                    )
+                );
+        }
+        // Otherwise, we don't accept the transfer.
+        else {
+            return bytes4(0);
         }
     }
 }
