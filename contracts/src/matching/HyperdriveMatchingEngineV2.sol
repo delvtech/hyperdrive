@@ -57,11 +57,8 @@ contract HyperdriveMatchingEngineV2 is
     /// @notice Mapping to track cancelled orders.
     mapping(bytes32 => bool) public isCancelled;
 
-    /// @notice Mapping to track the bond amount used for each order.
-    mapping(bytes32 => uint256) public orderBondAmountUsed;
-
-    /// @notice Mapping to track the amount of fund used for each order.
-    mapping(bytes32 => uint256) public orderFundAmountUsed;
+    /// @notice Mapping to track the amounts used for each order.
+    mapping(bytes32 => OrderAmounts) public orderAmountsUsed;
 
     /// @notice Initializes the matching engine.
     /// @param _name The name of this matching engine.
@@ -80,7 +77,7 @@ contract HyperdriveMatchingEngineV2 is
         address _surplusRecipient
     ) external nonReentrant {
         // Validate orders.
-        (bytes32 order1Hash, bytes32 order2Hash) = _validateOrders(
+        (bytes32 order1Hash, bytes32 order2Hash) = _validateOrdersNoTaker(
             _order1, 
             _order2
         );
@@ -140,16 +137,16 @@ contract HyperdriveMatchingEngineV2 is
             // new match, hence increasing the match likelihood.
             // NOTE: Round the required fund amount down to prevent overspending
             //       and possible reverting at a later step.
-            uint256 fundTokenAmountOrder1 = (order1.fundAmount - orderFundAmountUsed[order1Hash_]).mulDivDown(bondMatchAmount, (order1.bondAmount - orderBondAmountUsed[order1Hash_]));
-            uint256 fundTokenAmountOrder2 = (order2.fundAmount - orderFundAmountUsed[order2Hash_]).mulDivDown(bondMatchAmount, (order2.bondAmount - orderBondAmountUsed[order2Hash_]));
+            uint256 fundTokenAmountOrder1 = (order1.fundAmount - orderAmountsUsed[order1Hash_].fundAmount).mulDivDown(bondMatchAmount, (order1.bondAmount - orderAmountsUsed[order1Hash_].bondAmount));
+            uint256 fundTokenAmountOrder2 = (order2.fundAmount - orderAmountsUsed[order2Hash_].fundAmount).mulDivDown(bondMatchAmount, (order2.bondAmount - orderAmountsUsed[order2Hash_].bondAmount));
 
             // Update order fund amount used.
-            orderFundAmountUsed[order1Hash_] += fundTokenAmountOrder1;
-            orderFundAmountUsed[order2Hash_] += fundTokenAmountOrder2;
+            _updateOrderAmount(order1Hash_, fundTokenAmountOrder1, false);
+            _updateOrderAmount(order2Hash_, fundTokenAmountOrder2, false);
 
             // Check if the fund amount used is greater than the order amount.
-            if (orderFundAmountUsed[order1Hash_] > order1.fundAmount || 
-                orderFundAmountUsed[order2Hash_] > order2.fundAmount) {
+            if (orderAmountsUsed[order1Hash_].fundAmount > order1.fundAmount || 
+                orderAmountsUsed[order2Hash_].fundAmount > order2.fundAmount) {
                 revert InvalidFundAmount();
             }
 
@@ -184,8 +181,8 @@ contract HyperdriveMatchingEngineV2 is
                 hyperdrive_);
             
             // Update order bond amount used.
-            orderBondAmountUsed[order1Hash_] += bondAmount;
-            orderBondAmountUsed[order2Hash_] += bondAmount;
+            _updateOrderAmount(order1Hash_, bondAmount, true);
+            _updateOrderAmount(order2Hash_, bondAmount, true);
 
             // Transfer the remaining fund tokens back to the surplus recipient.
             // @dev This step could have been placed in the end outside of the
@@ -218,15 +215,15 @@ contract HyperdriveMatchingEngineV2 is
             // Get the min fund output according to the bondMatchAmount.
             // NOTE: Round the required fund amount up to respect the order specified
             //       min fund output.
-            uint256 minFundAmountOrder1 = (_order1.fundAmount - orderFundAmountUsed[order1Hash]).mulDivUp(bondMatchAmount, (_order1.bondAmount - orderBondAmountUsed[order1Hash]));
-            uint256 minFundAmountOrder2 = (_order2.fundAmount - orderFundAmountUsed[order2Hash]).mulDivUp(bondMatchAmount, (_order2.bondAmount - orderBondAmountUsed[order2Hash]));
+            uint256 minFundAmountOrder1 = (_order1.fundAmount - orderAmountsUsed[order1Hash].fundAmount).mulDivUp(bondMatchAmount, (_order1.bondAmount - orderAmountsUsed[order1Hash].bondAmount));
+            uint256 minFundAmountOrder2 = (_order2.fundAmount - orderAmountsUsed[order2Hash].fundAmount).mulDivUp(bondMatchAmount, (_order2.bondAmount - orderAmountsUsed[order2Hash].bondAmount));
 
             // Update order bond amount used.
             // @dev After the update, there is no need to check if the bond
             //      amount used is greater than the order amount, as the order
             //      amount is already used to calculate the bondMatchAmount.
-            orderBondAmountUsed[order1Hash] += bondMatchAmount;
-            orderBondAmountUsed[order2Hash] += bondMatchAmount;
+            _updateOrderAmount(order1Hash, bondMatchAmount, true);
+            _updateOrderAmount(order2Hash, bondMatchAmount, true);
 
             // Get the fund token.
             ERC20 fundToken;
@@ -248,8 +245,8 @@ contract HyperdriveMatchingEngineV2 is
             );
             
             // Update order fund amount used.
-            orderFundAmountUsed[order1Hash] += minFundAmountOrder1;
-            orderFundAmountUsed[order2Hash] += minFundAmountOrder2;
+            _updateOrderAmount(order1Hash, minFundAmountOrder1, false);
+            _updateOrderAmount(order2Hash, minFundAmountOrder2, false);
 
             // Transfer the remaining fund tokens back to the surplus recipient.
             // @dev This step could have been placed in the end outside of the
@@ -289,12 +286,12 @@ contract HyperdriveMatchingEngineV2 is
             // new match, hence increasing the match likelihood.
             // NOTE: Round the required fund amount down to prevent overspending
             //       and possible reverting at a later step.
-            uint256 fundTokenAmountOrder1 = (_order1.fundAmount - orderFundAmountUsed[order1Hash]).mulDivDown(bondMatchAmount, (_order1.bondAmount - orderBondAmountUsed[order1Hash]));
+            uint256 fundTokenAmountOrder1 = (_order1.fundAmount - orderAmountsUsed[order1Hash].fundAmount).mulDivDown(bondMatchAmount, (_order1.bondAmount - orderAmountsUsed[order1Hash].bondAmount));
             
             // Get the min fund output according to the bondMatchAmount.
             // NOTE: Round the required fund amount up to respect the order specified
             //       min fund output.
-            uint256 minFundAmountOrder2 = (_order2.fundAmount - orderFundAmountUsed[order2Hash]).mulDivUp(bondMatchAmount, (_order2.bondAmount - orderBondAmountUsed[order2Hash]));
+            uint256 minFundAmountOrder2 = (_order2.fundAmount - orderAmountsUsed[order2Hash].fundAmount).mulDivUp(bondMatchAmount, (_order2.bondAmount - orderAmountsUsed[order2Hash].bondAmount));
 
             // Get the fund token.
             ERC20 fundToken;
@@ -314,8 +311,8 @@ contract HyperdriveMatchingEngineV2 is
             // @dev After the update, there is no need to check if the bond
             //      amount used is greater than the order amount, as the order
             //      amount is already used to calculate the bondMatchAmount.
-            orderBondAmountUsed[order1Hash] += bondMatchAmount;
-            orderBondAmountUsed[order2Hash] += bondMatchAmount;
+            _updateOrderAmount(order1Hash, bondMatchAmount, true);
+            _updateOrderAmount(order2Hash, bondMatchAmount, true);
 
             _handleTransfer(
                 _order1,
@@ -328,8 +325,8 @@ contract HyperdriveMatchingEngineV2 is
             );
 
             // Update order fund amount used.
-            orderFundAmountUsed[order1Hash] += fundTokenAmountOrder1;
-            orderFundAmountUsed[order2Hash] += minFundAmountOrder2;
+            _updateOrderAmount(order1Hash, fundTokenAmountOrder1, false);
+            _updateOrderAmount(order2Hash, minFundAmountOrder2, false);
 
             // Transfer the remaining fund tokens back to the surplus recipient.
             // @dev This step could have been placed in the end outside of the
@@ -354,10 +351,10 @@ contract HyperdriveMatchingEngineV2 is
             order2Hash,
             _order1.trader,
             _order2.trader,
-            orderBondAmountUsed[order1Hash],
-            orderBondAmountUsed[order2Hash],
-            orderFundAmountUsed[order1Hash],
-            orderFundAmountUsed[order2Hash]
+            orderAmountsUsed[order1Hash].bondAmount,
+            orderAmountsUsed[order2Hash].bondAmount,
+            orderAmountsUsed[order1Hash].fundAmount,
+            orderAmountsUsed[order2Hash].fundAmount
         );
     }
 
@@ -451,7 +448,7 @@ contract HyperdriveMatchingEngineV2 is
     /// @param _order2 The second order to validate.
     /// @return order1Hash The hash of the first order.
     /// @return order2Hash The hash of the second order.
-    function _validateOrders(
+    function _validateOrdersNoTaker(
         OrderIntent calldata _order1,
         OrderIntent calldata _order2
     ) internal view returns (bytes32 order1Hash, bytes32 order2Hash) {
@@ -520,12 +517,12 @@ contract HyperdriveMatchingEngineV2 is
         order2Hash = hashOrderIntent(_order2);
 
         // Check if orders are fully executed.
-        if (orderBondAmountUsed[order1Hash] >= _order1.bondAmount || 
-            orderFundAmountUsed[order1Hash] >= _order1.fundAmount) {
+        if (orderAmountsUsed[order1Hash].bondAmount >= _order1.bondAmount || 
+            orderAmountsUsed[order1Hash].fundAmount >= _order1.fundAmount) {
             revert AlreadyFullyExecuted();
-            }
-        if (orderBondAmountUsed[order2Hash] >= _order2.bondAmount || 
-            orderFundAmountUsed[order2Hash] >= _order2.fundAmount) {
+        }
+        if (orderAmountsUsed[order2Hash].bondAmount >= _order2.bondAmount || 
+            orderAmountsUsed[order2Hash].fundAmount >= _order2.fundAmount) {
             revert AlreadyFullyExecuted();
         }
 
@@ -562,20 +559,14 @@ contract HyperdriveMatchingEngineV2 is
         OrderIntent calldata _order2,
         bytes32 _order1Hash,
         bytes32 _order2Hash
-    ) internal view returns (
-        uint256 bondMatchAmount
-    ) {
-        uint256 order1BondAmountUsed = orderBondAmountUsed[_order1Hash];
-        uint256 order2BondAmountUsed = orderBondAmountUsed[_order2Hash];
+    ) internal view returns (uint256 bondMatchAmount) {
+        OrderAmounts memory amounts1 = orderAmountsUsed[_order1Hash];
+        OrderAmounts memory amounts2 = orderAmountsUsed[_order2Hash];
 
-        if (order1BondAmountUsed >= _order1.bondAmount || order2BondAmountUsed >= _order2.bondAmount) {
-            revert NoBondMatchAmount();
-        }
-
-        uint256 _order1BondAmount = _order1.bondAmount - order1BondAmountUsed;
-        uint256 _order2BondAmount = _order2.bondAmount - order2BondAmountUsed;
+        uint256 order1BondAmount = _order1.bondAmount - amounts1.bondAmount;
+        uint256 order2BondAmount = _order2.bondAmount - amounts2.bondAmount;
             
-        bondMatchAmount = _order1BondAmount.min(_order2BondAmount);
+        bondMatchAmount = order1BondAmount.min(order2BondAmount);
     }
 
     /// @dev Handles the minting of matching positions.
@@ -787,5 +778,38 @@ contract HyperdriveMatchingEngineV2 is
             block.timestamp,
             _checkpointDuration
         );
+    }
+
+    /// @dev Updates either the bond amount or fund amount used for a given order.
+    /// @param orderHash The hash of the order.
+    /// @param amount The amount to add.
+    /// @param updateBond If true, updates bond amount; if false, updates fund
+    ///        amount.
+    function _updateOrderAmount(
+        bytes32 orderHash,
+        uint256 amount,
+        bool updateBond
+    ) internal {
+        OrderAmounts memory amounts = orderAmountsUsed[orderHash];
+        
+        if (updateBond) {
+            // Check for overflow before casting to uint128
+            if (amounts.bondAmount + amount > type(uint128).max) {
+                revert AmountOverflow();
+            }
+            orderAmountsUsed[orderHash] = OrderAmounts({
+                bondAmount: uint128(amounts.bondAmount + amount),
+                fundAmount: amounts.fundAmount
+            });
+        } else {
+            // Check for overflow before casting to uint128
+            if (amounts.fundAmount + amount > type(uint128).max) {
+                revert AmountOverflow();
+            }
+            orderAmountsUsed[orderHash] = OrderAmounts({
+                bondAmount: amounts.bondAmount,
+                fundAmount: uint128(amounts.fundAmount + amount)
+            });
+        }
     }
 }

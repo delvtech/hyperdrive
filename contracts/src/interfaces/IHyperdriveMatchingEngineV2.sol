@@ -36,8 +36,8 @@ interface IHyperdriveMatchingEngineV2 {
     ///         Hyperdrive instance.
     error MismatchedHyperdrive();
     
-    /// @notice Thrown when the bond match amount is zero.
-    error NoBondMatchAmount();
+    /// @notice Thrown when the amount overflows.
+    error AmountOverflow();
 
     /// @notice Thrown when the used fund amount is greater than the order specified.
     error InvalidFundAmount();
@@ -148,6 +148,14 @@ interface IHyperdriveMatchingEngineV2 {
         bytes32 salt;
     }
 
+    /// @notice Struct to track the amounts used for each order.
+    /// @param bondAmount The amount of bonds used.
+    /// @param fundAmount The amount of fund tokens used.
+    struct OrderAmounts {
+        uint128 bondAmount;
+        uint128 fundAmount;
+    }
+
     /// @notice Get the name of this matching engine.
     /// @return The name string.
     function name() external view returns (string memory);
@@ -169,15 +177,11 @@ interface IHyperdriveMatchingEngineV2 {
     /// @return True if the order was cancelled and false otherwise.
     function isCancelled(bytes32 orderHash) external view returns (bool);
 
-    /// @notice Get the amount of bonds used for a specific order.
+    /// @notice Returns the amounts used for a specific order.
     /// @param orderHash The hash of the order.
-    /// @return The amount of bonds used.
-    function orderBondAmountUsed(bytes32 orderHash) external view returns (uint256);
-
-    /// @notice Get the amount of funds used for a specific order.
-    /// @param orderHash The hash of the order.
-    /// @return The amount of funds used.
-    function orderFundAmountUsed(bytes32 orderHash) external view returns (uint256);
+    /// @return bondAmount The bond amount used for the order.
+    /// @return fundAmount The fund amount used for the order.
+    function orderAmountsUsed(bytes32 orderHash) external view returns (uint128 bondAmount, uint128 fundAmount);
 
     /// @notice Get the EIP712 typehash for the
     ///         `IHyperdriveMatchingEngine.OrderIntent` struct.
