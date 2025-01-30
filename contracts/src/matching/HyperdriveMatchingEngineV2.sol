@@ -263,11 +263,13 @@ contract HyperdriveMatchingEngineV2 is
             }
         }
 
-        // Case 3: Long transfer between traders.
-        else if (_order1.orderType == OrderType.OpenLong && 
-                 _order2.orderType == OrderType.CloseLong) {
-            // Verify that the maturity time of the CloseLong order matches the 
-            // OpenLong order's requirements.
+        // Case 3: Transfer positions between traders.
+        else if ((_order1.orderType == OrderType.OpenLong && 
+                 _order2.orderType == OrderType.CloseLong) ||
+                 (_order1.orderType == OrderType.OpenShort && 
+                 _order2.orderType == OrderType.CloseShort)) {
+            // Verify that the maturity time of the close order matches the 
+            // open order's requirements.
             if (_order2.maxMaturityTime > _order1.maxMaturityTime || 
                 _order2.maxMaturityTime < _order1.minMaturityTime) {
                 revert InvalidMaturityTime();
@@ -315,7 +317,7 @@ contract HyperdriveMatchingEngineV2 is
             orderBondAmountUsed[order1Hash] += bondMatchAmount;
             orderBondAmountUsed[order2Hash] += bondMatchAmount;
 
-            _handleLongTransfer(
+            _handleTransfer(
                 _order1,
                 _order2,
                 fundTokenAmountOrder1,
@@ -339,12 +341,6 @@ contract HyperdriveMatchingEngineV2 is
                     remainingBalance
                 );
             }
-        }
-
-        // Case 4: Short transfer between traders.
-        else if (_order1.orderType == OrderType.OpenShort && 
-                 _order2.orderType == OrderType.CloseShort) {
-            _handleShortTransfer();
         }
 
         // All other cases are invalid.
@@ -723,56 +719,61 @@ contract HyperdriveMatchingEngineV2 is
         _fundToken.safeTransfer(shortOrder.options.destination, _minFundAmountShortOrder);
     }
 
-    /// @dev Handles the transfer of long positions between traders.
-    /// @param _openLongOrder The order for opening a long position.
-    /// @param _closeLongOrder The order for closing a long position.
-    /// @param _fundTokenAmountOpenLongOrder The amount of fund tokens from the
-    ///        open long order.
-    /// @param _minFundAmountCloseLongOrder The minimum fund amount for the close
-    ///        long order.
+    /// @dev Handles the transfer of positions between traders.
+    /// @param _openOrder The order for opening a position.
+    /// @param _closeOrder The order for closing a position.
+    /// @param _fundTokenAmountOpenOrder The amount of fund tokens from the
+    ///        open order.
+    /// @param _minFundAmountCloseOrder The minimum fund amount for the close
+    ///        order.
     /// @param _bondMatchAmount The amount of bonds to transfer.
     /// @param _fundToken The fund token being used.
     /// @param _hyperdrive The Hyperdrive contract instance.
-    function _handleLongTransfer(
-        OrderIntent calldata _openLongOrder,
-        OrderIntent calldata _closeLongOrder,
-        uint256 _fundTokenAmountOpenLongOrder,
-        uint256 _minFundAmountCloseLongOrder,
+    function _handleTransfer(
+        OrderIntent calldata _openOrder,
+        OrderIntent calldata _closeOrder,
+        uint256 _fundTokenAmountOpenOrder,
+        uint256 _minFundAmountCloseOrder,
         uint256 _bondMatchAmount,
         ERC20 _fundToken,
         IHyperdrive _hyperdrive
     ) internal {
-        // Get asset ID for the long position.
-        uint256 longAssetId = AssetId.encodeAssetId(
-            AssetId.AssetIdPrefix.Long,
-            _closeLongOrder.maxMaturityTime
-        );
+        // Get asset ID for the position.
+        uint256 assetId;
+        if (_openOrder.orderType == OrderType.OpenLong) {
+            assetId = AssetId.encodeAssetId(
+                AssetId.AssetIdPrefix.Long,
+                _closeOrder.maxMaturityTime
+            );
+        } else {
+            assetId = AssetId.encodeAssetId(
+                AssetId.AssetIdPrefix.Short,
+                _closeOrder.maxMaturityTime
+            );
+        }
 
-        // Transfer the long position from the close trader to the open trader.
+        // Transfer the position from the close trader to the open trader.
         _hyperdrive.transferFrom(
-            longAssetId,
-            _closeLongOrder.trader,
-            _openLongOrder.options.destination,
+            assetId,
+            _closeOrder.trader,
+            _openOrder.options.destination,
             _bondMatchAmount
         );
 
         // Transfer fund tokens from open trader to the close trader.
         // @dev Considering this address may hold donated fund tokens, so we
-        //      transfer all the _fundTokenAmountOpenLongOrder to this contract
+        //      transfer all the _fundTokenAmountOpenOrder to this contract
         //      first, then transfer the needed amount to the close trader.
         _fundToken.safeTransferFrom(
-            _openLongOrder.trader,
+            _openOrder.trader,
             address(this),
-            _fundTokenAmountOpenLongOrder
+            _fundTokenAmountOpenOrder
         );
         _fundToken.safeTransfer(
-            _closeLongOrder.options.destination,
-            _minFundAmountCloseLongOrder
+            _closeOrder.options.destination,
+            _minFundAmountCloseOrder
         );
     }
-
-    // TODO: Implement these functions.
-    function _handleShortTransfer() internal {}
 
     /// @dev Gets the most recent checkpoint time.
     /// @param _checkpointDuration The duration of the checkpoint.
