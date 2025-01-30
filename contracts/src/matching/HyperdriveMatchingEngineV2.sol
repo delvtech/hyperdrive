@@ -188,10 +188,15 @@ contract HyperdriveMatchingEngineV2 is
             orderBondAmountUsed[order2Hash_] += bondAmount;
 
             // Transfer the remaining fund tokens back to the surplus recipient.
-            fundToken.safeTransfer(
-                surplusRecipient,
-                fundToken.balanceOf(address(this))
-            );
+            // @dev This step could have been placed in the end outside of the
+            //      control flow, but it's placed here to avoid stack-too-deep.
+            uint256 remainingBalance = fundToken.balanceOf(address(this));
+            if (remainingBalance > 0) {
+                fundToken.safeTransfer(
+                    surplusRecipient,
+                    remainingBalance
+                );
+            }
         } 
 
         // Case 2: Long + Short closing using burn().
@@ -247,10 +252,15 @@ contract HyperdriveMatchingEngineV2 is
             orderFundAmountUsed[order2Hash] += minFundAmountOrder2;
 
             // Transfer the remaining fund tokens back to the surplus recipient.
-            fundToken.safeTransfer(
-                _surplusRecipient,
-                fundToken.balanceOf(address(this))
-            );
+            // @dev This step could have been placed in the end outside of the
+            //      control flow, but it's placed here to avoid stack-too-deep.
+            uint256 remainingBalance = fundToken.balanceOf(address(this));
+            if (remainingBalance > 0) {
+                fundToken.safeTransfer(
+                    _surplusRecipient,
+                    remainingBalance
+                );
+            }
         }
 
         // Case 3: Long transfer between traders.
@@ -263,7 +273,72 @@ contract HyperdriveMatchingEngineV2 is
                 revert InvalidMaturityTime();
             }
 
-            _handleLongTransfer();
+            // Calculate matching amount.
+            uint256 bondMatchAmount = _calculateBondMatchAmount(
+                _order1, 
+                _order2, 
+                order1Hash, 
+                order2Hash
+            );
+
+            // Calculate the amount of fund tokens to transfer based on the 
+            // bondMatchAmount using dynamic pricing. During a series of partial 
+            // matching, the pricing requirements can go easier as needed for each 
+            // new match, hence increasing the match likelihood.
+            // NOTE: Round the required fund amount down to prevent overspending
+            //       and possible reverting at a later step.
+            uint256 fundTokenAmountOrder1 = (_order1.fundAmount - orderFundAmountUsed[order1Hash]).mulDivDown(bondMatchAmount, (_order1.bondAmount - orderBondAmountUsed[order1Hash]));
+            
+            // Get the min fund output according to the bondMatchAmount.
+            // NOTE: Round the required fund amount up to respect the order specified
+            //       min fund output.
+            uint256 minFundAmountOrder2 = (_order2.fundAmount - orderFundAmountUsed[order2Hash]).mulDivUp(bondMatchAmount, (_order2.bondAmount - orderBondAmountUsed[order2Hash]));
+
+            // Get the fund token.
+            ERC20 fundToken;
+            if (_order1.options.asBase) {
+                fundToken = ERC20(hyperdrive.baseToken());
+            } else {
+                fundToken = ERC20(hyperdrive.vaultSharesToken());
+            }
+
+            // Check if trader 1 has enough fund to transfer to trader 2.
+            // @dev Also considering any donations to help match the orders.
+            if (fundTokenAmountOrder1 + fundToken.balanceOf(address(this)) < minFundAmountOrder2) {
+                revert InsufficientFunding();
+            }
+
+            // Update order bond amount used.
+            // @dev After the update, there is no need to check if the bond
+            //      amount used is greater than the order amount, as the order
+            //      amount is already used to calculate the bondMatchAmount.
+            orderBondAmountUsed[order1Hash] += bondMatchAmount;
+            orderBondAmountUsed[order2Hash] += bondMatchAmount;
+
+            _handleLongTransfer(
+                _order1,
+                _order2,
+                fundTokenAmountOrder1,
+                minFundAmountOrder2,
+                bondMatchAmount,
+                fundToken,
+                hyperdrive
+            );
+
+            // Update order fund amount used.
+            orderFundAmountUsed[order1Hash] += fundTokenAmountOrder1;
+            orderFundAmountUsed[order2Hash] += minFundAmountOrder2;
+
+            // Transfer the remaining fund tokens back to the surplus recipient.
+            // @dev This step could have been placed in the end outside of the
+            //      control flow, but it's placed here to avoid stack-too-deep.
+            uint256 remainingBalance = fundToken.balanceOf(address(this));
+            if (remainingBalance > 0) {
+                fundToken.safeTransfer(
+                    _surplusRecipient,
+                    remainingBalance
+                );
+            }
         }
 
         // Case 4: Short transfer between traders.
@@ -648,8 +723,55 @@ contract HyperdriveMatchingEngineV2 is
         _fundToken.safeTransfer(shortOrder.options.destination, _minFundAmountShortOrder);
     }
 
+    /// @dev Handles the transfer of long positions between traders.
+    /// @param _openLongOrder The order for opening a long position.
+    /// @param _closeLongOrder The order for closing a long position.
+    /// @param _fundTokenAmountOpenLongOrder The amount of fund tokens from the
+    ///        open long order.
+    /// @param _minFundAmountCloseLongOrder The minimum fund amount for the close
+    ///        long order.
+    /// @param _bondMatchAmount The amount of bonds to transfer.
+    /// @param _fundToken The fund token being used.
+    /// @param _hyperdrive The Hyperdrive contract instance.
+    function _handleLongTransfer(
+        OrderIntent calldata _openLongOrder,
+        OrderIntent calldata _closeLongOrder,
+        uint256 _fundTokenAmountOpenLongOrder,
+        uint256 _minFundAmountCloseLongOrder,
+        uint256 _bondMatchAmount,
+        ERC20 _fundToken,
+        IHyperdrive _hyperdrive
+    ) internal {
+        // Get asset ID for the long position.
+        uint256 longAssetId = AssetId.encodeAssetId(
+            AssetId.AssetIdPrefix.Long,
+            _closeLongOrder.maxMaturityTime
+        );
+
+        // Transfer the long position from the close trader to the open trader.
+        _hyperdrive.transferFrom(
+            longAssetId,
+            _closeLongOrder.trader,
+            _openLongOrder.options.destination,
+            _bondMatchAmount
+        );
+
+        // Transfer fund tokens from open trader to the close trader.
+        // @dev Considering this address may hold donated fund tokens, so we
+        //      transfer all the _fundTokenAmountOpenLongOrder to this contract
+        //      first, then transfer the needed amount to the close trader.
+        _fundToken.safeTransferFrom(
+            _openLongOrder.trader,
+            address(this),
+            _fundTokenAmountOpenLongOrder
+        );
+        _fundToken.safeTransfer(
+            _closeLongOrder.options.destination,
+            _minFundAmountCloseLongOrder
+        );
+    }
+
     // TODO: Implement these functions.
-    function _handleLongTransfer() internal {}
     function _handleShortTransfer() internal {}
 
     /// @dev Gets the most recent checkpoint time.
