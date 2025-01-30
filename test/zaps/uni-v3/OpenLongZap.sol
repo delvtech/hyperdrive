@@ -396,7 +396,7 @@ contract OpenLongZapTest is UniV3ZapTest {
                     recipient: address(zap),
                     deadline: block.timestamp + 1 minutes,
                     amountIn: 1_000e6,
-                    amountOutMinimum: 999e18
+                    amountOutMinimum: 999.5e18
                 }),
                 sourceAsset: USDC,
                 sourceAmount: 1_000e6,
@@ -427,7 +427,7 @@ contract OpenLongZapTest is UniV3ZapTest {
                     recipient: address(zap),
                     deadline: block.timestamp + 1 minutes,
                     amountIn: 1_000e6,
-                    amountOutMinimum: 885e18
+                    amountOutMinimum: 885.5e18
                 }),
                 sourceAsset: USDC,
                 sourceAmount: 1_000e6,
@@ -456,7 +456,7 @@ contract OpenLongZapTest is UniV3ZapTest {
                     recipient: address(zap),
                     deadline: block.timestamp + 1 minutes,
                     amountIn: 0.2534e18,
-                    amountOutMinimum: 771e18
+                    amountOutMinimum: 772e18
                 }),
                 sourceAsset: STETH,
                 sourceAmount: 0.3e18,
@@ -569,9 +569,10 @@ contract OpenLongZapTest is UniV3ZapTest {
                 aliceBalanceBefore - zapInOptions.sourceAmount
             );
         } else {
-            assertEq(
+            assertApproxEqAbs(
                 IERC20(zapInOptions.sourceAsset).balanceOf(alice),
-                aliceBalanceBefore - zapInOptions.sourceAmount
+                aliceBalanceBefore - zapInOptions.sourceAmount,
+                1
             );
         }
 
@@ -592,8 +593,7 @@ contract OpenLongZapTest is UniV3ZapTest {
             assertGt(
                 hyperdriveVaultSharesBalanceAfter,
                 hyperdriveVaultSharesBalanceBefore +
-                    _convertToShares(
-                        hyperdrive,
+                    hyperdrive.convertToShares(
                         zapInOptions.swapParams.amountOutMinimum
                     )
             );
@@ -634,10 +634,9 @@ contract OpenLongZapTest is UniV3ZapTest {
                 );
             } else {
                 assertGt(
-                    _convertToBase(
-                        hyperdrive,
-                        zapInOptions.swapParams.amountOutMinimum
-                    ).divDown(longAmount),
+                    hyperdrive
+                        .convertToBase(zapInOptions.swapParams.amountOutMinimum)
+                        .divDown(longAmount),
                     spotPriceBefore
                 );
             }

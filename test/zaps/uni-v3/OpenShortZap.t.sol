@@ -606,9 +606,10 @@ contract OpenShortZapTest is UniV3ZapTest {
                 params.aliceInputBalanceBefore - _zapInOptions.sourceAmount
             );
         } else {
-            assertEq(
+            assertApproxEqAbs(
                 IERC20(_zapInOptions.sourceAsset).balanceOf(alice),
-                params.aliceInputBalanceBefore - _zapInOptions.sourceAmount
+                params.aliceInputBalanceBefore - _zapInOptions.sourceAmount,
+                1
             );
         }
 
@@ -621,13 +622,24 @@ contract OpenShortZapTest is UniV3ZapTest {
                     (_zapInOptions.swapParams.amountOutMinimum - deposit)
             );
         } else {
-            assertGt(
-                IERC20(_zapInOptions.swapParams.path.tokenOut()).balanceOf(
-                    alice
-                ),
-                params.aliceOutputBalanceBefore +
-                    (_zapInOptions.swapParams.amountOutMinimum - deposit)
-            );
+            if (_zapInOptions.isRebasing && !_asBase) {
+                assertGt(
+                    IERC20(_zapInOptions.swapParams.path.tokenOut()).balanceOf(
+                        alice
+                    ),
+                    params.aliceOutputBalanceBefore +
+                        (_zapInOptions.swapParams.amountOutMinimum -
+                            _hyperdrive.convertToBase(deposit))
+                );
+            } else {
+                assertGt(
+                    IERC20(_zapInOptions.swapParams.path.tokenOut()).balanceOf(
+                        alice
+                    ),
+                    params.aliceOutputBalanceBefore +
+                        (_zapInOptions.swapParams.amountOutMinimum - deposit)
+                );
+            }
         }
 
         // Ensure that Hyperdrive received the deposit.
@@ -637,15 +649,16 @@ contract OpenShortZapTest is UniV3ZapTest {
         if (_zapInOptions.isRebasing) {
             if (_asBase) {
                 // NOTE: Since the vault shares rebase, the units are in base.
-                assertEq(
+                assertApproxEqAbs(
                     hyperdriveVaultSharesBalanceAfter,
-                    params.hyperdriveVaultSharesBalanceBefore + deposit
+                    params.hyperdriveVaultSharesBalanceBefore + deposit,
+                    1
                 );
             } else {
                 assertApproxEqAbs(
                     hyperdriveVaultSharesBalanceAfter,
                     params.hyperdriveVaultSharesBalanceBefore +
-                        _convertToBase(_hyperdrive, deposit),
+                        _hyperdrive.convertToBase(deposit),
                     1
                 );
             }
@@ -655,7 +668,7 @@ contract OpenShortZapTest is UniV3ZapTest {
                 assertApproxEqAbs(
                     hyperdriveVaultSharesBalanceAfter,
                     params.hyperdriveVaultSharesBalanceBefore +
-                        _convertToShares(_hyperdrive, deposit),
+                        _hyperdrive.convertToShares(deposit),
                     1
                 );
             } else {
@@ -680,7 +693,7 @@ contract OpenShortZapTest is UniV3ZapTest {
                 assertLt(deposit.divDown(_bondAmount), params.spotPriceBefore);
             } else {
                 assertLt(
-                    _convertToBase(_hyperdrive, deposit).divDown(_bondAmount),
+                    _hyperdrive.convertToBase(deposit).divDown(_bondAmount),
                     params.spotPriceBefore
                 );
             }

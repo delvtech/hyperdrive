@@ -29,22 +29,6 @@ contract UniV3Zap is IUniV3Zap, ReentrancyGuard {
     using SafeERC20 for ERC20;
     using UniV3Path for bytes;
 
-    /// @dev We can assume that almost all Hyperdrive deployments have the
-    ///      `convertToBase` and `convertToShares` functions, but there is
-    ///      one legacy sDAI pool that was deployed before these functions
-    ///      were written. We explicitly special case conversions for this
-    ///      pool.
-    address internal constant LEGACY_SDAI_HYPERDRIVE =
-        address(0x324395D5d835F84a02A75Aa26814f6fD22F25698);
-
-    /// @notice We can assume that almost all Hyperdrive deployments have the
-    ///         `convertToBase` and `convertToShares` functions, but there is
-    ///         one legacy stETH pool that was deployed before these functions
-    ///         were written. We explicitly special case conversions for this
-    ///         pool.
-    address internal constant LEGACY_STETH_HYPERDRIVE =
-        address(0xd7e470043241C10970953Bd8374ee6238e77D735);
-
     /// @dev The address of the Hyperdrive contract that is currently being
     ///      interacted with. This is only set before we expect a transfer of
     ///      ERC1155 tokens.
@@ -141,7 +125,7 @@ contract UniV3Zap is IUniV3Zap, ReentrancyGuard {
         // token is a rebasing token, the proceeds amount needs to be converted
         // to vault shares.
         if (!_hyperdriveOptions.asBase && _zapInOptions.isRebasing) {
-            proceeds = _convertToShares(_hyperdrive, proceeds);
+            proceeds = _hyperdrive.convertToShares(proceeds);
         }
         uint256 value = shouldConvertToETH ? proceeds : 0;
         lpShares = _hyperdrive.addLiquidity{ value: value }(
@@ -344,7 +328,7 @@ contract UniV3Zap is IUniV3Zap, ReentrancyGuard {
         // token is a rebasing token, the proceeds amount needs to be converted
         // to vault shares.
         if (!_hyperdriveOptions.asBase && _zapInOptions.isRebasing) {
-            proceeds = _convertToShares(_hyperdrive, proceeds);
+            proceeds = _hyperdrive.convertToShares(proceeds);
         }
         uint256 value = shouldConvertToETH ? proceeds : 0;
         (maturityTime, longAmount) = _hyperdrive.openLong{ value: value }(
@@ -390,7 +374,7 @@ contract UniV3Zap is IUniV3Zap, ReentrancyGuard {
         );
 
         // Take custody of the long position.
-        // hyperdrive = address(_hyperdrive);
+        hyperdrive = address(_hyperdrive);
         _hyperdrive.safeTransferFrom(
             msg.sender,
             address(this),
@@ -453,7 +437,7 @@ contract UniV3Zap is IUniV3Zap, ReentrancyGuard {
             _zapInOptions
         );
 
-        // Zap the funds that will be used to open the long and approve the pool
+        // Zap the funds that will be used to open the short and approve the pool
         // to spend these funds.
         uint256 proceeds = _zapIn(_zapInOptions, shouldConvertToETH);
 
@@ -929,44 +913,6 @@ contract UniV3Zap is IUniV3Zap, ReentrancyGuard {
         return proceeds;
     }
 
-    /// @dev Converts a quantity in base to vault shares. This works for all
-    ///      Hyperdrive pools.
-    /// @param _hyperdrive The Hyperdrive instance.
-    /// @param _baseAmount The base amount.
-    /// @return The converted vault shares amount.
-    function _convertToShares(
-        IHyperdrive _hyperdrive,
-        uint256 _baseAmount
-    ) internal view returns (uint256) {
-        // If this is a mainnet deployment and the address is the legacy stETH
-        // pool, we have to convert the proceeds to shares manually using Lido's
-        // `getSharesByPooledEth` function.
-        if (
-            block.chainid == 1 &&
-            address(_hyperdrive) == LEGACY_STETH_HYPERDRIVE
-        ) {
-            return
-                ILido(_hyperdrive.vaultSharesToken()).getSharesByPooledEth(
-                    _baseAmount
-                );
-        }
-        // If this is a mainnet deployment and the address is the legacy stETH
-        // pool, we have to convert the proceeds to shares manually using Lido's
-        // `getSharesByPooledEth` function.
-        else if (
-            block.chainid == 1 && address(_hyperdrive) == LEGACY_SDAI_HYPERDRIVE
-        ) {
-            return
-                IERC4626(_hyperdrive.vaultSharesToken()).convertToShares(
-                    _baseAmount
-                );
-        }
-        // Otherwise, we can use the built-in `convertToShares` function.
-        else {
-            return _hyperdrive.convertToShares(_baseAmount);
-        }
-    }
-
     /// IERC1155Receiver ///
 
     // FIXME: Add a test for the transfer of a non-Hyperdrive ERC1155.
@@ -982,7 +928,7 @@ contract UniV3Zap is IUniV3Zap, ReentrancyGuard {
         uint256,
         uint256,
         bytes calldata
-    ) external returns (bytes4) {
+    ) external view returns (bytes4) {
         // If the sender is the right Hyperdrive contract, we accept the transfer.
         if (msg.sender == hyperdrive) {
             return
@@ -1011,7 +957,7 @@ contract UniV3Zap is IUniV3Zap, ReentrancyGuard {
         uint256[] calldata,
         uint256[] calldata,
         bytes calldata
-    ) external returns (bytes4) {
+    ) external view returns (bytes4) {
         // If the sender is the right Hyperdrive contract, we accept the batch
         // transfer.
         if (msg.sender == hyperdrive) {
