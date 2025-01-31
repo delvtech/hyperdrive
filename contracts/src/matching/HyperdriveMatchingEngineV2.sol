@@ -142,7 +142,7 @@ contract HyperdriveMatchingEngineV2 is
                 revert InvalidFundAmount();
             }
 
-            // Calculate costs and parameters
+            // Calculate costs and parameters.
             (
                 uint256 maturityTime,
                 uint256 cost
@@ -173,14 +173,6 @@ contract HyperdriveMatchingEngineV2 is
             // Update order bond amount used.
             _updateOrderAmount(order1Hash, bondAmount, true);
             _updateOrderAmount(order2Hash, bondAmount, true);
-
-            // Transfer the remaining fund tokens back to the surplus recipient.
-            // @dev This step could have been placed in the end outside of the
-            //      control flow, but it's placed here to avoid stack-too-deep.
-            uint256 remainingBalance = fundToken.balanceOf(address(this));
-            if (remainingBalance > 0) {
-                fundToken.safeTransfer(_surplusRecipient, remainingBalance);
-            }
         }
         // Case 2: Long + Short closing using burn().
         else if (
@@ -237,14 +229,6 @@ contract HyperdriveMatchingEngineV2 is
             // Update order fund amount used.
             _updateOrderAmount(order1Hash, minFundAmountOrder1, false);
             _updateOrderAmount(order2Hash, minFundAmountOrder2, false);
-
-            // Transfer the remaining fund tokens back to the surplus recipient.
-            // @dev This step could have been placed in the end outside of the
-            //      control flow, but it's placed here to avoid stack-too-deep.
-            uint256 remainingBalance = fundToken.balanceOf(address(this));
-            if (remainingBalance > 0) {
-                fundToken.safeTransfer(_surplusRecipient, remainingBalance);
-            }
         }
         // Case 3: Transfer positions between traders.
         else if (
@@ -322,18 +306,16 @@ contract HyperdriveMatchingEngineV2 is
             // Update order fund amount used.
             _updateOrderAmount(order1Hash, fundTokenAmountOrder1, false);
             _updateOrderAmount(order2Hash, minFundAmountOrder2, false);
-
-            // Transfer the remaining fund tokens back to the surplus recipient.
-            // @dev This step could have been placed in the end outside of the
-            //      control flow, but it's placed here to avoid stack-too-deep.
-            uint256 remainingBalance = fundToken.balanceOf(address(this));
-            if (remainingBalance > 0) {
-                fundToken.safeTransfer(_surplusRecipient, remainingBalance);
-            }
         }
         // All other cases are invalid.
         else {
             revert InvalidOrderCombination();
+        }
+
+        // Transfer the remaining fund tokens back to the surplus recipient.
+        uint256 remainingBalance = fundToken.balanceOf(address(this));
+        if (remainingBalance > 0) {
+            fundToken.safeTransfer(_surplusRecipient, remainingBalance);
         }
 
         emit OrdersMatched(
@@ -364,7 +346,7 @@ contract HyperdriveMatchingEngineV2 is
     //     uint256 _bondAmount,
     //     address _destination
     // ) external nonReentrant {
-    //     // Validate maker order
+    //     // Validate maker order.
     //     bytes32 makerOrderHash = _validateMakerOrder(_makerOrder);
 
     //     // Set the destination to the caller if not specified.
@@ -377,14 +359,14 @@ contract HyperdriveMatchingEngineV2 is
     //     uint256 makerBondAmount = _makerOrder.bondAmount - amountsMaker.bondAmount;
     //     uint256 bondMatchAmount = makerBondAmount.min(_bondAmount);
 
-    //     // Create taker order on the fly
+    //     // Create taker order on the fly.
     //     OrderIntent memory takerOrder = OrderIntent({
     //         trader: msg.sender,
     //         counterparty: _makerOrder.trader,
     //         feeRecipient: address(0),
     //         hyperdrive: _makerOrder.hyperdrive,
-    //         fundAmount: 0,  // Not needed for immediate fill
-    //         bondAmount: 0,  // Not needed for immediate fill
+    //         fundAmount: 0,  // Not needed for immediate fill.
+    //         bondAmount: 0,  // Not needed for immediate fill.
     //         minVaultSharePrice: _makerOrder.minVaultSharePrice,
     //         options: IHyperdrive.Options({
     //             destination: _destination,
@@ -393,9 +375,9 @@ contract HyperdriveMatchingEngineV2 is
     //         orderType: _takerOrderType,
     //         minMaturityTime: _makerOrder.minMaturityTime,
     //         maxMaturityTime: _makerOrder.maxMaturityTime,
-    //         expiry: block.timestamp + 1,  // Immediate expiry
-    //         salt: 0,                      // Not needed for immediate fill
-    //         signature: ""                 // Not needed for immediate fill
+    //         expiry: block.timestamp + 1,  // Immediate expiry.
+    //         salt: 0,                      // Not needed for immediate fill.
+    //         signature: ""                 // Not needed for immediate fill.
     //     });
 
     //     // If the taker order is a close order, set the maturity time to the
@@ -407,10 +389,10 @@ contract HyperdriveMatchingEngineV2 is
 
     //     IHyperdrive hyperdrive = _makerOrder.hyperdrive;
 
-    //     // Handle different maker order types
+    //     // Handle different maker order types.
     //     if (_makerOrder.orderType == OrderType.OpenLong) {
     //         if (_takerOrderType == OrderType.OpenShort) {
-    //             // OpenLong + OpenShort: Use mint()
+    //             // OpenLong + OpenShort: Use mint().
     //             // Get necessary pool parameters.
     //             IHyperdrive.PoolConfig memory config = hyperdrive.getPoolConfig();
     //             uint256 latestCheckpoint = _latestCheckpoint(
@@ -429,7 +411,7 @@ contract HyperdriveMatchingEngineV2 is
 
     //             _handleMint(_makerOrder, takerOrder, config, latestCheckpoint);
     //         } else if (_takerOrderType == OrderType.CloseLong) {
-    //             // OpenLong + CloseLong: Transfer long position
+    //             // OpenLong + CloseLong: Transfer long position.
     //             _handleTransfer(_makerOrder, takerOrder);
     //         } else {
     //             revert InvalidOrderCombination();
@@ -437,10 +419,10 @@ contract HyperdriveMatchingEngineV2 is
     //     }
     //     else if (_makerOrder.orderType == OrderType.OpenShort) {
     //         if (_takerOrderType == OrderType.OpenLong) {
-    //             // OpenShort + OpenLong: Use mint()
+    //             // OpenShort + OpenLong: Use mint().
     //             _handleMint(takerOrder, _makerOrder);
     //         } else if (_takerOrderType == OrderType.CloseShort) {
-    //             // OpenShort + CloseShort: Transfer short position
+    //             // OpenShort + CloseShort: Transfer short position.
     //             _handleTransfer(_makerOrder, takerOrder);
     //         } else {
     //             revert InvalidOrderCombination();
@@ -448,10 +430,10 @@ contract HyperdriveMatchingEngineV2 is
     //     }
     //     else if (_makerOrder.orderType == OrderType.CloseLong) {
     //         if (_takerOrderType == OrderType.OpenLong) {
-    //             // CloseLong + OpenLong: Transfer long position
+    //             // CloseLong + OpenLong: Transfer long position.
     //             _handleTransfer(takerOrder, _makerOrder);
     //         } else if (_takerOrderType == OrderType.CloseShort) {
-    //             // CloseLong + CloseShort: Use burn()
+    //             // CloseLong + CloseShort: Use burn().
     //             _handleBurn(_makerOrder, takerOrder);
     //         } else {
     //             revert InvalidOrderCombination();
@@ -459,10 +441,10 @@ contract HyperdriveMatchingEngineV2 is
     //     }
     //     else if (_makerOrder.orderType == OrderType.CloseShort) {
     //         if (_takerOrderType == OrderType.OpenShort) {
-    //             // CloseShort + OpenShort: Transfer short position
+    //             // CloseShort + OpenShort: Transfer short position.
     //             _handleTransfer(takerOrder, _makerOrder);
     //         } else if (_takerOrderType == OrderType.CloseLong) {
-    //             // CloseShort + CloseLong: Use burn()
+    //             // CloseShort + CloseLong: Use burn().
     //             _handleBurn(takerOrder, _makerOrder);
     //         } else {
     //             revert InvalidOrderCombination();
@@ -980,11 +962,11 @@ contract HyperdriveMatchingEngineV2 is
         );
     }
 
-    /// @dev Calculates the cost and parameters for minting positions
-    /// @param _hyperdrive The Hyperdrive contract instance
-    /// @param _bondMatchAmount The amount of bonds to mint
-    /// @return maturityTime The maturity time for new positions
-    /// @return cost The total cost including fees
+    /// @dev Calculates the cost and parameters for minting positions.
+    /// @param _hyperdrive The Hyperdrive contract instance.
+    /// @param _bondMatchAmount The amount of bonds to mint.
+    /// @return maturityTime The maturity time for new positions.
+    /// @return cost The total cost including fees.
     function _calculateMintCost(
         IHyperdrive _hyperdrive,
         uint256 _bondMatchAmount
@@ -992,14 +974,14 @@ contract HyperdriveMatchingEngineV2 is
         uint256 maturityTime,
         uint256 cost
     ) {
-        // Get pool configuration
+        // Get pool configuration.
         IHyperdrive.PoolConfig memory config = _hyperdrive.getPoolConfig();
         
-        // Calculate checkpoint and maturity time
+        // Calculate checkpoint and maturity time.
         uint256 latestCheckpoint = _latestCheckpoint(config.checkpointDuration);
         maturityTime = latestCheckpoint + config.positionDuration;
         
-        // Get vault share prices
+        // Get vault share prices.
         // @dev TODO: there is another way to get the info without calling
         //      getPoolInfo()?
         uint256 vaultSharePrice = _hyperdrive.getPoolInfo().vaultSharePrice;
@@ -1008,20 +990,20 @@ contract HyperdriveMatchingEngineV2 is
             openVaultSharePrice = vaultSharePrice;
         }
         
-        // Calculate the required fund amount
-        // NOTE: Round the required fund amount up to overestimate the cost
+        // Calculate the required fund amount.
+        // NOTE: Round the required fund amount up to overestimate the cost.
         cost = _bondMatchAmount.mulDivUp(
             vaultSharePrice.max(openVaultSharePrice),
             openVaultSharePrice
         );
         
-        // Add flat fee
-        // NOTE: Round the flat fee calculation up to match other flows
+        // Add flat fee.
+        // NOTE: Round the flat fee calculation up to match other flows.
         uint256 flatFee = _bondMatchAmount.mulUp(config.fees.flat);
         cost += flatFee;
         
-        // Add governance fee
-        // NOTE: Round the governance fee calculation down to match other flows
+        // Add governance fee.
+        // NOTE: Round the governance fee calculation down to match other flows.
         uint256 governanceFee = 2 * flatFee.mulDown(config.fees.governanceLP);
         cost += governanceFee;
     }
@@ -1048,7 +1030,7 @@ contract HyperdriveMatchingEngineV2 is
                 fundAmount: amounts.fundAmount
             });
         } else {
-            // Check for overflow before casting to uint128
+            // Check for overflow before casting to uint128.
             if (amounts.fundAmount + amount > type(uint128).max) {
                 revert AmountOverflow();
             }
