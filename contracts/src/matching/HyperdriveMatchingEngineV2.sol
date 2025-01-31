@@ -88,7 +88,12 @@ contract HyperdriveMatchingEngineV2 is
         );
 
         IHyperdrive hyperdrive = _order1.hyperdrive;
-
+        ERC20 fundToken;
+        if (_order1.options.asBase) {
+            fundToken = ERC20(hyperdrive.baseToken());
+        } else {
+            fundToken = ERC20(hyperdrive.vaultSharesToken());
+        }
 
         // Handle different order type combinations.
         // Case 1: Long + Short creation using mint().
@@ -96,55 +101,15 @@ contract HyperdriveMatchingEngineV2 is
             _order1.orderType == OrderType.OpenLong &&
             _order2.orderType == OrderType.OpenShort
         ) {
-            // Get necessary pool parameters.
-            IHyperdrive.PoolConfig memory config = hyperdrive.getPoolConfig();
-
-            uint256 latestCheckpoint = _latestCheckpoint(
-                config.checkpointDuration
-            );
-            // @dev TODO: there is another way to get the info without calling
-            //          getPoolInfo()?
-            uint256 vaultSharePrice = hyperdrive.getPoolInfo().vaultSharePrice;
-
-            // Calculate the amount of fund tokens to transfer based on the
-            // bondMatchAmount.
-            uint256 openVaultSharePrice = hyperdrive
-                .getCheckpoint(latestCheckpoint)
-                .vaultSharePrice;
-            if (openVaultSharePrice == 0) {
-                openVaultSharePrice = vaultSharePrice;
-            }
-
-            // Stack cycling to avoid stack-too-deep.
-            OrderIntent calldata order1 = _order1;
-            OrderIntent calldata order2 = _order2;
-            bytes32 order1Hash_ = order1Hash;
-            bytes32 order2Hash_ = order2Hash;
-            address surplusRecipient = _surplusRecipient;
-
             // Calculate matching amount.
             // @dev This could have been placed before the control flow for
             //      shorter code, but it's put here to avoid stack-too-deep.
             uint256 bondMatchAmount = _calculateBondMatchAmount(
-                order1,
-                order2,
-                order1Hash_,
-                order2Hash_
+                _order1,
+                _order2,
+                order1Hash,
+                order2Hash
             );
-
-            // Get the sufficient funding amount to mint the bonds.
-            // NOTE: Round the required fund amount up to overestimate the cost.
-            //       Round the flat fee calculation up and the governance fee
-            //       calculation down to match the rounding used in the other flows.
-            uint256 cost = bondMatchAmount.mulDivUp(
-                vaultSharePrice.max(openVaultSharePrice),
-                openVaultSharePrice
-            ) +
-                bondMatchAmount.mulUp(config.fees.flat) +
-                2 *
-                bondMatchAmount.mulUp(config.fees.flat).mulDown(
-                    config.fees.governanceLP
-                );
 
             // Calculate the amount of fund tokens to transfer based on the
             // bondMatchAmount using dynamic pricing. During a series of partial
@@ -152,76 +117,69 @@ contract HyperdriveMatchingEngineV2 is
             // new match, hence increasing the match likelihood.
             // NOTE: Round the required fund amount down to prevent overspending
             //       and possible reverting at a later step.
-            uint256 fundTokenAmountOrder1 = (order1.fundAmount -
-                orderAmountsUsed[order1Hash_].fundAmount).mulDivDown(
+            uint256 fundTokenAmountOrder1 = (_order1.fundAmount -
+                orderAmountsUsed[order1Hash].fundAmount).mulDivDown(
                     bondMatchAmount,
-                    (order1.bondAmount -
-                        orderAmountsUsed[order1Hash_].bondAmount)
+                    (_order1.bondAmount -
+                        orderAmountsUsed[order1Hash].bondAmount)
                 );
-            uint256 fundTokenAmountOrder2 = (order2.fundAmount -
-                orderAmountsUsed[order2Hash_].fundAmount).mulDivDown(
+            uint256 fundTokenAmountOrder2 = (_order2.fundAmount -
+                orderAmountsUsed[order2Hash].fundAmount).mulDivDown(
                     bondMatchAmount,
-                    (order2.bondAmount -
-                        orderAmountsUsed[order2Hash_].bondAmount)
+                    (_order2.bondAmount -
+                        orderAmountsUsed[order2Hash].bondAmount)
                 );
 
             // Update order fund amount used.
-            _updateOrderAmount(order1Hash_, fundTokenAmountOrder1, false);
-            _updateOrderAmount(order2Hash_, fundTokenAmountOrder2, false);
+            _updateOrderAmount(order1Hash, fundTokenAmountOrder1, false);
+            _updateOrderAmount(order2Hash, fundTokenAmountOrder2, false);
 
             // Check if the fund amount used is greater than the order amount.
             if (
-                orderAmountsUsed[order1Hash_].fundAmount > order1.fundAmount ||
-                orderAmountsUsed[order2Hash_].fundAmount > order2.fundAmount
+                orderAmountsUsed[order1Hash].fundAmount > _order1.fundAmount ||
+                orderAmountsUsed[order2Hash].fundAmount > _order2.fundAmount
             ) {
                 revert InvalidFundAmount();
             }
 
-            // Calculate the maturity time of newly minted positions.
-            uint256 maturityTime = latestCheckpoint + config.positionDuration;
+            // Calculate costs and parameters
+            (
+                uint256 maturityTime,
+                uint256 cost
+            ) = _calculateMintCost(hyperdrive, bondMatchAmount);
 
             // Check if the maturity time is within the range.
             if (
-                maturityTime < order1.minMaturityTime ||
-                maturityTime > order1.maxMaturityTime ||
-                maturityTime < order2.minMaturityTime ||
-                maturityTime > order2.maxMaturityTime
+                maturityTime < _order1.minMaturityTime ||
+                maturityTime > _order1.maxMaturityTime ||
+                maturityTime < _order2.minMaturityTime ||
+                maturityTime > _order2.maxMaturityTime
             ) {
                 revert InvalidMaturityTime();
             }
 
-            // @dev This could have been placed before the control flow for
-            //      shorter code, but it's put here to avoid stack-too-deep.
-            IHyperdrive hyperdrive_ = order1.hyperdrive;
-            ERC20 fundToken;
-            if (order1.options.asBase) {
-                fundToken = ERC20(hyperdrive_.baseToken());
-            } else {
-                fundToken = ERC20(hyperdrive_.vaultSharesToken());
-            }
-
             // Mint the bonds.
             uint256 bondAmount = _handleMint(
-                order1,
-                order2,
+                _order1,
+                _order2,
                 fundTokenAmountOrder1,
                 fundTokenAmountOrder2,
                 cost,
                 bondMatchAmount,
                 fundToken,
-                hyperdrive_
+                hyperdrive
             );
 
             // Update order bond amount used.
-            _updateOrderAmount(order1Hash_, bondAmount, true);
-            _updateOrderAmount(order2Hash_, bondAmount, true);
+            _updateOrderAmount(order1Hash, bondAmount, true);
+            _updateOrderAmount(order2Hash, bondAmount, true);
 
             // Transfer the remaining fund tokens back to the surplus recipient.
             // @dev This step could have been placed in the end outside of the
             //      control flow, but it's placed here to avoid stack-too-deep.
             uint256 remainingBalance = fundToken.balanceOf(address(this));
             if (remainingBalance > 0) {
-                fundToken.safeTransfer(surplusRecipient, remainingBalance);
+                fundToken.safeTransfer(_surplusRecipient, remainingBalance);
             }
         }
         // Case 2: Long + Short closing using burn().
@@ -264,14 +222,6 @@ contract HyperdriveMatchingEngineV2 is
             //      amount is already used to calculate the bondMatchAmount.
             _updateOrderAmount(order1Hash, bondMatchAmount, true);
             _updateOrderAmount(order2Hash, bondMatchAmount, true);
-
-            // Get the fund token.
-            ERC20 fundToken;
-            if (_order1.options.asBase) {
-                fundToken = ERC20(hyperdrive.baseToken());
-            } else {
-                fundToken = ERC20(hyperdrive.vaultSharesToken());
-            }
 
             // Handle burn operation through helper function.
             _handleBurn(
@@ -343,14 +293,6 @@ contract HyperdriveMatchingEngineV2 is
                         orderAmountsUsed[order2Hash].bondAmount)
                 );
 
-            // Get the fund token.
-            ERC20 fundToken;
-            if (_order1.options.asBase) {
-                fundToken = ERC20(hyperdrive.baseToken());
-            } else {
-                fundToken = ERC20(hyperdrive.vaultSharesToken());
-            }
-
             // Check if trader 1 has enough fund to transfer to trader 2.
             // @dev Also considering any donations to help match the orders.
             if (
@@ -415,112 +357,130 @@ contract HyperdriveMatchingEngineV2 is
     /// @param _bondAmount The amount of bonds the taker wants to trade.
     /// @param _destination The destination of the taker to receive funds or bonds
     ///        output, as well as the surplus fund tokens.
-    function fillOrder(
-        OrderIntent calldata _makerOrder,
-        OrderType _takerOrderType,
-        uint256 _closeOrderMaturityTime,
-        uint256 _bondAmount,
-        address _destination
-    ) external nonReentrant {
-        // Validate maker order
-        bytes32 makerOrderHash = _validateMakerOrder(_makerOrder);
+    // function fillOrder(
+    //     OrderIntent calldata _makerOrder,
+    //     OrderType _takerOrderType,
+    //     uint256 _closeOrderMaturityTime,
+    //     uint256 _bondAmount,
+    //     address _destination
+    // ) external nonReentrant {
+    //     // Validate maker order
+    //     bytes32 makerOrderHash = _validateMakerOrder(_makerOrder);
 
-        // Set the destination to the caller if not specified.
-        if (_destination == address(0)) {
-            _destination = msg.sender;
-        }
+    //     // Set the destination to the caller if not specified.
+    //     if (_destination == address(0)) {
+    //         _destination = msg.sender;
+    //     }
 
-        // Calculates the amount of bonds that can be matched between two orders.
-        OrderAmounts memory amountsMaker = orderAmountsUsed[makerOrderHash];
-        uint256 makerBondAmount = _makerOrder.bondAmount - amountsMaker.bondAmount;
-        uint256 bondMatchAmount = makerBondAmount.min(_bondAmount);
+    //     // Calculates the amount of bonds that can be matched between two orders.
+    //     OrderAmounts memory amountsMaker = orderAmountsUsed[makerOrderHash];
+    //     uint256 makerBondAmount = _makerOrder.bondAmount - amountsMaker.bondAmount;
+    //     uint256 bondMatchAmount = makerBondAmount.min(_bondAmount);
 
-        // Create taker order on the fly
-        OrderIntent memory takerOrder = OrderIntent({
-            trader: msg.sender,
-            counterparty: _makerOrder.trader,
-            feeRecipient: address(0),
-            hyperdrive: _makerOrder.hyperdrive,
-            fundAmount: 0,  // Not needed for immediate fill
-            bondAmount: 0,  // Not needed for immediate fill
-            minVaultSharePrice: _makerOrder.minVaultSharePrice,
-            options: IHyperdrive.Options({
-                destination: _destination,
-                asBase: _makerOrder.options.asBase
-            }),
-            orderType: _takerOrderType,
-            minMaturityTime: _makerOrder.minMaturityTime,
-            maxMaturityTime: _makerOrder.maxMaturityTime,
-            expiry: block.timestamp + 1,  // Immediate expiry
-            salt: 0,                      // Not needed for immediate fill
-            signature: ""                 // Not needed for immediate fill
-        });
+    //     // Create taker order on the fly
+    //     OrderIntent memory takerOrder = OrderIntent({
+    //         trader: msg.sender,
+    //         counterparty: _makerOrder.trader,
+    //         feeRecipient: address(0),
+    //         hyperdrive: _makerOrder.hyperdrive,
+    //         fundAmount: 0,  // Not needed for immediate fill
+    //         bondAmount: 0,  // Not needed for immediate fill
+    //         minVaultSharePrice: _makerOrder.minVaultSharePrice,
+    //         options: IHyperdrive.Options({
+    //             destination: _destination,
+    //             asBase: _makerOrder.options.asBase
+    //         }),
+    //         orderType: _takerOrderType,
+    //         minMaturityTime: _makerOrder.minMaturityTime,
+    //         maxMaturityTime: _makerOrder.maxMaturityTime,
+    //         expiry: block.timestamp + 1,  // Immediate expiry
+    //         salt: 0,                      // Not needed for immediate fill
+    //         signature: ""                 // Not needed for immediate fill
+    //     });
 
-        // If the taker order is a close order, set the maturity time to the
-        // close order maturity time.
-        if (_takerOrderType == OrderType.CloseLong || _takerOrderType == OrderType.CloseShort) {
-            takerOrder.minMaturityTime = _closeOrderMaturityTime;
-            takerOrder.maxMaturityTime = _closeOrderMaturityTime;
-        }
+    //     // If the taker order is a close order, set the maturity time to the
+    //     // close order maturity time.
+    //     if (_takerOrderType == OrderType.CloseLong || _takerOrderType == OrderType.CloseShort) {
+    //         takerOrder.minMaturityTime = _closeOrderMaturityTime;
+    //         takerOrder.maxMaturityTime = _closeOrderMaturityTime;
+    //     }
 
-        // Handle different maker order types
-        if (_makerOrder.orderType == OrderType.OpenLong) {
-            if (_takerOrderType == OrderType.OpenShort) {
-                // OpenLong + OpenShort: Use mint()
-                _handleMint(_makerOrder, takerOrder);
-            } else if (_takerOrderType == OrderType.CloseLong) {
-                // OpenLong + CloseLong: Transfer long position
-                _handleTransfer(_makerOrder, takerOrder);
-            } else {
-                revert InvalidOrderCombination();
-            }
-        }
-        else if (_makerOrder.orderType == OrderType.OpenShort) {
-            if (_takerOrderType == OrderType.OpenLong) {
-                // OpenShort + OpenLong: Use mint()
-                _handleMint(takerOrder, _makerOrder);
-            } else if (_takerOrderType == OrderType.CloseShort) {
-                // OpenShort + CloseShort: Transfer short position
-                _handleTransfer(_makerOrder, takerOrder);
-            } else {
-                revert InvalidOrderCombination();
-            }
-        }
-        else if (_makerOrder.orderType == OrderType.CloseLong) {
-            if (_takerOrderType == OrderType.OpenLong) {
-                // CloseLong + OpenLong: Transfer long position
-                _handleTransfer(takerOrder, _makerOrder);
-            } else if (_takerOrderType == OrderType.CloseShort) {
-                // CloseLong + CloseShort: Use burn()
-                _handleBurn(_makerOrder, takerOrder);
-            } else {
-                revert InvalidOrderCombination();
-            }
-        }
-        else if (_makerOrder.orderType == OrderType.CloseShort) {
-            if (_takerOrderType == OrderType.OpenShort) {
-                // CloseShort + OpenShort: Transfer short position
-                _handleTransfer(takerOrder, _makerOrder);
-            } else if (_takerOrderType == OrderType.CloseLong) {
-                // CloseShort + CloseLong: Use burn()
-                _handleBurn(takerOrder, _makerOrder);
-            } else {
-                revert InvalidOrderCombination();
-            }
-        }
-        else {
-            revert InvalidOrderCombination();
-        }
+    //     IHyperdrive hyperdrive = _makerOrder.hyperdrive;
 
-        emit OrderFilled(
-            _makerOrder.hyperdrive,
-            makerOrderHash,
-            _makerOrder.trader,
-            msg.sender,
-            orderAmountsUsed[makerOrderHash].bondAmount,
-            orderAmountsUsed[makerOrderHash].fundAmount
-        );
-    }
+    //     // Handle different maker order types
+    //     if (_makerOrder.orderType == OrderType.OpenLong) {
+    //         if (_takerOrderType == OrderType.OpenShort) {
+    //             // OpenLong + OpenShort: Use mint()
+    //             // Get necessary pool parameters.
+    //             IHyperdrive.PoolConfig memory config = hyperdrive.getPoolConfig();
+    //             uint256 latestCheckpoint = _latestCheckpoint(
+    //                 config.checkpointDuration
+    //             );
+    //             uint256 vaultSharePrice = hyperdrive.getPoolInfo().vaultSharePrice;
+
+    //             // Calculate the amount of fund tokens to transfer based on the
+    //             // bondMatchAmount.
+    //             uint256 openVaultSharePrice = hyperdrive
+    //                 .getCheckpoint(latestCheckpoint)
+    //                 .vaultSharePrice;
+    //             if (openVaultSharePrice == 0) {
+    //                 openVaultSharePrice = vaultSharePrice;
+    //             }
+
+    //             _handleMint(_makerOrder, takerOrder, config, latestCheckpoint);
+    //         } else if (_takerOrderType == OrderType.CloseLong) {
+    //             // OpenLong + CloseLong: Transfer long position
+    //             _handleTransfer(_makerOrder, takerOrder);
+    //         } else {
+    //             revert InvalidOrderCombination();
+    //         }
+    //     }
+    //     else if (_makerOrder.orderType == OrderType.OpenShort) {
+    //         if (_takerOrderType == OrderType.OpenLong) {
+    //             // OpenShort + OpenLong: Use mint()
+    //             _handleMint(takerOrder, _makerOrder);
+    //         } else if (_takerOrderType == OrderType.CloseShort) {
+    //             // OpenShort + CloseShort: Transfer short position
+    //             _handleTransfer(_makerOrder, takerOrder);
+    //         } else {
+    //             revert InvalidOrderCombination();
+    //         }
+    //     }
+    //     else if (_makerOrder.orderType == OrderType.CloseLong) {
+    //         if (_takerOrderType == OrderType.OpenLong) {
+    //             // CloseLong + OpenLong: Transfer long position
+    //             _handleTransfer(takerOrder, _makerOrder);
+    //         } else if (_takerOrderType == OrderType.CloseShort) {
+    //             // CloseLong + CloseShort: Use burn()
+    //             _handleBurn(_makerOrder, takerOrder);
+    //         } else {
+    //             revert InvalidOrderCombination();
+    //         }
+    //     }
+    //     else if (_makerOrder.orderType == OrderType.CloseShort) {
+    //         if (_takerOrderType == OrderType.OpenShort) {
+    //             // CloseShort + OpenShort: Transfer short position
+    //             _handleTransfer(takerOrder, _makerOrder);
+    //         } else if (_takerOrderType == OrderType.CloseLong) {
+    //             // CloseShort + CloseLong: Use burn()
+    //             _handleBurn(takerOrder, _makerOrder);
+    //         } else {
+    //             revert InvalidOrderCombination();
+    //         }
+    //     }
+    //     else {
+    //         revert InvalidOrderCombination();
+    //     }
+
+    //     emit OrderFilled(
+    //         _makerOrder.hyperdrive,
+    //         makerOrderHash,
+    //         _makerOrder.trader,
+    //         msg.sender,
+    //         orderAmountsUsed[makerOrderHash].bondAmount,
+    //         orderAmountsUsed[makerOrderHash].fundAmount
+    //     );
+    // }
 
     /// @notice Allows traders to cancel their orders.
     /// @param _orders Array of orders to cancel.
@@ -1018,6 +978,52 @@ contract HyperdriveMatchingEngineV2 is
             block.timestamp,
             _checkpointDuration
         );
+    }
+
+    /// @dev Calculates the cost and parameters for minting positions
+    /// @param _hyperdrive The Hyperdrive contract instance
+    /// @param _bondMatchAmount The amount of bonds to mint
+    /// @return maturityTime The maturity time for new positions
+    /// @return cost The total cost including fees
+    function _calculateMintCost(
+        IHyperdrive _hyperdrive,
+        uint256 _bondMatchAmount
+    ) internal view returns (
+        uint256 maturityTime,
+        uint256 cost
+    ) {
+        // Get pool configuration
+        IHyperdrive.PoolConfig memory config = _hyperdrive.getPoolConfig();
+        
+        // Calculate checkpoint and maturity time
+        uint256 latestCheckpoint = _latestCheckpoint(config.checkpointDuration);
+        maturityTime = latestCheckpoint + config.positionDuration;
+        
+        // Get vault share prices
+        // @dev TODO: there is another way to get the info without calling
+        //      getPoolInfo()?
+        uint256 vaultSharePrice = _hyperdrive.getPoolInfo().vaultSharePrice;
+        uint256 openVaultSharePrice = _hyperdrive.getCheckpoint(latestCheckpoint).vaultSharePrice;
+        if (openVaultSharePrice == 0) {
+            openVaultSharePrice = vaultSharePrice;
+        }
+        
+        // Calculate the required fund amount
+        // NOTE: Round the required fund amount up to overestimate the cost
+        cost = _bondMatchAmount.mulDivUp(
+            vaultSharePrice.max(openVaultSharePrice),
+            openVaultSharePrice
+        );
+        
+        // Add flat fee
+        // NOTE: Round the flat fee calculation up to match other flows
+        uint256 flatFee = _bondMatchAmount.mulUp(config.fees.flat);
+        cost += flatFee;
+        
+        // Add governance fee
+        // NOTE: Round the governance fee calculation down to match other flows
+        uint256 governanceFee = 2 * flatFee.mulDown(config.fees.governanceLP);
+        cost += governanceFee;
     }
 
     /// @dev Updates either the bond amount or fund amount used for a given order.
