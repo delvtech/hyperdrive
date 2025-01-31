@@ -18,7 +18,7 @@ contract HyperdriveMatchingEngineV2Test is HyperdriveTest {
     using SafeERC20 for ERC20;
     using Lib for *;
 
-    /// @dev A salt used to help create orders. 
+    /// @dev A salt used to help create orders.
     bytes32 internal constant salt = bytes32(uint256(0xdeadbeef));
 
     /// @dev The deployed Hyperdrive matching engine.
@@ -33,7 +33,10 @@ contract HyperdriveMatchingEngineV2Test is HyperdriveTest {
         super.setUp();
 
         // Deploy and initialize a Hyperdrive pool with fees.
-        IHyperdrive.PoolConfig memory config = testConfig(0.05e18, POSITION_DURATION);
+        IHyperdrive.PoolConfig memory config = testConfig(
+            0.05e18,
+            POSITION_DURATION
+        );
         config.fees.curve = 0.01e18;
         config.fees.flat = 0.0005e18;
         config.fees.governanceLP = 0.15e18;
@@ -41,7 +44,9 @@ contract HyperdriveMatchingEngineV2Test is HyperdriveTest {
         initialize(alice, 0.05e18, 100_000e18);
 
         // Deploy matching engine.
-        matchingEngine = new HyperdriveMatchingEngineV2("Hyperdrive Matching Engine V2");
+        matchingEngine = new HyperdriveMatchingEngineV2(
+            "Hyperdrive Matching Engine V2"
+        );
 
         // Fund accounts and approve matching engine.
         address[3] memory accounts = [alice, bob, celine];
@@ -59,23 +64,25 @@ contract HyperdriveMatchingEngineV2Test is HyperdriveTest {
     /// @dev Tests matching orders with open long and open short orders.
     function test_matchOrders_openLongAndOpenShort() public {
         // Create orders.
-        IHyperdriveMatchingEngineV2.OrderIntent memory longOrder = _createOrderIntent(
-            alice,
-            address(0),
-            address(0),
-            100_000e18,  // fundAmount.
-            95_000e18,   // bondAmount.
-            IHyperdriveMatchingEngineV2.OrderType.OpenLong
-        );
-        
-        IHyperdriveMatchingEngineV2.OrderIntent memory shortOrder = _createOrderIntent(
-            bob,
-            address(0),
-            address(0),
-            101_000e18,  // fundAmount.
-            95_000e18,   // bondAmount.
-            IHyperdriveMatchingEngineV2.OrderType.OpenShort
-        );
+        IHyperdriveMatchingEngineV2.OrderIntent
+            memory longOrder = _createOrderIntent(
+                alice,
+                address(0),
+                address(0),
+                100_000e18, // fundAmount.
+                95_000e18, // bondAmount.
+                IHyperdriveMatchingEngineV2.OrderType.OpenLong
+            );
+
+        IHyperdriveMatchingEngineV2.OrderIntent
+            memory shortOrder = _createOrderIntent(
+                bob,
+                address(0),
+                address(0),
+                101_000e18, // fundAmount.
+                95_000e18, // bondAmount.
+                IHyperdriveMatchingEngineV2.OrderType.OpenShort
+            );
 
         // Sign orders.
         longOrder.signature = _signOrderIntent(longOrder, alicePK);
@@ -102,40 +109,57 @@ contract HyperdriveMatchingEngineV2Test is HyperdriveTest {
         // First create and match open orders to create positions.
         test_matchOrders_openLongAndOpenShort();
 
-        uint256 maturityTime = hyperdrive.latestCheckpoint() + hyperdrive.getPoolConfig().positionDuration;
-        
+        uint256 maturityTime = hyperdrive.latestCheckpoint() +
+            hyperdrive.getPoolConfig().positionDuration;
+
         // Approve Hyperdrive bonds positions to the matching engine.
-        uint256 longAssetId = AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime);
-        uint256 shortAssetId = AssetId.encodeAssetId(AssetId.AssetIdPrefix.Short, maturityTime);
+        uint256 longAssetId = AssetId.encodeAssetId(
+            AssetId.AssetIdPrefix.Long,
+            maturityTime
+        );
+        uint256 shortAssetId = AssetId.encodeAssetId(
+            AssetId.AssetIdPrefix.Short,
+            maturityTime
+        );
 
         vm.startPrank(alice);
-        hyperdrive.setApproval(longAssetId, address(matchingEngine), type(uint256).max);
+        hyperdrive.setApproval(
+            longAssetId,
+            address(matchingEngine),
+            type(uint256).max
+        );
         vm.stopPrank();
 
         vm.startPrank(bob);
-        hyperdrive.setApproval(shortAssetId, address(matchingEngine), type(uint256).max);
+        hyperdrive.setApproval(
+            shortAssetId,
+            address(matchingEngine),
+            type(uint256).max
+        );
         vm.stopPrank();
 
         // Create close orders.
-        IHyperdriveMatchingEngineV2.OrderIntent memory closeLongOrder = _createOrderIntent(
-            alice,
-            address(0),
-            address(0),
-            90_000e18,   // min fund amount to receive.
-            95_000e18,   // bond amount to close.
-            IHyperdriveMatchingEngineV2.OrderType.CloseLong
-        );
+        IHyperdriveMatchingEngineV2.OrderIntent
+            memory closeLongOrder = _createOrderIntent(
+                alice,
+                address(0),
+                address(0),
+                90_000e18, // min fund amount to receive.
+                95_000e18, // bond amount to close.
+                IHyperdriveMatchingEngineV2.OrderType.CloseLong
+            );
         closeLongOrder.minMaturityTime = maturityTime;
         closeLongOrder.maxMaturityTime = maturityTime;
 
-        IHyperdriveMatchingEngineV2.OrderIntent memory closeShortOrder = _createOrderIntent(
-            bob,
-            address(0),
-            address(0),
-            5_001e18,   // min fund amount to receive.
-            95_000e18,   // bond amount to close.
-            IHyperdriveMatchingEngineV2.OrderType.CloseShort
-        );
+        IHyperdriveMatchingEngineV2.OrderIntent
+            memory closeShortOrder = _createOrderIntent(
+                bob,
+                address(0),
+                address(0),
+                5_001e18, // min fund amount to receive.
+                95_000e18, // bond amount to close.
+                IHyperdriveMatchingEngineV2.OrderType.CloseShort
+            );
         closeShortOrder.minMaturityTime = maturityTime;
         closeShortOrder.maxMaturityTime = maturityTime;
 
@@ -163,87 +187,98 @@ contract HyperdriveMatchingEngineV2Test is HyperdriveTest {
     ///      different maturity times.
     function test_matchOrders_revertInvalidMaturityTime() public {
         // Create close orders with different maturity times.
-        uint256 maturityTime = hyperdrive.latestCheckpoint() + hyperdrive.getPoolConfig().positionDuration;
-        
-        IHyperdriveMatchingEngineV2.OrderIntent memory closeLongOrder = _createOrderIntent(
-            alice,
-            address(0),
-            address(0),
-            90_000e18,
-            95_000e18,
-            IHyperdriveMatchingEngineV2.OrderType.CloseLong
-        );
+        uint256 maturityTime = hyperdrive.latestCheckpoint() +
+            hyperdrive.getPoolConfig().positionDuration;
+
+        IHyperdriveMatchingEngineV2.OrderIntent
+            memory closeLongOrder = _createOrderIntent(
+                alice,
+                address(0),
+                address(0),
+                90_000e18,
+                95_000e18,
+                IHyperdriveMatchingEngineV2.OrderType.CloseLong
+            );
         closeLongOrder.minMaturityTime = maturityTime;
         closeLongOrder.maxMaturityTime = maturityTime;
 
-        IHyperdriveMatchingEngineV2.OrderIntent memory closeShortOrder = _createOrderIntent(
-            bob,
-            address(0),
-            address(0),
-            90_000e18,
-            95_000e18,
-            IHyperdriveMatchingEngineV2.OrderType.CloseShort
-        );
+        IHyperdriveMatchingEngineV2.OrderIntent
+            memory closeShortOrder = _createOrderIntent(
+                bob,
+                address(0),
+                address(0),
+                90_000e18,
+                95_000e18,
+                IHyperdriveMatchingEngineV2.OrderType.CloseShort
+            );
         closeShortOrder.minMaturityTime = maturityTime + 1 days;
         closeShortOrder.maxMaturityTime = maturityTime + 1 days;
 
         closeLongOrder.signature = _signOrderIntent(closeLongOrder, alicePK);
         closeShortOrder.signature = _signOrderIntent(closeShortOrder, bobPK);
 
-        vm.expectRevert(IHyperdriveMatchingEngineV2.InvalidMaturityTime.selector);
+        vm.expectRevert(
+            IHyperdriveMatchingEngineV2.InvalidMaturityTime.selector
+        );
         matchingEngine.matchOrders(closeLongOrder, closeShortOrder, celine);
     }
 
     /// @dev Tests matching orders with insufficient funding.
     function test_matchOrders_failure_insufficientFunding() public {
         // Create orders with insufficient funding.
-        IHyperdriveMatchingEngineV2.OrderIntent memory longOrder = _createOrderIntent(
-            alice,
-            address(0),
-            address(0),
-            1e18,  // Very small fundAmount.
-            95_000e18,   
-            IHyperdriveMatchingEngineV2.OrderType.OpenLong
-        );
-        
-        IHyperdriveMatchingEngineV2.OrderIntent memory shortOrder = _createOrderIntent(
-            bob,
-            address(0),
-            address(0),
-            1e18,  // Very small fundAmount.
-            95_000e18,   
-            IHyperdriveMatchingEngineV2.OrderType.OpenShort
-        );
+        IHyperdriveMatchingEngineV2.OrderIntent
+            memory longOrder = _createOrderIntent(
+                alice,
+                address(0),
+                address(0),
+                1e18, // Very small fundAmount.
+                95_000e18,
+                IHyperdriveMatchingEngineV2.OrderType.OpenLong
+            );
+
+        IHyperdriveMatchingEngineV2.OrderIntent
+            memory shortOrder = _createOrderIntent(
+                bob,
+                address(0),
+                address(0),
+                1e18, // Very small fundAmount.
+                95_000e18,
+                IHyperdriveMatchingEngineV2.OrderType.OpenShort
+            );
 
         longOrder.signature = _signOrderIntent(longOrder, alicePK);
         shortOrder.signature = _signOrderIntent(shortOrder, bobPK);
 
-        vm.expectRevert(IHyperdriveMatchingEngineV2.InsufficientFunding.selector);
+        vm.expectRevert(
+            IHyperdriveMatchingEngineV2.InsufficientFunding.selector
+        );
         matchingEngine.matchOrders(longOrder, shortOrder, celine);
     }
 
-    /// @dev Tests matching orders with valid but different bond amounts 
+    /// @dev Tests matching orders with valid but different bond amounts
     ///      (partial match).
     function test_matchOrders_differentBondAmounts() public {
         // Create orders with different bond amounts - this should succeed with
         // partial matching.
-        IHyperdriveMatchingEngineV2.OrderIntent memory longOrder = _createOrderIntent(
-            alice,
-            address(0),
-            address(0),
-            100_000e18,
-            95_000e18,
-            IHyperdriveMatchingEngineV2.OrderType.OpenLong
-        );
-        
-        IHyperdriveMatchingEngineV2.OrderIntent memory shortOrder = _createOrderIntent(
-            bob,
-            address(0),
-            address(0),
-            100_000e18,
-            90_000e18, // Different but valid bond amount.
-            IHyperdriveMatchingEngineV2.OrderType.OpenShort
-        );
+        IHyperdriveMatchingEngineV2.OrderIntent
+            memory longOrder = _createOrderIntent(
+                alice,
+                address(0),
+                address(0),
+                100_000e18,
+                95_000e18,
+                IHyperdriveMatchingEngineV2.OrderType.OpenLong
+            );
+
+        IHyperdriveMatchingEngineV2.OrderIntent
+            memory shortOrder = _createOrderIntent(
+                bob,
+                address(0),
+                address(0),
+                100_000e18,
+                90_000e18, // Different but valid bond amount.
+                IHyperdriveMatchingEngineV2.OrderType.OpenShort
+            );
 
         longOrder.signature = _signOrderIntent(longOrder, alicePK);
         shortOrder.signature = _signOrderIntent(shortOrder, bobPK);
@@ -265,41 +300,58 @@ contract HyperdriveMatchingEngineV2Test is HyperdriveTest {
     function test_matchOrders_failure_invalidBondAmount() public {
         // First create some positions.
         test_matchOrders_openLongAndOpenShort();
-        
-        uint256 maturityTime = hyperdrive.latestCheckpoint() + hyperdrive.getPoolConfig().positionDuration;
+
+        uint256 maturityTime = hyperdrive.latestCheckpoint() +
+            hyperdrive.getPoolConfig().positionDuration;
 
         // Approve Hyperdrive bonds positions to the matching engine.
-        uint256 longAssetId = AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime);
-        uint256 shortAssetId = AssetId.encodeAssetId(AssetId.AssetIdPrefix.Short, maturityTime);
+        uint256 longAssetId = AssetId.encodeAssetId(
+            AssetId.AssetIdPrefix.Long,
+            maturityTime
+        );
+        uint256 shortAssetId = AssetId.encodeAssetId(
+            AssetId.AssetIdPrefix.Short,
+            maturityTime
+        );
 
         vm.startPrank(alice);
-        hyperdrive.setApproval(longAssetId, address(matchingEngine), type(uint256).max);
+        hyperdrive.setApproval(
+            longAssetId,
+            address(matchingEngine),
+            type(uint256).max
+        );
         vm.stopPrank();
 
         vm.startPrank(bob);
-        hyperdrive.setApproval(shortAssetId, address(matchingEngine), type(uint256).max);
-        vm.stopPrank();
-        
-        // Try to close more bonds than available.
-        IHyperdriveMatchingEngineV2.OrderIntent memory closeLongOrder = _createOrderIntent(
-            alice,
-            address(0),
-            address(0),
-            100_000e18,
-            200_000e18, // More than what alice has.
-            IHyperdriveMatchingEngineV2.OrderType.CloseLong
+        hyperdrive.setApproval(
+            shortAssetId,
+            address(matchingEngine),
+            type(uint256).max
         );
+        vm.stopPrank();
+
+        // Try to close more bonds than available.
+        IHyperdriveMatchingEngineV2.OrderIntent
+            memory closeLongOrder = _createOrderIntent(
+                alice,
+                address(0),
+                address(0),
+                100_000e18,
+                200_000e18, // More than what alice has.
+                IHyperdriveMatchingEngineV2.OrderType.CloseLong
+            );
         closeLongOrder.minMaturityTime = maturityTime;
         closeLongOrder.maxMaturityTime = maturityTime;
-        
-        IHyperdriveMatchingEngineV2.OrderIntent memory closeShortOrder = _createOrderIntent(
-            bob,
-            address(0),
-            address(0),
-            100_000e18,
-            200_000e18,
-            IHyperdriveMatchingEngineV2.OrderType.CloseShort
-        );
+
+        IHyperdriveMatchingEngineV2.OrderIntent
+            memory closeShortOrder = _createOrderIntent(
+                bob,
+                address(0),
+                address(0),
+                100_000e18,
+                200_000e18,
+                IHyperdriveMatchingEngineV2.OrderType.CloseShort
+            );
         closeShortOrder.minMaturityTime = maturityTime;
         closeShortOrder.maxMaturityTime = maturityTime;
 
@@ -315,24 +367,26 @@ contract HyperdriveMatchingEngineV2Test is HyperdriveTest {
 
     /// @dev Tests matching orders with expired orders.
     function test_matchOrders_failure_alreadyExpired() public {
-        IHyperdriveMatchingEngineV2.OrderIntent memory longOrder = _createOrderIntent(
-            alice,
-            address(0),
-            address(0),
-            100_000e18,
-            95_000e18,
-            IHyperdriveMatchingEngineV2.OrderType.OpenLong
-        );
+        IHyperdriveMatchingEngineV2.OrderIntent
+            memory longOrder = _createOrderIntent(
+                alice,
+                address(0),
+                address(0),
+                100_000e18,
+                95_000e18,
+                IHyperdriveMatchingEngineV2.OrderType.OpenLong
+            );
         longOrder.expiry = block.timestamp - 1; // Already expired.
-        
-        IHyperdriveMatchingEngineV2.OrderIntent memory shortOrder = _createOrderIntent(
-            bob,
-            address(0),
-            address(0),
-            100_000e18,
-            95_000e18,
-            IHyperdriveMatchingEngineV2.OrderType.OpenShort
-        );
+
+        IHyperdriveMatchingEngineV2.OrderIntent
+            memory shortOrder = _createOrderIntent(
+                bob,
+                address(0),
+                address(0),
+                100_000e18,
+                95_000e18,
+                IHyperdriveMatchingEngineV2.OrderType.OpenShort
+            );
 
         longOrder.signature = _signOrderIntent(longOrder, alicePK);
         shortOrder.signature = _signOrderIntent(shortOrder, bobPK);
@@ -343,52 +397,58 @@ contract HyperdriveMatchingEngineV2Test is HyperdriveTest {
 
     /// @dev Tests matching orders with mismatched Hyperdrive instances.
     function test_matchOrders_failure_mismatchedHyperdrive() public {
-        IHyperdriveMatchingEngineV2.OrderIntent memory longOrder = _createOrderIntent(
-            alice,
-            address(0),
-            address(0),
-            100_000e18,
-            95_000e18,
-            IHyperdriveMatchingEngineV2.OrderType.OpenLong
-        );
-        
-        IHyperdriveMatchingEngineV2.OrderIntent memory shortOrder = _createOrderIntent(
-            bob,
-            address(0),
-            address(0),
-            100_000e18,
-            95_000e18,
-            IHyperdriveMatchingEngineV2.OrderType.OpenShort
-        );
+        IHyperdriveMatchingEngineV2.OrderIntent
+            memory longOrder = _createOrderIntent(
+                alice,
+                address(0),
+                address(0),
+                100_000e18,
+                95_000e18,
+                IHyperdriveMatchingEngineV2.OrderType.OpenLong
+            );
+
+        IHyperdriveMatchingEngineV2.OrderIntent
+            memory shortOrder = _createOrderIntent(
+                bob,
+                address(0),
+                address(0),
+                100_000e18,
+                95_000e18,
+                IHyperdriveMatchingEngineV2.OrderType.OpenShort
+            );
         shortOrder.hyperdrive = IHyperdrive(address(0xdead)); // Different Hyperdrive instance.
 
         longOrder.signature = _signOrderIntent(longOrder, alicePK);
         shortOrder.signature = _signOrderIntent(shortOrder, bobPK);
 
-        vm.expectRevert(IHyperdriveMatchingEngineV2.MismatchedHyperdrive.selector);
+        vm.expectRevert(
+            IHyperdriveMatchingEngineV2.MismatchedHyperdrive.selector
+        );
         matchingEngine.matchOrders(longOrder, shortOrder, celine);
     }
 
     /// @dev Tests successful partial matching of orders.
     function test_matchOrders_partialMatch() public {
         // Create orders where one has larger amount than the other.
-        IHyperdriveMatchingEngineV2.OrderIntent memory longOrder = _createOrderIntent(
-            alice,
-            address(0),
-            address(0),
-            100_000e18,
-            95_000e18,
-            IHyperdriveMatchingEngineV2.OrderType.OpenLong
-        );
-        
-        IHyperdriveMatchingEngineV2.OrderIntent memory shortOrder = _createOrderIntent(
-            bob,
-            address(0),
-            address(0),
-            50_000e18, // Half the amount.
-            47_500e18, // Half the bonds.
-            IHyperdriveMatchingEngineV2.OrderType.OpenShort
-        );
+        IHyperdriveMatchingEngineV2.OrderIntent
+            memory longOrder = _createOrderIntent(
+                alice,
+                address(0),
+                address(0),
+                100_000e18,
+                95_000e18,
+                IHyperdriveMatchingEngineV2.OrderType.OpenLong
+            );
+
+        IHyperdriveMatchingEngineV2.OrderIntent
+            memory shortOrder = _createOrderIntent(
+                bob,
+                address(0),
+                address(0),
+                50_000e18, // Half the amount.
+                47_500e18, // Half the bonds.
+                IHyperdriveMatchingEngineV2.OrderType.OpenShort
+            );
 
         longOrder.signature = _signOrderIntent(longOrder, alicePK);
         shortOrder.signature = _signOrderIntent(shortOrder, bobPK);
@@ -403,7 +463,7 @@ contract HyperdriveMatchingEngineV2Test is HyperdriveTest {
         // Verify partial fill.
         assertGe(_getLongBalance(alice) - aliceLongBalanceBefore, 47_500e18);
         assertGe(_getShortBalance(bob) - bobShortBalanceBefore, 47_500e18);
-        
+
         // Verify order is not fully cancelled for alice.
         bytes32 orderHash = matchingEngine.hashOrderIntent(longOrder);
         assertFalse(matchingEngine.isCancelled(orderHash));
@@ -411,24 +471,26 @@ contract HyperdriveMatchingEngineV2Test is HyperdriveTest {
 
     /// @dev Tests matching orders with invalid vault share price.
     function test_matchOrders_failure_invalidVaultSharePrice() public {
-        IHyperdriveMatchingEngineV2.OrderIntent memory longOrder = _createOrderIntent(
-            alice,
-            address(0),
-            address(0),
-            100_000e18,
-            95_000e18,
-            IHyperdriveMatchingEngineV2.OrderType.OpenLong
-        );
+        IHyperdriveMatchingEngineV2.OrderIntent
+            memory longOrder = _createOrderIntent(
+                alice,
+                address(0),
+                address(0),
+                100_000e18,
+                95_000e18,
+                IHyperdriveMatchingEngineV2.OrderType.OpenLong
+            );
         longOrder.minVaultSharePrice = type(uint256).max; // Unreasonably high min vault share price.
-        
-        IHyperdriveMatchingEngineV2.OrderIntent memory shortOrder = _createOrderIntent(
-            bob,
-            address(0),
-            address(0),
-            100_000e18,
-            95_000e18,
-            IHyperdriveMatchingEngineV2.OrderType.OpenShort
-        );
+
+        IHyperdriveMatchingEngineV2.OrderIntent
+            memory shortOrder = _createOrderIntent(
+                bob,
+                address(0),
+                address(0),
+                100_000e18,
+                95_000e18,
+                IHyperdriveMatchingEngineV2.OrderType.OpenShort
+            );
         shortOrder.minVaultSharePrice = type(uint256).max; // Unreasonably high min vault share price.
 
         longOrder.signature = _signOrderIntent(longOrder, alicePK);
@@ -440,23 +502,25 @@ contract HyperdriveMatchingEngineV2Test is HyperdriveTest {
 
     /// @dev Tests matching orders with invalid signatures.
     function test_matchOrders_failure_invalidSignature() public {
-        IHyperdriveMatchingEngineV2.OrderIntent memory longOrder = _createOrderIntent(
-            alice,
-            address(0),
-            address(0),
-            100_000e18,
-            95_000e18,
-            IHyperdriveMatchingEngineV2.OrderType.OpenLong
-        );
-        
-        IHyperdriveMatchingEngineV2.OrderIntent memory shortOrder = _createOrderIntent(
-            bob,
-            address(0),
-            address(0),
-            100_000e18,
-            95_000e18,
-            IHyperdriveMatchingEngineV2.OrderType.OpenShort
-        );
+        IHyperdriveMatchingEngineV2.OrderIntent
+            memory longOrder = _createOrderIntent(
+                alice,
+                address(0),
+                address(0),
+                100_000e18,
+                95_000e18,
+                IHyperdriveMatchingEngineV2.OrderType.OpenLong
+            );
+
+        IHyperdriveMatchingEngineV2.OrderIntent
+            memory shortOrder = _createOrderIntent(
+                bob,
+                address(0),
+                address(0),
+                100_000e18,
+                95_000e18,
+                IHyperdriveMatchingEngineV2.OrderType.OpenShort
+            );
 
         // Sign with wrong private keys.
         longOrder.signature = _signOrderIntent(longOrder, bobPK); // Wrong signer.
@@ -484,48 +548,56 @@ contract HyperdriveMatchingEngineV2Test is HyperdriveTest {
         uint256 bondAmount,
         IHyperdriveMatchingEngineV2.OrderType orderType
     ) internal view returns (IHyperdriveMatchingEngineV2.OrderIntent memory) {
-        return IHyperdriveMatchingEngineV2.OrderIntent({
-            trader: trader,
-            counterparty: counterparty,
-            feeRecipient: feeRecipient,
-            hyperdrive: hyperdrive,
-            fundAmount: fundAmount,
-            bondAmount: bondAmount,
-            minVaultSharePrice: 0,
-            options: IHyperdrive.Options({
-                destination: trader,
-                asBase: true,
-                extraData: ""
-            }),
-            orderType: orderType,
-            minMaturityTime: 0,
-            maxMaturityTime: type(uint256).max,
-            signature: "",
-            expiry: block.timestamp + 1 days,
-            salt: salt
-        });
+        return
+            IHyperdriveMatchingEngineV2.OrderIntent({
+                trader: trader,
+                counterparty: counterparty,
+                feeRecipient: feeRecipient,
+                hyperdrive: hyperdrive,
+                fundAmount: fundAmount,
+                bondAmount: bondAmount,
+                minVaultSharePrice: 0,
+                options: IHyperdrive.Options({
+                    destination: trader,
+                    asBase: true,
+                    extraData: ""
+                }),
+                orderType: orderType,
+                minMaturityTime: 0,
+                maxMaturityTime: type(uint256).max,
+                signature: "",
+                expiry: block.timestamp + 1 days,
+                salt: salt
+            });
     }
 
     /// @dev Gets the balance of long bonds for an account.
     /// @param account The address of the account.
     /// @return The balance of long bonds for the account.
     function _getLongBalance(address account) internal view returns (uint256) {
-        uint256 maturityTime = hyperdrive.latestCheckpoint() + hyperdrive.getPoolConfig().positionDuration;
-        return hyperdrive.balanceOf(
-            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime),
-            account
-        );
+        uint256 maturityTime = hyperdrive.latestCheckpoint() +
+            hyperdrive.getPoolConfig().positionDuration;
+        return
+            hyperdrive.balanceOf(
+                AssetId.encodeAssetId(AssetId.AssetIdPrefix.Long, maturityTime),
+                account
+            );
     }
 
     /// @dev Gets the balance of short bonds for an account.
     /// @param account The address of the account.
     /// @return The balance of short bonds for the account.
     function _getShortBalance(address account) internal view returns (uint256) {
-        uint256 maturityTime = hyperdrive.latestCheckpoint() + hyperdrive.getPoolConfig().positionDuration;
-        return hyperdrive.balanceOf(
-            AssetId.encodeAssetId(AssetId.AssetIdPrefix.Short, maturityTime),
-            account
-        );
+        uint256 maturityTime = hyperdrive.latestCheckpoint() +
+            hyperdrive.getPoolConfig().positionDuration;
+        return
+            hyperdrive.balanceOf(
+                AssetId.encodeAssetId(
+                    AssetId.AssetIdPrefix.Short,
+                    maturityTime
+                ),
+                account
+            );
     }
 
     /// @dev Signs an order intent.
@@ -540,4 +612,4 @@ contract HyperdriveMatchingEngineV2Test is HyperdriveTest {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, digest);
         return abi.encodePacked(r, s, v);
     }
-} 
+}

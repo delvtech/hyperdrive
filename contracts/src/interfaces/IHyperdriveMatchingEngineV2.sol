@@ -35,7 +35,7 @@ interface IHyperdriveMatchingEngineV2 {
     /// @notice Thrown when the long and short orders don't refer to the same
     ///         Hyperdrive instance.
     error MismatchedHyperdrive();
-    
+
     /// @notice Thrown when the amount overflows.
     error AmountOverflow();
 
@@ -105,14 +105,14 @@ interface IHyperdriveMatchingEngineV2 {
         address feeRecipient;
         /// @dev The Hyperdrive address where the trade will be executed.
         IHyperdrive hyperdrive;
-        /// @dev The amount to be used in the trade. In the case of `OpenLong` or 
-        ///      `OpenShort`, this is the amount of funds to deposit; and in the 
-        ///      case of `CloseLong` or `CloseShort`, this is the min amount of 
+        /// @dev The amount to be used in the trade. In the case of `OpenLong` or
+        ///      `OpenShort`, this is the amount of funds to deposit; and in the
+        ///      case of `CloseLong` or `CloseShort`, this is the min amount of
         ///      funds to receive.
         uint256 fundAmount;
         /// @dev The minimum output amount expected from the trade. In the case of
-        ///      `OpenLong` or `OpenShort`, this is the min amount of bonds to 
-        ///      receive; and in the case of `CloseLong` or `CloseShort`, this is 
+        ///      `OpenLong` or `OpenShort`, this is the min amount of bonds to
+        ///      receive; and in the case of `CloseLong` or `CloseShort`, this is
         ///      the amount of bonds to close.
         uint256 bondAmount;
         /// @dev The minimum vault share price. This protects traders against
@@ -181,7 +181,9 @@ interface IHyperdriveMatchingEngineV2 {
     /// @param orderHash The hash of the order.
     /// @return bondAmount The bond amount used for the order.
     /// @return fundAmount The fund amount used for the order.
-    function orderAmountsUsed(bytes32 orderHash) external view returns (uint128 bondAmount, uint128 fundAmount);
+    function orderAmountsUsed(
+        bytes32 orderHash
+    ) external view returns (uint128 bondAmount, uint128 fundAmount);
 
     /// @notice Get the EIP712 typehash for the
     ///         `IHyperdriveMatchingEngine.OrderIntent` struct.
