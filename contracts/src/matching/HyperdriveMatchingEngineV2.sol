@@ -76,6 +76,10 @@ contract HyperdriveMatchingEngineV2 is
         OrderIntent calldata _order2,
         address _surplusRecipient
     ) external nonReentrant {
+        if (_surplusRecipient == address(0)) {
+            _surplusRecipient = msg.sender;
+        }
+
         // Validate orders.
         (bytes32 order1Hash, bytes32 order2Hash) = _validateOrdersNoTaker(
             _order1,
@@ -83,6 +87,7 @@ contract HyperdriveMatchingEngineV2 is
         );
 
         IHyperdrive hyperdrive = _order1.hyperdrive;
+
 
         // Handle different order type combinations.
         // Case 1: Long + Short creation using mint().
@@ -589,6 +594,69 @@ contract HyperdriveMatchingEngineV2 is
         if (
             !verifySignature(order1Hash, _order1.signature, _order1.trader) ||
             !verifySignature(order2Hash, _order2.signature, _order2.trader)
+        ) {
+            revert InvalidSignature();
+        }
+    }
+
+    /// @dev Validates the maker order.
+    /// @param _makerOrder The maker order to validate.
+    /// @return makerOrderHash The hash of the maker order.
+    function _validateMakerOrder(
+        OrderIntent calldata _makerOrder
+    ) internal view returns (bytes32 makerOrderHash) {
+        // Verify the counterparty is the taker.
+        if (
+            (_makerOrder.counterparty != address(0) &&
+                _makerOrder.counterparty != msg.sender)
+        ) {
+            revert InvalidCounterparty();
+        }
+
+        // Check expiry.
+        if (_makerOrder.expiry <= block.timestamp) {
+            revert AlreadyExpired();
+        }
+
+        // Verify valid maturity time.
+        if (_makerOrder.minMaturityTime > _makerOrder.maxMaturityTime) {
+            revert InvalidMaturityTime();
+        }
+
+        // For the close order, minMaturityTime must equal maxMaturityTime.
+        if (
+            _makerOrder.orderType == OrderType.CloseLong ||
+            _makerOrder.orderType == OrderType.CloseShort
+        ) {
+            if (_makerOrder.minMaturityTime != _makerOrder.maxMaturityTime) {
+                revert InvalidMaturityTime();
+            }
+        }
+
+        // Check that the destination is not the zero address.
+        if (_makerOrder.options.destination == address(0)) {
+            revert InvalidDestination();
+        }
+
+        // Hash the order.
+        makerOrderHash = hashOrderIntent(_makerOrder);
+
+        // Check if the order is fully executed.
+        if (
+            orderAmountsUsed[makerOrderHash].bondAmount >= _makerOrder.bondAmount ||
+            orderAmountsUsed[makerOrderHash].fundAmount >= _makerOrder.fundAmount
+        ) {
+            revert AlreadyFullyExecuted();
+        }
+
+        // Check if the order is cancelled.
+        if (isCancelled[makerOrderHash]) {
+            revert AlreadyCancelled();
+        }
+
+        // Verify signatures.
+        if (
+            !verifySignature(makerOrderHash, _makerOrder.signature, _makerOrder.trader)
         ) {
             revert InvalidSignature();
         }
