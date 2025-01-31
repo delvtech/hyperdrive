@@ -76,6 +76,7 @@ contract HyperdriveMatchingEngineV2 is
         OrderIntent calldata _order2,
         address _surplusRecipient
     ) external nonReentrant {
+        // Set the surplus recipient to the caller if not specified.
         if (_surplusRecipient == address(0)) {
             _surplusRecipient = msg.sender;
         }
@@ -403,6 +404,121 @@ contract HyperdriveMatchingEngineV2 is
             orderAmountsUsed[order2Hash].bondAmount,
             orderAmountsUsed[order1Hash].fundAmount,
             orderAmountsUsed[order2Hash].fundAmount
+        );
+    }
+
+    /// @notice Fills a maker order by the taker.
+    /// @param _makerOrder The maker order to fill.
+    /// @param _takerOrderType The order type of the taker.
+    /// @param _closeOrderMaturityTime The maturity time for the close position
+    ///        from the taker. This value will not be used for open new positions.
+    /// @param _bondAmount The amount of bonds the taker wants to trade.
+    /// @param _destination The destination of the taker to receive funds or bonds
+    ///        output, as well as the surplus fund tokens.
+    function fillOrder(
+        OrderIntent calldata _makerOrder,
+        OrderType _takerOrderType,
+        uint256 _closeOrderMaturityTime,
+        uint256 _bondAmount,
+        address _destination
+    ) external nonReentrant {
+        // Validate maker order
+        bytes32 makerOrderHash = _validateMakerOrder(_makerOrder);
+
+        // Set the destination to the caller if not specified.
+        if (_destination == address(0)) {
+            _destination = msg.sender;
+        }
+
+        // Calculates the amount of bonds that can be matched between two orders.
+        OrderAmounts memory amountsMaker = orderAmountsUsed[makerOrderHash];
+        uint256 makerBondAmount = _makerOrder.bondAmount - amountsMaker.bondAmount;
+        uint256 bondMatchAmount = makerBondAmount.min(_bondAmount);
+
+        // Create taker order on the fly
+        OrderIntent memory takerOrder = OrderIntent({
+            trader: msg.sender,
+            counterparty: _makerOrder.trader,
+            feeRecipient: address(0),
+            hyperdrive: _makerOrder.hyperdrive,
+            fundAmount: 0,  // Not needed for immediate fill
+            bondAmount: 0,  // Not needed for immediate fill
+            minVaultSharePrice: _makerOrder.minVaultSharePrice,
+            options: IHyperdrive.Options({
+                destination: _destination,
+                asBase: _makerOrder.options.asBase
+            }),
+            orderType: _takerOrderType,
+            minMaturityTime: _makerOrder.minMaturityTime,
+            maxMaturityTime: _makerOrder.maxMaturityTime,
+            expiry: block.timestamp + 1,  // Immediate expiry
+            salt: 0,                      // Not needed for immediate fill
+            signature: ""                 // Not needed for immediate fill
+        });
+
+        // If the taker order is a close order, set the maturity time to the
+        // close order maturity time.
+        if (_takerOrderType == OrderType.CloseLong || _takerOrderType == OrderType.CloseShort) {
+            takerOrder.minMaturityTime = _closeOrderMaturityTime;
+            takerOrder.maxMaturityTime = _closeOrderMaturityTime;
+        }
+
+        // Handle different maker order types
+        if (_makerOrder.orderType == OrderType.OpenLong) {
+            if (_takerOrderType == OrderType.OpenShort) {
+                // OpenLong + OpenShort: Use mint()
+                _handleMint(_makerOrder, takerOrder);
+            } else if (_takerOrderType == OrderType.CloseLong) {
+                // OpenLong + CloseLong: Transfer long position
+                _handleTransfer(_makerOrder, takerOrder);
+            } else {
+                revert InvalidOrderCombination();
+            }
+        }
+        else if (_makerOrder.orderType == OrderType.OpenShort) {
+            if (_takerOrderType == OrderType.OpenLong) {
+                // OpenShort + OpenLong: Use mint()
+                _handleMint(takerOrder, _makerOrder);
+            } else if (_takerOrderType == OrderType.CloseShort) {
+                // OpenShort + CloseShort: Transfer short position
+                _handleTransfer(_makerOrder, takerOrder);
+            } else {
+                revert InvalidOrderCombination();
+            }
+        }
+        else if (_makerOrder.orderType == OrderType.CloseLong) {
+            if (_takerOrderType == OrderType.OpenLong) {
+                // CloseLong + OpenLong: Transfer long position
+                _handleTransfer(takerOrder, _makerOrder);
+            } else if (_takerOrderType == OrderType.CloseShort) {
+                // CloseLong + CloseShort: Use burn()
+                _handleBurn(_makerOrder, takerOrder);
+            } else {
+                revert InvalidOrderCombination();
+            }
+        }
+        else if (_makerOrder.orderType == OrderType.CloseShort) {
+            if (_takerOrderType == OrderType.OpenShort) {
+                // CloseShort + OpenShort: Transfer short position
+                _handleTransfer(takerOrder, _makerOrder);
+            } else if (_takerOrderType == OrderType.CloseLong) {
+                // CloseShort + CloseLong: Use burn()
+                _handleBurn(takerOrder, _makerOrder);
+            } else {
+                revert InvalidOrderCombination();
+            }
+        }
+        else {
+            revert InvalidOrderCombination();
+        }
+
+        emit OrderFilled(
+            _makerOrder.hyperdrive,
+            makerOrderHash,
+            _makerOrder.trader,
+            msg.sender,
+            orderAmountsUsed[makerOrderHash].bondAmount,
+            orderAmountsUsed[makerOrderHash].fundAmount
         );
     }
 

@@ -83,6 +83,22 @@ interface IHyperdriveMatchingEngineV2 {
         uint256 order2FundAmountUsed
     );
 
+    /// @notice Emitted when an order is filled by a taker.
+    /// @param hyperdrive The Hyperdrive contract where the trade occurred.
+    /// @param orderHash The hash of the order.
+    /// @param maker The maker of the order.
+    /// @param taker The taker of the order.
+    /// @param bondAmount The amount of bonds used for the order.
+    /// @param fundAmount The amount of funds used for the order.
+    event OrderFilled(
+        IHyperdrive indexed hyperdrive,
+        bytes32 indexed orderHash,
+        address indexed maker,
+        address taker,
+        uint256 bondAmount,
+        uint256 fundAmount
+    );
+
     /// @notice The type of an order intent.
     enum OrderType {
         OpenLong,
