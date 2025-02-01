@@ -856,7 +856,7 @@ contract HyperdriveMatchingEngineV2 is
                         ORDER_INTENT_TYPEHASH,
                         _order.trader,
                         _order.counterparty,
-                        // _order.feeRecipient,
+                        _order.feeRecipient,
                         address(_order.hyperdrive),
                         _order.fundAmount,
                         _order.bondAmount,
