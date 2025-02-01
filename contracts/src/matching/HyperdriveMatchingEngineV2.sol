@@ -333,60 +333,46 @@ contract HyperdriveMatchingEngineV2 is
 
     /// @notice Fills a maker order by the taker.
     /// @param _makerOrder The maker order to fill.
-    /// @param _takerOrderType The order type of the taker.
-    /// @param _closeOrderMaturityTime The maturity time for the close position
-    ///        from the taker. This value will not be used for open new positions.
-    /// @param _bondAmount The amount of bonds the taker wants to trade.
-    /// @param _destination The destination of the taker to receive funds or bonds
-    ///        output, as well as the surplus fund tokens.
+    /// @param _takerOrder The taker order created on the fly by the frontend.
+    /// @dev The frontend will have to take some necessary values from the user
+    ///      like the destination address, the orderType, and the maturity time
+    ///      for the close position...etc., and create the minimal sufficient
+    ///      struct as the _takerOrder argument. For example:
+    ///
+    /// OrderIntent({
+    ///    trader: msg.sender, // Take the user's address.
+    ///    counterparty: address(0), // Not needed for immediate fill.
+    ///    feeRecipient: address(0), // Not needed for immediate fill.
+    ///    hyperdrive: IHyperdrive(address(0)), // Not needed for immediate fill.
+    ///    fundAmount: 0,  // Not needed for immediate fill.
+    ///    bondAmount: _bondAmount,  // Take from the user's input.
+    ///    minVaultSharePrice: _makerOrder.minVaultSharePrice, // From maker order.
+    ///    options: IHyperdrive.Options({
+    ///        // Take destination from the user's input; if null, set to msg.sender.
+    ///        destination: _destination or msg.sender,
+    ///        asBase: _makerOrder.options.asBase, // From maker order.
+    ///        extraData: ""
+    ///    }),
+    ///    orderType: _takerOrderType, // Take from the user's input.
+    ///    // For closing positions, take maturity time from the user's input; 
+    ///    // otherwise, use values from the maker order.
+    ///    minMaturityTime: _closeOrderMaturityTime or _makerOrder.minMaturityTime,
+    ///    maxMaturityTime: _closeOrderMaturityTime or _makerOrder.maxMaturityTime,
+    ///    expiry: 0,  // Not needed for immediate fill.
+    ///    salt: 0,                      // Not needed for immediate fill.
+    ///    signature: ""                 // Not needed for immediate fill.
+    /// })
     function fillOrder(
         OrderIntent calldata _makerOrder,
-        OrderType _takerOrderType,
-        uint256 _closeOrderMaturityTime,
-        uint256 _bondAmount,
-        address _destination
+        OrderIntent calldata _takerOrder
     ) external nonReentrant {
-        // Validate maker order.
-        bytes32 makerOrderHash = _validateMakerOrder(_makerOrder);
-
-        // Set the destination to the caller if not specified.
-        if (_destination == address(0)) {
-            _destination = msg.sender;
-        }
+        // Validate maker order and taker order.
+        bytes32 makerOrderHash = _validateOrdersWithTaker(_makerOrder, _takerOrder);
 
         // Calculates the amount of bonds that can be matched between two orders.
         OrderAmounts memory amountsMaker = orderAmountsUsed[makerOrderHash];
         uint256 makerBondAmount = _makerOrder.bondAmount - amountsMaker.bondAmount;
-        uint256 bondMatchAmount = makerBondAmount.min(_bondAmount);
-
-        // Create taker order on the fly.
-        OrderIntent memory takerOrder = OrderIntent({
-            trader: msg.sender,
-            counterparty: address(0), // Not needed for immediate fill.
-            feeRecipient: address(0), // Not needed for immediate fill.
-            hyperdrive: IHyperdrive(address(0)), // Not needed for immediate fill.
-            fundAmount: 0,  // Not needed for immediate fill.
-            bondAmount: 0,  // Not needed for immediate fill.
-            minVaultSharePrice: _makerOrder.minVaultSharePrice,
-            options: IHyperdrive.Options({
-                destination: _destination,
-                asBase: _makerOrder.options.asBase,
-                extraData: ""
-            }),
-            orderType: _takerOrderType,
-            minMaturityTime: _makerOrder.minMaturityTime,
-            maxMaturityTime: _makerOrder.maxMaturityTime,
-            expiry: block.timestamp + 1,  // Immediate expiry.
-            salt: 0,                      // Not needed for immediate fill.
-            signature: ""                 // Not needed for immediate fill.
-        });
-
-        // If the taker is closing a position, then set the maturity time to the
-        // closeOrderMaturityTime.
-        if (_takerOrderType == OrderType.CloseLong || _takerOrderType == OrderType.CloseShort) {
-            takerOrder.minMaturityTime = _closeOrderMaturityTime;
-            takerOrder.maxMaturityTime = _closeOrderMaturityTime;
-        }
+        uint256 bondMatchAmount = makerBondAmount.min(_takerOrder.bondAmount);
 
         IHyperdrive hyperdrive = _makerOrder.hyperdrive;
         ERC20 fundToken;
@@ -398,7 +384,7 @@ contract HyperdriveMatchingEngineV2 is
 
         // Handle different maker order types.
         if (_makerOrder.orderType == OrderType.OpenLong) {
-            if (_takerOrderType == OrderType.OpenShort) {
+            if (_takerOrder.orderType == OrderType.OpenShort) {
                 // OpenLong + OpenShort: Use mint().
                 // Calculate the amount of fund tokens to transfer based on the
                 // bondMatchAmount using dynamic pricing. During a series of partial
@@ -443,7 +429,7 @@ contract HyperdriveMatchingEngineV2 is
                 // Mint the bonds.
                 uint256 bondAmount = _handleMint(
                     _makerOrder,
-                    takerOrder,
+                    _takerOrder,
                     fundTokenAmountMaker,
                     fundTokenAmountTaker,
                     cost,
@@ -454,13 +440,13 @@ contract HyperdriveMatchingEngineV2 is
 
                 // Update order bond amount used.
                 _updateOrderAmount(makerOrderHash, bondAmount, true);
-            } else if (_takerOrderType == OrderType.CloseLong) {
+            } else if (_takerOrder.orderType == OrderType.CloseLong) {
                 // OpenLong + CloseLong: Transfer long position.
                 // Verify that the maturity time of the close order matches the
                 // open order's requirements.
                 if (
-                    takerOrder.maxMaturityTime > _makerOrder.maxMaturityTime ||
-                    takerOrder.maxMaturityTime < _makerOrder.minMaturityTime
+                    _takerOrder.maxMaturityTime > _makerOrder.maxMaturityTime ||
+                    _takerOrder.maxMaturityTime < _makerOrder.minMaturityTime
                 ) {
                     revert InvalidMaturityTime();
                 }
@@ -490,7 +476,7 @@ contract HyperdriveMatchingEngineV2 is
 
                 _handleTransfer(
                     _makerOrder,
-                    takerOrder,
+                    _takerOrder,
                     fundTokenAmountMaker,
                     minFundAmountTaker,
                     bondMatchAmount,
@@ -544,14 +530,14 @@ contract HyperdriveMatchingEngineV2 is
         // Transfer the remaining fund tokens back to the taker's destination.
         uint256 remainingBalance = fundToken.balanceOf(address(this));
         if (remainingBalance > 0) {
-            fundToken.safeTransfer(_destination, remainingBalance);
+            fundToken.safeTransfer(_takerOrder.options.destination, remainingBalance);
         }
 
         emit OrderFilled(
             _makerOrder.hyperdrive,
             makerOrderHash,
             _makerOrder.trader,
-            msg.sender,
+            _takerOrder.trader,
             orderAmountsUsed[makerOrderHash].bondAmount,
             orderAmountsUsed[makerOrderHash].fundAmount
         );
@@ -750,16 +736,21 @@ contract HyperdriveMatchingEngineV2 is
         }
     }
 
-    /// @dev Validates the maker order.
+    /// @dev Validates the maker and taker orders. This function has shrinked
+    ///      logic from the _validateOrdersNoTaker function, as the taker order
+    ///      is only a minimal sufficient struct created by the frontend, with
+    ///      some fields being faulty values.
     /// @param _makerOrder The maker order to validate.
+    /// @param _takerOrder The taker order to validate.
     /// @return makerOrderHash The hash of the maker order.
-    function _validateMakerOrder(
-        OrderIntent calldata _makerOrder
+    function _validateOrdersWithTaker(
+        OrderIntent calldata _makerOrder,
+        OrderIntent calldata _takerOrder
     ) internal view returns (bytes32 makerOrderHash) {
-        // Verify the counterparty is the taker.
+        // Verify the maker's counterparty is the taker.
         if (
             (_makerOrder.counterparty != address(0) &&
-                _makerOrder.counterparty != msg.sender)
+                _makerOrder.counterparty != _takerOrder.trader)
         ) {
             revert InvalidCounterparty();
         }
@@ -769,8 +760,17 @@ contract HyperdriveMatchingEngineV2 is
             revert AlreadyExpired();
         }
 
+        // Verify settlement asset.
+        // @dev TODO: only supporting both true or both false for now.
+        //      Supporting mixed asBase values needs code changes on the Hyperdrive
+        //      instances.
+        if (_makerOrder.options.asBase != _takerOrder.options.asBase) {
+            revert InvalidSettlementAsset();
+        }
+
         // Verify valid maturity time.
-        if (_makerOrder.minMaturityTime > _makerOrder.maxMaturityTime) {
+        if (_makerOrder.minMaturityTime > _makerOrder.maxMaturityTime ||
+            _takerOrder.minMaturityTime > _takerOrder.maxMaturityTime) {
             revert InvalidMaturityTime();
         }
 
@@ -783,16 +783,25 @@ contract HyperdriveMatchingEngineV2 is
                 revert InvalidMaturityTime();
             }
         }
+        if (
+            _takerOrder.orderType == OrderType.CloseLong ||
+            _takerOrder.orderType == OrderType.CloseShort
+        ) {
+            if (_takerOrder.minMaturityTime != _takerOrder.maxMaturityTime) {
+                revert InvalidMaturityTime();
+            }
+        }
 
         // Check that the destination is not the zero address.
-        if (_makerOrder.options.destination == address(0)) {
+        if (_makerOrder.options.destination == address(0) ||
+            _takerOrder.options.destination == address(0)) {
             revert InvalidDestination();
         }
 
         // Hash the order.
         makerOrderHash = hashOrderIntent(_makerOrder);
 
-        // Check if the order is fully executed.
+        // Check if the maker order is fully executed.
         if (
             orderAmountsUsed[makerOrderHash].bondAmount >= _makerOrder.bondAmount ||
             orderAmountsUsed[makerOrderHash].fundAmount >= _makerOrder.fundAmount
@@ -800,12 +809,12 @@ contract HyperdriveMatchingEngineV2 is
             revert AlreadyFullyExecuted();
         }
 
-        // Check if the order is cancelled.
+        // Check if the maker order is cancelled.
         if (isCancelled[makerOrderHash]) {
             revert AlreadyCancelled();
         }
 
-        // Verify signatures.
+        // Verify the maker's signature.
         if (
             !verifySignature(makerOrderHash, _makerOrder.signature, _makerOrder.trader)
         ) {

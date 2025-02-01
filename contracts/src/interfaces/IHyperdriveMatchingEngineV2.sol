@@ -228,17 +228,10 @@ interface IHyperdriveMatchingEngineV2 {
 
     /// @notice Fills a maker order by the taker.
     /// @param _makerOrder The maker order to fill.
-    /// @param _takerOrderType The order type of the taker.
-    /// @param _closeOrderMaturityTime The maturity time for the close position
-    ///        from the taker. This value will not be used for open new positions.
-    /// @param _bondAmount The amount of bonds the taker wants to trade.
-    /// @param _destination The destination of the taker to receive funds or bonds
+    /// @param _takerOrder The taker order created on the fly by the frontend.
     function fillOrder(
         OrderIntent calldata _makerOrder,
-        OrderType _takerOrderType,
-        uint256 _closeOrderMaturityTime,
-        uint256 _bondAmount,
-        address _destination
+        OrderIntent calldata _takerOrder
     ) external;
 
     /// @notice Hashes an order intent according to EIP-712.
