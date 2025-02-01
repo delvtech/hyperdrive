@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.24;
 
-import { ECDSA } from "lib/openzeppelin-contracts/contracts/utils/cryptography/ECDSA.sol";
-import { EIP712 } from "lib/openzeppelin-contracts/contracts/utils/cryptography/EIP712.sol";
-import { ERC20 } from "lib/openzeppelin-contracts/contracts/token/ERC20/ERC20.sol";
-import { IERC1271 } from "lib/openzeppelin-contracts/contracts/interfaces/IERC1271.sol";
-import { ReentrancyGuard } from "lib/openzeppelin-contracts/contracts/utils/ReentrancyGuard.sol";
-import { SafeERC20 } from "lib/openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol";
+import { IERC1271 } from "openzeppelin/interfaces/IERC1271.sol";
+import { ECDSA } from "openzeppelin/utils/cryptography/ECDSA.sol";
+import { EIP712 } from "openzeppelin/utils/cryptography/EIP712.sol";
+import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
+import { ReentrancyGuard } from "openzeppelin/utils/ReentrancyGuard.sol";
+import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { AssetId } from "../libraries/AssetId.sol";
 import { FixedPointMath } from "../libraries/FixedPointMath.sol";
 import { HYPERDRIVE_MATCHING_ENGINE_KIND, VERSION } from "../libraries/Constants.sol";
