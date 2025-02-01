@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity ^0.8.20;
 
+import { IERC1155Receiver } from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
 import { IHyperdrive } from "../../contracts/src/interfaces/IHyperdrive.sol";
 import { IHyperdriveAdminController } from "../../contracts/src/interfaces/IHyperdriveAdminController.sol";
 import { IERC20 } from "../../contracts/src/interfaces/IERC20.sol";
@@ -13,6 +14,37 @@ import { MockHyperdrive } from "../../contracts/test/MockHyperdrive.sol";
 import { IMockHyperdrive, MockHyperdrive } from "../../contracts/test/MockHyperdrive.sol";
 import { HyperdriveTest } from "../utils/HyperdriveTest.sol";
 import { Lib } from "../utils/Lib.sol";
+
+// Helper contracts for testing receiver functionality
+contract NonReceiverContract {}
+
+contract ReceiverContract is IERC1155Receiver {
+    function onERC1155Received(
+        address,
+        address,
+        uint256,
+        uint256,
+        bytes calldata
+    ) external pure override returns (bytes4) {
+        return this.onERC1155Received.selector;
+    }
+
+    function onERC1155BatchReceived(
+        address,
+        address,
+        uint256[] calldata,
+        uint256[] calldata,
+        bytes calldata
+    ) external pure override returns (bytes4) {
+        return this.onERC1155BatchReceived.selector;
+    }
+
+    function supportsInterface(
+        bytes4 interfaceId
+    ) external pure override returns (bool) {
+        return interfaceId == type(IERC1155Receiver).interfaceId;
+    }
+}
 
 contract DummyHyperdriveMultiToken is HyperdriveMultiToken, MockHyperdrive {
     constructor(
@@ -335,6 +367,54 @@ contract MultiTokenTest is HyperdriveTest {
         hyperdrive.safeTransferFrom(owner, bob, 1, 100 ether, "");
     }
 
+    function testSafeTransferFromToNonReceiverContractReverts() public {
+        NonReceiverContract nonReceiver = new NonReceiverContract();
+        address owner = alice;
+
+        IMockHyperdrive(address(hyperdrive)).mint(1, owner, 100 ether);
+
+        vm.startPrank(owner);
+        hyperdrive.setApprovalForAll(address(this), true);
+
+        // Expect revert when transferring to non-receiver contract
+        vm.expectRevert(IHyperdrive.ERC1155InvalidReceiver.selector);
+        hyperdrive.safeTransferFrom(
+            owner,
+            address(nonReceiver),
+            1,
+            100 ether,
+            ""
+        );
+    }
+
+    function testSafeTransferFromToEOA() public {
+        address owner = alice;
+        IMockHyperdrive(address(hyperdrive)).mint(1, owner, 100 ether);
+
+        vm.startPrank(owner);
+        hyperdrive.setApprovalForAll(address(this), true);
+
+        hyperdrive.safeTransferFrom(owner, bob, 1, 100 ether, "");
+
+        // Verify balance update
+        assertEq(hyperdrive.balanceOf(1, bob), 100 ether);
+    }
+
+    function testSafeTransferFromToReceiverContractSucceeds() public {
+        ReceiverContract receiver = new ReceiverContract();
+        address owner = alice;
+
+        IMockHyperdrive(address(hyperdrive)).mint(1, owner, 100 ether);
+
+        vm.startPrank(owner);
+        hyperdrive.setApprovalForAll(address(this), true);
+
+        hyperdrive.safeTransferFrom(owner, address(receiver), 1, 100 ether, "");
+
+        // Verify balance update
+        assertEq(hyperdrive.balanceOf(1, address(receiver)), 100 ether);
+    }
+
     function testCannotTransferZeroAddrSafeBatchTransferFrom() public {
         vm.expectRevert();
         hyperdrive.safeBatchTransferFrom(
@@ -450,5 +530,72 @@ contract MultiTokenTest is HyperdriveTest {
 
         vm.expectRevert();
         hyperdrive.safeBatchTransferFrom(owner, bob, ids, amounts, "");
+    }
+
+    function testSafeBatchTransferFromToEOA() public {
+        address owner = alice;
+        uint256[] memory ids = new uint256[](1);
+        ids[0] = 1;
+        uint256[] memory amounts = new uint256[](1);
+        amounts[0] = 100 ether;
+
+        IMockHyperdrive(address(hyperdrive)).mint(1, owner, 100 ether);
+
+        vm.startPrank(owner);
+        hyperdrive.setApprovalForAll(address(this), true);
+
+        hyperdrive.safeBatchTransferFrom(owner, bob, ids, amounts, "");
+
+        // Verify balances
+        assertEq(hyperdrive.balanceOf(1, bob), 100 ether);
+    }
+
+    function testSafeBatchTransferFromToNonReceiverContractReverts() public {
+        NonReceiverContract nonReceiver = new NonReceiverContract();
+        address owner = alice;
+        uint256[] memory ids = new uint256[](1);
+        ids[0] = 1;
+        uint256[] memory amounts = new uint256[](1);
+        amounts[0] = 100 ether;
+
+        IMockHyperdrive(address(hyperdrive)).mint(1, owner, 100 ether);
+
+        vm.startPrank(owner);
+        hyperdrive.setApprovalForAll(address(this), true);
+
+        // Expect revert when transferring to non-receiver contract
+        vm.expectRevert(IHyperdrive.ERC1155InvalidReceiver.selector);
+        hyperdrive.safeBatchTransferFrom(
+            owner,
+            address(nonReceiver),
+            ids,
+            amounts,
+            ""
+        );
+    }
+
+    function testSafeBatchTransferFromToReceiverContractSucceeds() public {
+        ReceiverContract receiver = new ReceiverContract();
+        address owner = alice;
+        uint256[] memory ids = new uint256[](1);
+        ids[0] = 1;
+        uint256[] memory amounts = new uint256[](1);
+        amounts[0] = 100 ether;
+
+        IMockHyperdrive(address(hyperdrive)).mint(1, owner, 100 ether);
+
+        vm.startPrank(owner);
+        hyperdrive.setApprovalForAll(address(this), true);
+
+        hyperdrive.safeBatchTransferFrom(
+            owner,
+            address(receiver),
+            ids,
+            amounts,
+            ""
+        );
+
+        // Verify balance update
+        assertEq(hyperdrive.balanceOf(1, address(receiver)), 100 ether);
     }
 }
