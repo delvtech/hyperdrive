@@ -915,8 +915,6 @@ contract UniV3Zap is IUniV3Zap, ReentrancyGuard {
 
     /// IERC1155Receiver ///
 
-    // FIXME: Add a test for the transfer of a non-Hyperdrive ERC1155.
-    //
     /// @notice Handles the receipt of a single ERC1155 token type. This
     ///         function is called at the end of a `safeTransferFrom` after the
     ///         balance has been updated.
@@ -944,8 +942,6 @@ contract UniV3Zap is IUniV3Zap, ReentrancyGuard {
         }
     }
 
-    // FIXME: Add a test for the batch transfer of a non-Hyperdrive ERC1155.
-    //
     /// @notice Handles the receipt of a multiple ERC1155 token types. This
     ///         function is called at the end of a `safeBatchTransferFrom` after
     ///         the balances have been updated.
