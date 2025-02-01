@@ -143,10 +143,10 @@ contract HyperdriveMatchingEngineV2 is
             }
 
             // Calculate costs and parameters.
-            (
-                uint256 maturityTime,
-                uint256 cost
-            ) = _calculateMintCost(hyperdrive, bondMatchAmount);
+            (uint256 maturityTime, uint256 cost) = _calculateMintCost(
+                hyperdrive,
+                bondMatchAmount
+            );
 
             // Check if the maturity time is within the range.
             if (
@@ -354,7 +354,7 @@ contract HyperdriveMatchingEngineV2 is
     ///        extraData: ""
     ///    }),
     ///    orderType: _takerOrderType, // Take from the user's input.
-    ///    // For closing positions, take maturity time from the user's input; 
+    ///    // For closing positions, take maturity time from the user's input;
     ///    // otherwise, use values from the maker order.
     ///    minMaturityTime: _closeOrderMaturityTime or _makerOrder.minMaturityTime,
     ///    maxMaturityTime: _closeOrderMaturityTime or _makerOrder.maxMaturityTime,
@@ -367,11 +367,15 @@ contract HyperdriveMatchingEngineV2 is
         OrderIntent calldata _takerOrder
     ) external nonReentrant {
         // Validate maker order and taker order.
-        bytes32 makerOrderHash = _validateOrdersWithTaker(_makerOrder, _takerOrder);
+        bytes32 makerOrderHash = _validateOrdersWithTaker(
+            _makerOrder,
+            _takerOrder
+        );
 
         // Calculates the amount of bonds that can be matched between two orders.
         OrderAmounts memory amountsMaker = orderAmountsUsed[makerOrderHash];
-        uint256 makerBondAmount = _makerOrder.bondAmount - amountsMaker.bondAmount;
+        uint256 makerBondAmount = _makerOrder.bondAmount -
+            amountsMaker.bondAmount;
         uint256 bondMatchAmount = makerBondAmount.min(_takerOrder.bondAmount);
 
         IHyperdrive hyperdrive = _makerOrder.hyperdrive;
@@ -385,7 +389,7 @@ contract HyperdriveMatchingEngineV2 is
         // Handle different maker order types.
         if (_makerOrder.orderType == OrderType.OpenLong) {
             if (_takerOrder.orderType == OrderType.OpenShort) {
-                // OpenLong + OpenShort: Use mint().
+                // OpenLong + OpenShort: _handleMint().
                 // Calculate the amount of fund tokens to transfer based on the
                 // bondMatchAmount using dynamic pricing. During a series of partial
                 // matching, the pricing requirements can go easier as needed for
@@ -398,22 +402,23 @@ contract HyperdriveMatchingEngineV2 is
                         (_makerOrder.bondAmount -
                             orderAmountsUsed[makerOrderHash].bondAmount)
                     );
-                
+
                 // Update order fund amount used.
                 _updateOrderAmount(makerOrderHash, fundTokenAmountMaker, false);
 
                 // Check if the fund amount used is greater than the order amount.
                 if (
-                    orderAmountsUsed[makerOrderHash].fundAmount > _makerOrder.fundAmount
+                    orderAmountsUsed[makerOrderHash].fundAmount >
+                    _makerOrder.fundAmount
                 ) {
                     revert InvalidFundAmount();
                 }
 
                 // Calculate costs and parameters.
-                (
-                    uint256 maturityTime,
-                    uint256 cost
-                ) = _calculateMintCost(hyperdrive, bondMatchAmount);
+                (uint256 maturityTime, uint256 cost) = _calculateMintCost(
+                    hyperdrive,
+                    bondMatchAmount
+                );
 
                 // Check if the maturity time is within the range.
                 if (
@@ -424,7 +429,10 @@ contract HyperdriveMatchingEngineV2 is
                 }
 
                 // Calculate the amount of fund tokens the taker needs to pay.
-                uint256 fundTokenAmountTaker = fundTokenAmountMaker > cost + TOKEN_AMOUNT_BUFFER ? 0 : cost + TOKEN_AMOUNT_BUFFER - fundTokenAmountMaker;
+                uint256 fundTokenAmountTaker = fundTokenAmountMaker >
+                    cost + TOKEN_AMOUNT_BUFFER
+                    ? 0
+                    : cost + TOKEN_AMOUNT_BUFFER - fundTokenAmountMaker;
 
                 // Mint the bonds.
                 uint256 bondAmount = _handleMint(
@@ -441,7 +449,7 @@ contract HyperdriveMatchingEngineV2 is
                 // Update order bond amount used.
                 _updateOrderAmount(makerOrderHash, bondAmount, true);
             } else if (_takerOrder.orderType == OrderType.CloseLong) {
-                // OpenLong + CloseLong: Transfer long position.
+                // OpenLong + CloseLong: _handleTransfer().
                 // Verify that the maturity time of the close order matches the
                 // open order's requirements.
                 if (
@@ -489,48 +497,313 @@ contract HyperdriveMatchingEngineV2 is
             } else {
                 revert InvalidOrderCombination();
             }
-        }
-        // else if (_makerOrder.orderType == OrderType.OpenShort) {
-        //     if (_takerOrderType == OrderType.OpenLong) {
-        //         // OpenShort + OpenLong: Use mint().
-        //         _handleMint(takerOrder, _makerOrder);
-        //     } else if (_takerOrderType == OrderType.CloseShort) {
-        //         // OpenShort + CloseShort: Transfer short position.
-        //         _handleTransfer(_makerOrder, takerOrder);
-        //     } else {
-        //         revert InvalidOrderCombination();
-        //     }
-        // }
-        // else if (_makerOrder.orderType == OrderType.CloseLong) {
-        //     if (_takerOrderType == OrderType.OpenLong) {
-        //         // CloseLong + OpenLong: Transfer long position.
-        //         _handleTransfer(takerOrder, _makerOrder);
-        //     } else if (_takerOrderType == OrderType.CloseShort) {
-        //         // CloseLong + CloseShort: Use burn().
-        //         _handleBurn(_makerOrder, takerOrder);
-        //     } else {
-        //         revert InvalidOrderCombination();
-        //     }
-        // }
-        // else if (_makerOrder.orderType == OrderType.CloseShort) {
-        //     if (_takerOrderType == OrderType.OpenShort) {
-        //         // CloseShort + OpenShort: Transfer short position.
-        //         _handleTransfer(takerOrder, _makerOrder);
-        //     } else if (_takerOrderType == OrderType.CloseLong) {
-        //         // CloseShort + CloseLong: Use burn().
-        //         _handleBurn(takerOrder, _makerOrder);
-        //     } else {
-        //         revert InvalidOrderCombination();
-        //     }
-        // }
-        else {
+        } else if (_makerOrder.orderType == OrderType.OpenShort) {
+            if (_takerOrder.orderType == OrderType.OpenLong) {
+                // OpenShort + OpenLong: _handleMint() but reverse the order.
+                // Calculate the amount of fund tokens to transfer based on the
+                // bondMatchAmount using dynamic pricing. During a series of partial
+                // matching, the pricing requirements can go easier as needed for
+                // each new match, hence increasing the match likelihood.
+                // NOTE: Round the required fund amount down to prevent overspending
+                //       and possible reverting at a later step.
+                uint256 fundTokenAmountMaker = (_makerOrder.fundAmount -
+                    orderAmountsUsed[makerOrderHash].fundAmount).mulDivDown(
+                        bondMatchAmount,
+                        (_makerOrder.bondAmount -
+                            orderAmountsUsed[makerOrderHash].bondAmount)
+                    );
+
+                // Update order fund amount used.
+                _updateOrderAmount(makerOrderHash, fundTokenAmountMaker, false);
+
+                // Check if the fund amount used is greater than the order amount.
+                if (
+                    orderAmountsUsed[makerOrderHash].fundAmount >
+                    _makerOrder.fundAmount
+                ) {
+                    revert InvalidFundAmount();
+                }
+
+                // Calculate costs and parameters.
+                (uint256 maturityTime, uint256 cost) = _calculateMintCost(
+                    hyperdrive,
+                    bondMatchAmount
+                );
+
+                // Check if the maturity time is within the range.
+                if (
+                    maturityTime < _makerOrder.minMaturityTime ||
+                    maturityTime > _makerOrder.maxMaturityTime
+                ) {
+                    revert InvalidMaturityTime();
+                }
+
+                // Calculate the amount of fund tokens the taker needs to pay.
+                uint256 fundTokenAmountTaker = fundTokenAmountMaker >
+                    cost + TOKEN_AMOUNT_BUFFER
+                    ? 0
+                    : cost + TOKEN_AMOUNT_BUFFER - fundTokenAmountMaker;
+
+                // Mint the bonds.
+                uint256 bondAmount = _handleMint(
+                    _takerOrder,
+                    _makerOrder,
+                    fundTokenAmountTaker,
+                    fundTokenAmountMaker,
+                    cost,
+                    bondMatchAmount,
+                    fundToken,
+                    hyperdrive
+                );
+
+                // Update order bond amount used.
+                _updateOrderAmount(makerOrderHash, bondAmount, true);
+            } else if (_takerOrder.orderType == OrderType.CloseShort) {
+                // OpenShort + CloseShort: _handleTransfer().
+                // Verify that the maturity time of the close order matches the
+                // open order's requirements.
+                if (
+                    _takerOrder.maxMaturityTime > _makerOrder.maxMaturityTime ||
+                    _takerOrder.maxMaturityTime < _makerOrder.minMaturityTime
+                ) {
+                    revert InvalidMaturityTime();
+                }
+
+                // Calculate the amount of fund tokens to transfer based on the
+                // bondMatchAmount using dynamic pricing. During a series of partial
+                // matching, the pricing requirements can go easier as needed for each
+                // new match, hence increasing the match likelihood.
+                // NOTE: Round the required fund amount down to prevent overspending
+                //       and possible reverting at a later step.
+                uint256 fundTokenAmountMaker = (_makerOrder.fundAmount -
+                    orderAmountsUsed[makerOrderHash].fundAmount).mulDivDown(
+                        bondMatchAmount,
+                        (_makerOrder.bondAmount -
+                            orderAmountsUsed[makerOrderHash].bondAmount)
+                    );
+
+                // The taker simply agrees with the maker's fund amount, and no
+                // additional donation nor validations need to be considered
+                uint256 minFundAmountTaker = fundTokenAmountMaker;
+
+                // Update order bond amount used.
+                // @dev After the update, there is no need to check if the bond
+                //      amount used is greater than the order amount, as the order
+                //      amount is already used to calculate the bondMatchAmount.
+                _updateOrderAmount(makerOrderHash, bondMatchAmount, true);
+
+                _handleTransfer(
+                    _makerOrder,
+                    _takerOrder,
+                    fundTokenAmountMaker,
+                    minFundAmountTaker,
+                    bondMatchAmount,
+                    fundToken,
+                    hyperdrive
+                );
+
+                // Update order fund amount used.
+                _updateOrderAmount(makerOrderHash, fundTokenAmountMaker, false);
+            } else {
+                revert InvalidOrderCombination();
+            }
+        } else if (_makerOrder.orderType == OrderType.CloseLong) {
+            if (_takerOrder.orderType == OrderType.OpenLong) {
+                // CloseLong + OpenLong: _handleTransfer() but reverse the order.
+                // Verify that the maturity time of the close order matches the
+                // open order's requirements.
+                if (
+                    _makerOrder.maxMaturityTime > _takerOrder.maxMaturityTime ||
+                    _makerOrder.maxMaturityTime < _takerOrder.minMaturityTime
+                ) {
+                    revert InvalidMaturityTime();
+                }
+
+                // Calculate the amount of fund tokens to transfer based on the
+                // bondMatchAmount using dynamic pricing. During a series of partial
+                // matching, the pricing requirements can go easier as needed for each
+                // new match, hence increasing the match likelihood.
+                // NOTE: Round the required fund amount down to prevent overspending
+                //       and possible reverting at a later step.
+                uint256 minFundAmountMaker = (_makerOrder.fundAmount -
+                    orderAmountsUsed[makerOrderHash].fundAmount).mulDivDown(
+                        bondMatchAmount,
+                        (_makerOrder.bondAmount -
+                            orderAmountsUsed[makerOrderHash].bondAmount)
+                    );
+
+                // The taker simply agrees with the maker's fund amount, and no
+                // additional donation nor validations need to be considered
+                uint256 fundTokenAmountTaker = minFundAmountMaker;
+
+                // Update order bond amount used.
+                // @dev After the update, there is no need to check if the bond
+                //      amount used is greater than the order amount, as the order
+                //      amount is already used to calculate the bondMatchAmount.
+                _updateOrderAmount(makerOrderHash, bondMatchAmount, true);
+
+                _handleTransfer(
+                    _takerOrder,
+                    _makerOrder,
+                    fundTokenAmountTaker,
+                    minFundAmountMaker,
+                    bondMatchAmount,
+                    fundToken,
+                    hyperdrive
+                );
+
+                // Update order fund amount used.
+                _updateOrderAmount(makerOrderHash, minFundAmountMaker, false);
+            } else if (_takerOrder.orderType == OrderType.CloseShort) {
+                // CloseLong + CloseShort: _handleBurn().
+                // Verify both orders have the same maturity time.
+                if (
+                    _makerOrder.maxMaturityTime != _takerOrder.maxMaturityTime
+                ) {
+                    revert InvalidMaturityTime();
+                }
+
+                // Get the min fund output according to the bondMatchAmount.
+                // NOTE: Round the required fund amount up to respect the order
+                //       specified min fund output.
+                uint256 minFundAmountMaker = (_makerOrder.fundAmount -
+                    orderAmountsUsed[makerOrderHash].fundAmount).mulDivUp(
+                        bondMatchAmount,
+                        (_makerOrder.bondAmount -
+                            orderAmountsUsed[makerOrderHash].bondAmount)
+                    );
+
+                // The taker takes whatever the leftover fund amount is.
+                // @dev The taker will not receive proceeds inside the _handleBurn(),
+                //      but will receive the leftover fund at the surplus distribution.
+                uint256 minFundAmountTaker = 0;
+
+                // Update order bond amount used.
+                // @dev After the update, there is no need to check if the bond
+                //      amount used is greater than the order amount, as the order
+                //      amount is already used to calculate the bondMatchAmount.
+                _updateOrderAmount(makerOrderHash, bondMatchAmount, true);
+
+                // Handle burn operation through helper function.
+                _handleBurn(
+                    _makerOrder,
+                    _takerOrder,
+                    minFundAmountMaker,
+                    minFundAmountTaker,
+                    bondMatchAmount,
+                    fundToken,
+                    hyperdrive
+                );
+
+                // Update order fund amount used.
+                _updateOrderAmount(makerOrderHash, minFundAmountMaker, false);
+            } else {
+                revert InvalidOrderCombination();
+            }
+        } else if (_makerOrder.orderType == OrderType.CloseShort) {
+            if (_takerOrder.orderType == OrderType.OpenShort) {
+                // CloseShort + OpenShort: _handleTransfer() but reverse the order.
+                // Verify that the maturity time of the close order matches the
+                // open order's requirements.
+                if (
+                    _makerOrder.maxMaturityTime > _takerOrder.maxMaturityTime ||
+                    _makerOrder.maxMaturityTime < _takerOrder.minMaturityTime
+                ) {
+                    revert InvalidMaturityTime();
+                }
+
+                // Calculate the amount of fund tokens to transfer based on the
+                // bondMatchAmount using dynamic pricing. During a series of partial
+                // matching, the pricing requirements can go easier as needed for each
+                // new match, hence increasing the match likelihood.
+                // NOTE: Round the required fund amount down to prevent overspending
+                //       and possible reverting at a later step.
+                uint256 minFundAmountMaker = (_makerOrder.fundAmount -
+                    orderAmountsUsed[makerOrderHash].fundAmount).mulDivDown(
+                        bondMatchAmount,
+                        (_makerOrder.bondAmount -
+                            orderAmountsUsed[makerOrderHash].bondAmount)
+                    );
+
+                // The taker simply agrees with the maker's fund amount, and no
+                // additional donation nor validations need to be considered
+                uint256 fundTokenAmountTaker = minFundAmountMaker;
+
+                // Update order bond amount used.
+                // @dev After the update, there is no need to check if the bond
+                //      amount used is greater than the order amount, as the order
+                //      amount is already used to calculate the bondMatchAmount.
+                _updateOrderAmount(makerOrderHash, bondMatchAmount, true);
+
+                _handleTransfer(
+                    _takerOrder,
+                    _makerOrder,
+                    fundTokenAmountTaker,
+                    minFundAmountMaker,
+                    bondMatchAmount,
+                    fundToken,
+                    hyperdrive
+                );
+
+                // Update order fund amount used.
+                _updateOrderAmount(makerOrderHash, minFundAmountMaker, false);
+            } else if (_takerOrder.orderType == OrderType.CloseLong) {
+                // CloseShort + CloseLong: _handleBurn() but reverse the order.
+                // Verify both orders have the same maturity time.
+                if (
+                    _makerOrder.maxMaturityTime != _takerOrder.maxMaturityTime
+                ) {
+                    revert InvalidMaturityTime();
+                }
+
+                // Get the min fund output according to the bondMatchAmount.
+                // NOTE: Round the required fund amount up to respect the order
+                //       specified min fund output.
+                uint256 minFundAmountMaker = (_makerOrder.fundAmount -
+                    orderAmountsUsed[makerOrderHash].fundAmount).mulDivUp(
+                        bondMatchAmount,
+                        (_makerOrder.bondAmount -
+                            orderAmountsUsed[makerOrderHash].bondAmount)
+                    );
+
+                // The taker takes whatever the leftover fund amount is.
+                // @dev The taker will not receive proceeds inside the _handleBurn(),
+                //      but will receive the leftover fund at the surplus distribution.
+                uint256 minFundAmountTaker = 0;
+
+                // Update order bond amount used.
+                // @dev After the update, there is no need to check if the bond
+                //      amount used is greater than the order amount, as the order
+                //      amount is already used to calculate the bondMatchAmount.
+                _updateOrderAmount(makerOrderHash, bondMatchAmount, true);
+
+                // Handle burn operation through helper function.
+                _handleBurn(
+                    _takerOrder,
+                    _makerOrder,
+                    minFundAmountTaker,
+                    minFundAmountMaker,
+                    bondMatchAmount,
+                    fundToken,
+                    hyperdrive
+                );
+
+                // Update order fund amount used.
+                _updateOrderAmount(makerOrderHash, minFundAmountMaker, false);
+            } else {
+                revert InvalidOrderCombination();
+            }
+        } else {
             revert InvalidOrderCombination();
         }
 
-        // Transfer the remaining fund tokens back to the taker's destination.
+        // Transfer any remaining fund tokens back to the taker's destination.
         uint256 remainingBalance = fundToken.balanceOf(address(this));
         if (remainingBalance > 0) {
-            fundToken.safeTransfer(_takerOrder.options.destination, remainingBalance);
+            fundToken.safeTransfer(
+                _takerOrder.options.destination,
+                remainingBalance
+            );
         }
 
         emit OrderFilled(
@@ -583,7 +856,7 @@ contract HyperdriveMatchingEngineV2 is
                         ORDER_INTENT_TYPEHASH,
                         _order.trader,
                         _order.counterparty,
-                        _order.feeRecipient,
+                        // _order.feeRecipient,
                         address(_order.hyperdrive),
                         _order.fundAmount,
                         _order.bondAmount,
@@ -769,8 +1042,10 @@ contract HyperdriveMatchingEngineV2 is
         }
 
         // Verify valid maturity time.
-        if (_makerOrder.minMaturityTime > _makerOrder.maxMaturityTime ||
-            _takerOrder.minMaturityTime > _takerOrder.maxMaturityTime) {
+        if (
+            _makerOrder.minMaturityTime > _makerOrder.maxMaturityTime ||
+            _takerOrder.minMaturityTime > _takerOrder.maxMaturityTime
+        ) {
             revert InvalidMaturityTime();
         }
 
@@ -793,8 +1068,10 @@ contract HyperdriveMatchingEngineV2 is
         }
 
         // Check that the destination is not the zero address.
-        if (_makerOrder.options.destination == address(0) ||
-            _takerOrder.options.destination == address(0)) {
+        if (
+            _makerOrder.options.destination == address(0) ||
+            _takerOrder.options.destination == address(0)
+        ) {
             revert InvalidDestination();
         }
 
@@ -803,8 +1080,10 @@ contract HyperdriveMatchingEngineV2 is
 
         // Check if the maker order is fully executed.
         if (
-            orderAmountsUsed[makerOrderHash].bondAmount >= _makerOrder.bondAmount ||
-            orderAmountsUsed[makerOrderHash].fundAmount >= _makerOrder.fundAmount
+            orderAmountsUsed[makerOrderHash].bondAmount >=
+            _makerOrder.bondAmount ||
+            orderAmountsUsed[makerOrderHash].fundAmount >=
+            _makerOrder.fundAmount
         ) {
             revert AlreadyFullyExecuted();
         }
@@ -816,7 +1095,11 @@ contract HyperdriveMatchingEngineV2 is
 
         // Verify the maker's signature.
         if (
-            !verifySignature(makerOrderHash, _makerOrder.signature, _makerOrder.trader)
+            !verifySignature(
+                makerOrderHash,
+                _makerOrder.signature,
+                _makerOrder.trader
+            )
         ) {
             revert InvalidSignature();
         }
@@ -1072,38 +1355,37 @@ contract HyperdriveMatchingEngineV2 is
     function _calculateMintCost(
         IHyperdrive _hyperdrive,
         uint256 _bondMatchAmount
-    ) internal view returns (
-        uint256 maturityTime,
-        uint256 cost
-    ) {
+    ) internal view returns (uint256 maturityTime, uint256 cost) {
         // Get pool configuration.
         IHyperdrive.PoolConfig memory config = _hyperdrive.getPoolConfig();
-        
+
         // Calculate checkpoint and maturity time.
         uint256 latestCheckpoint = _latestCheckpoint(config.checkpointDuration);
         maturityTime = latestCheckpoint + config.positionDuration;
-        
+
         // Get vault share prices.
         // @dev TODO: there is another way to get the info without calling
         //      getPoolInfo()?
         uint256 vaultSharePrice = _hyperdrive.getPoolInfo().vaultSharePrice;
-        uint256 openVaultSharePrice = _hyperdrive.getCheckpoint(latestCheckpoint).vaultSharePrice;
+        uint256 openVaultSharePrice = _hyperdrive
+            .getCheckpoint(latestCheckpoint)
+            .vaultSharePrice;
         if (openVaultSharePrice == 0) {
             openVaultSharePrice = vaultSharePrice;
         }
-        
+
         // Calculate the required fund amount.
         // NOTE: Round the required fund amount up to overestimate the cost.
         cost = _bondMatchAmount.mulDivUp(
             vaultSharePrice.max(openVaultSharePrice),
             openVaultSharePrice
         );
-        
+
         // Add flat fee.
         // NOTE: Round the flat fee calculation up to match other flows.
         uint256 flatFee = _bondMatchAmount.mulUp(config.fees.flat);
         cost += flatFee;
-        
+
         // Add governance fee.
         // NOTE: Round the governance fee calculation down to match other flows.
         uint256 governanceFee = 2 * flatFee.mulDown(config.fees.governanceLP);
