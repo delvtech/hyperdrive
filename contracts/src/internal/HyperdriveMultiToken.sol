@@ -60,7 +60,8 @@ abstract contract HyperdriveMultiToken is IHyperdriveEvents, HyperdriveBase {
         }
 
         // Call internal transfer for each asset.
-        for (uint256 i = 0; i < _ids.length; i++) {
+        uint256 length = _ids.length;
+        for (uint256 i = 0; i < length; i++) {
             _transferFrom(_ids[i], _from, _to, _values[i], msg.sender);
         }
     }
@@ -159,7 +160,7 @@ abstract contract HyperdriveMultiToken is IHyperdriveEvents, HyperdriveBase {
         address _to,
         uint256[] calldata _ids,
         uint256[] calldata _amounts,
-        bytes memory _data
+        bytes calldata _data
     ) internal nonReentrant {
         // Perform the regular batch transfer first.
         _batchTransferFrom(_from, _to, _ids, _amounts);

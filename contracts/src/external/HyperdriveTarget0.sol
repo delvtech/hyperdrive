@@ -180,7 +180,7 @@ abstract contract HyperdriveTarget0 is
         address _to,
         uint256[] calldata _ids,
         uint256[] calldata _amounts,
-        bytes memory _data
+        bytes calldata _data
     ) external {
         _safeBatchTransferFrom(_from, _to, _ids, _amounts, _data);
     }
@@ -482,7 +482,8 @@ abstract contract HyperdriveTarget0 is
 
         // Load the balances.
         uint256[] memory batchBalances = new uint256[](_accounts.length);
-        for (uint256 i = 0; i < _accounts.length; ++i) {
+        uint256 length = _accounts.length;
+        for (uint256 i = 0; i < length; ++i) {
             batchBalances[i] = _balanceOf[_ids[i]][_accounts[i]];
         }
 

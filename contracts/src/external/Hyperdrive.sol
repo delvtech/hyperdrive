@@ -347,7 +347,7 @@ abstract contract Hyperdrive is
         address,
         uint256[] calldata,
         uint256[] calldata,
-        bytes memory
+        bytes calldata
     ) external {
         _delegate(target0);
     }

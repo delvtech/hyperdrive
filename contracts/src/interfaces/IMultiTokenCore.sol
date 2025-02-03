@@ -76,7 +76,7 @@ interface IMultiTokenCore {
         address _to,
         uint256[] calldata _ids,
         uint256[] calldata _amounts,
-        bytes memory _data
+        bytes calldata _data
     ) external;
 
     /// @notice Allows a caller who is not the owner of an account to execute the
