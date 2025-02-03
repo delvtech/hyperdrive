@@ -2,6 +2,7 @@
 pragma solidity ^0.8.18;
 
 import { IERC20Forwarder } from "../../contracts/src/interfaces/IERC20Forwarder.sol";
+import { IHyperdrive } from "../../contracts/src/interfaces/IHyperdrive.sol";
 import { IMultiToken } from "../../contracts/src/interfaces/IMultiToken.sol";
 import { AssetId } from "../../contracts/src/libraries/AssetId.sol";
 import { ERC20_FORWARDER_KIND, ERC20_FORWARDER_FACTORY_KIND, VERSION } from "../../contracts/src/libraries/Constants.sol";
@@ -213,7 +214,7 @@ contract ERC20ForwarderFactoryTest is HyperdriveTest {
         forwarder.permit(owner, address(0xCAFE), 1e18, oldTimestamp, v, r, s);
     }
 
-    function testFailPermitReplay() public {
+    function testRevertPermitReplay() public {
         uint256 privateKey = 0xBEEF;
         address owner = vm.addr(privateKey);
 
@@ -247,6 +248,7 @@ contract ERC20ForwarderFactoryTest is HyperdriveTest {
             s
         );
 
+        vm.expectRevert(IHyperdrive.InvalidSignature.selector);
         forwarder.permit(
             owner,
             address(0xCAFE),
