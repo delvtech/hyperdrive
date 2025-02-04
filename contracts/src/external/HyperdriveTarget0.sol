@@ -152,23 +152,6 @@ abstract contract HyperdriveTarget0 is
         _setApproval(tokenID, operator, amount, msg.sender);
     }
 
-    /// @dev Safely transfers tokens, checking if recipient is a contract and
-    ///      can handle ERC1155 tokens.
-    /// @param _from The source address.
-    /// @param _to The destination address.
-    /// @param _id The token identifier.
-    /// @param _amount The amount to transfer.
-    /// @param _data Additional data to pass to recipient if it's a contract.
-    function safeTransferFrom(
-        address _from,
-        address _to,
-        uint256 _id,
-        uint256 _amount,
-        bytes calldata _data
-    ) external {
-        _safeTransferFrom(_from, _to, _id, _amount, _data);
-    }
-
     /// @dev Safely transfers multiple tokens in a batch.
     /// @param _from The source address.
     /// @param _to The destination address.

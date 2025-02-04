@@ -338,7 +338,7 @@ abstract contract Hyperdrive is
         uint256,
         bytes calldata
     ) external {
-        _delegate(target0);
+        _delegate(target3);
     }
 
     /// @inheritdoc IMultiTokenCore
