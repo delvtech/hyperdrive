@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.24;
 
-import { IERC1271 } from "openzeppelin/interfaces/IERC1271.sol";
 import { ECDSA } from "openzeppelin/utils/cryptography/ECDSA.sol";
 import { EIP712 } from "openzeppelin/utils/cryptography/EIP712.sol";
 import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
+import { IERC1271 } from "openzeppelin/interfaces/IERC1271.sol";
 import { ReentrancyGuard } from "openzeppelin/utils/ReentrancyGuard.sol";
 import { SafeERC20 } from "openzeppelin/token/ERC20/utils/SafeERC20.sol";
 import { AssetId } from "../libraries/AssetId.sol";
