@@ -2,18 +2,6 @@
 pragma solidity ^0.8.20;
 
 interface IMultiTokenCore {
-    /// @notice Transfers an amount of assets from the source to the destination.
-    /// @param tokenID The token identifier.
-    /// @param from The address whose balance will be reduced.
-    /// @param to The address whose balance will be increased.
-    /// @param amount The amount of token to move.
-    function transferFrom(
-        uint256 tokenID,
-        address from,
-        address to,
-        uint256 amount
-    ) external;
-
     /// @notice Permissioned transfer for the bridge to access, only callable by
     ///         the ERC20 linking bridge.
     /// @param tokenID The token identifier.
@@ -62,16 +50,33 @@ interface IMultiTokenCore {
     /// @param approved True to approve, false to remove approval.
     function setApprovalForAll(address operator, bool approved) external;
 
-    /// @notice Transfers several assets from one account to another.
-    /// @param from The source account.
-    /// @param to The destination account.
-    /// @param ids The array of token ids of the asset to transfer.
-    /// @param values The amount of each token to transfer.
-    function batchTransferFrom(
-        address from,
-        address to,
-        uint256[] calldata ids,
-        uint256[] calldata values
+    /// @dev Safely transfers tokens, checking if recipient is a contract and
+    ///      can handle ERC1155 tokens.
+    /// @param _from The source address.
+    /// @param _to The destination address.
+    /// @param _id The token identifier.
+    /// @param _amount The amount to transfer.
+    /// @param _data Additional data to pass to recipient if it's a contract.
+    function safeTransferFrom(
+        address _from,
+        address _to,
+        uint256 _id,
+        uint256 _amount,
+        bytes calldata _data
+    ) external;
+
+    /// @dev Safely transfers multiple tokens in a batch.
+    /// @param _from The source address.
+    /// @param _to The destination address.
+    /// @param _ids Array of token identifiers.
+    /// @param _amounts Array of amounts to transfer for each token.
+    /// @param _data Additional data to pass to recipient if it's a contract.
+    function safeBatchTransferFrom(
+        address _from,
+        address _to,
+        uint256[] calldata _ids,
+        uint256[] calldata _amounts,
+        bytes calldata _data
     ) external;
 
     /// @notice Allows a caller who is not the owner of an account to execute the

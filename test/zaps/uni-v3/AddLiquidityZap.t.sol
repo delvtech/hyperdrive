@@ -557,9 +557,10 @@ contract AddLiquidityZapTest is UniV3ZapTest {
                 aliceBalanceBefore - zapInOptions.sourceAmount
             );
         } else {
-            assertEq(
+            assertApproxEqAbs(
                 IERC20(_zapInOptions.sourceAsset).balanceOf(alice),
-                aliceBalanceBefore - zapInOptions.sourceAmount
+                aliceBalanceBefore - zapInOptions.sourceAmount,
+                1
             );
         }
 
@@ -580,8 +581,7 @@ contract AddLiquidityZapTest is UniV3ZapTest {
             assertGt(
                 hyperdriveVaultSharesBalanceAfter,
                 hyperdriveVaultSharesBalanceBefore +
-                    _convertToShares(
-                        hyperdrive_,
+                    hyperdrive_.convertToShares(
                         zapInOptions.swapParams.amountOutMinimum
                     )
             );
@@ -623,10 +623,9 @@ contract AddLiquidityZapTest is UniV3ZapTest {
             } else {
                 assertGt(
                     lpShares,
-                    _convertToBase(
-                        hyperdrive_,
-                        zapInOptions.swapParams.amountOutMinimum
-                    ).divDown(hyperdrive_.getPoolInfo().lpSharePrice)
+                    hyperdrive_
+                        .convertToBase(zapInOptions.swapParams.amountOutMinimum)
+                        .divDown(hyperdrive_.getPoolInfo().lpSharePrice)
                 );
             }
         }

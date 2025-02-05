@@ -236,6 +236,10 @@ interface IHyperdrive is
     /// @notice Thrown when a permit signature is expired.
     error ExpiredDeadline();
 
+    /// @notice Thrown when the recipient of an ERC1155 token transfer isn't a
+    ///         valid receiver.
+    error ERC1155InvalidReceiver();
+
     /// @notice Thrown when a user doesn't have a sufficient balance to perform
     ///         an action.
     error InsufficientBalance();

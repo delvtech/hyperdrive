@@ -305,11 +305,6 @@ abstract contract Hyperdrive is
     /// MultiToken ///
 
     /// @inheritdoc IMultiTokenCore
-    function transferFrom(uint256, address, address, uint256) external {
-        _delegate(target0);
-    }
-
-    /// @inheritdoc IMultiTokenCore
     function transferFromBridge(
         uint256,
         address,
@@ -336,11 +331,23 @@ abstract contract Hyperdrive is
     }
 
     /// @inheritdoc IMultiTokenCore
-    function batchTransferFrom(
+    function safeTransferFrom(
+        address,
+        address,
+        uint256,
+        uint256,
+        bytes calldata
+    ) external {
+        _delegate(target3);
+    }
+
+    /// @inheritdoc IMultiTokenCore
+    function safeBatchTransferFrom(
         address,
         address,
         uint256[] calldata,
-        uint256[] calldata
+        uint256[] calldata,
+        bytes calldata
     ) external {
         _delegate(target0);
     }

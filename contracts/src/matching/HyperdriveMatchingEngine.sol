@@ -229,11 +229,12 @@ contract HyperdriveMatchingEngine is
         // If the withdrawal shares are greater than zero, send them to the fee
         // recipient.
         if (withdrawalShares > 0) {
-            hyperdrive.transferFrom(
-                AssetId._WITHDRAWAL_SHARE_ASSET_ID,
+            hyperdrive.safeTransferFrom(
                 address(this),
                 feeRecipient,
-                withdrawalShares
+                AssetId._WITHDRAWAL_SHARE_ASSET_ID,
+                withdrawalShares,
+                ""
             );
         }
 

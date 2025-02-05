@@ -104,7 +104,7 @@ contract CloseShortZapTest is UniV3ZapTest {
         // Add a large amount of liquidity to ensure that there is adequate
         // liquidity to open the long.
         uint256 contribution = (
-            _asBase ? _bondAmount : _convertToShares(_hyperdrive, _bondAmount)
+            _asBase ? _bondAmount : _hyperdrive.convertToShares(_bondAmount)
         ).mulDown(1_000e18);
         _hyperdrive.addLiquidity(
             contribution,

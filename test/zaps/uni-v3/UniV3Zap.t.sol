@@ -7,6 +7,18 @@ import { ERC4626Target1 } from "../../../contracts/src/instances/erc4626/ERC4626
 import { ERC4626Target2 } from "../../../contracts/src/instances/erc4626/ERC4626Target2.sol";
 import { ERC4626Target3 } from "../../../contracts/src/instances/erc4626/ERC4626Target3.sol";
 import { ERC4626Target4 } from "../../../contracts/src/instances/erc4626/ERC4626Target4.sol";
+import { RETHHyperdrive } from "../../../contracts/src/instances/reth/RETHHyperdrive.sol";
+import { RETHTarget0 } from "../../../contracts/src/instances/reth/RETHTarget0.sol";
+import { RETHTarget1 } from "../../../contracts/src/instances/reth/RETHTarget1.sol";
+import { RETHTarget2 } from "../../../contracts/src/instances/reth/RETHTarget2.sol";
+import { RETHTarget3 } from "../../../contracts/src/instances/reth/RETHTarget3.sol";
+import { RETHTarget4 } from "../../../contracts/src/instances/reth/RETHTarget4.sol";
+import { StETHHyperdrive } from "../../../contracts/src/instances/steth/StETHHyperdrive.sol";
+import { StETHTarget0 } from "../../../contracts/src/instances/steth/StETHTarget0.sol";
+import { StETHTarget1 } from "../../../contracts/src/instances/steth/StETHTarget1.sol";
+import { StETHTarget2 } from "../../../contracts/src/instances/steth/StETHTarget2.sol";
+import { StETHTarget3 } from "../../../contracts/src/instances/steth/StETHTarget3.sol";
+import { StETHTarget4 } from "../../../contracts/src/instances/steth/StETHTarget4.sol";
 import { IERC20 } from "../../../contracts/src/interfaces/IERC20.sol";
 import { IERC4626 } from "../../../contracts/src/interfaces/IERC4626.sol";
 import { ILido } from "../../../contracts/src/interfaces/ILido.sol";
@@ -14,6 +26,7 @@ import { IHyperdrive } from "../../../contracts/src/interfaces/IHyperdrive.sol";
 import { ISwapRouter } from "../../../contracts/src/interfaces/ISwapRouter.sol";
 import { IUniV3Zap } from "../../../contracts/src/interfaces/IUniV3Zap.sol";
 import { IWETH } from "../../../contracts/src/interfaces/IWETH.sol";
+import { ETH } from "../../../contracts/src/libraries/Constants.sol";
 import { UniV3Path } from "../../../contracts/src/libraries/UniV3Path.sol";
 import { UniV3Zap } from "../../../contracts/src/zaps/UniV3Zap.sol";
 import { ERC20Mintable } from "../../../contracts/test/ERC20Mintable.sol";
@@ -23,21 +36,6 @@ import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
 contract UniV3ZapTest is HyperdriveTest {
     /// @dev The name of the zap contract.
     string internal constant NAME = "DELV Uniswap v3 Zap";
-
-    /// @dev We can assume that almost all Hyperdrive deployments have the
-    ///      `convertToBase` and `convertToShares` functions, but there is
-    ///      one legacy sDAI pool that was deployed before these functions
-    ///      were written. We explicitly special case conversions for this
-    ///      pool.
-    address internal constant LEGACY_SDAI_HYPERDRIVE =
-        address(0x324395D5d835F84a02A75Aa26814f6fD22F25698);
-
-    /// @dev We can assume that almost all Hyperdrive deployments have the
-    ///      `convertToBase` and `convertToShares` functions, but there is
-    ///      a legacy stETH pool that was deployed before these functions were
-    ///      written. We explicitly special case conversions for this pool.
-    address internal constant LEGACY_STETH_HYPERDRIVE =
-        address(0xd7e470043241C10970953Bd8374ee6238e77D735);
 
     /// @dev Uniswap's lowest fee tier.
     uint24 internal constant LOWEST_FEE_TIER = 100;
@@ -103,16 +101,13 @@ contract UniV3ZapTest is HyperdriveTest {
         ISwapRouter(0xE592427A0AEce92De3Edee1F18E0157C05861564);
 
     /// @dev The Hyperdrive mainnet sDAI pool.
-    IHyperdrive internal constant SDAI_HYPERDRIVE =
-        IHyperdrive(0x324395D5d835F84a02A75Aa26814f6fD22F25698);
+    IHyperdrive internal SDAI_HYPERDRIVE;
 
     /// @dev The Hyperdrive mainnet stETH pool.
-    IHyperdrive internal constant STETH_HYPERDRIVE =
-        IHyperdrive(0xd7e470043241C10970953Bd8374ee6238e77D735);
+    IHyperdrive internal STETH_HYPERDRIVE;
 
     /// @dev The Hyperdrive mainnet rETH pool.
-    IHyperdrive internal constant RETH_HYPERDRIVE =
-        IHyperdrive(0xca5dB9Bb25D09A9bF3b22360Be3763b5f2d13589);
+    IHyperdrive internal RETH_HYPERDRIVE;
 
     /// @dev A Hyperdrive instance that integrates with a MockERC4626 vault that
     ///      uses WETH as the base asset. This is useful for testing situations
@@ -163,6 +158,10 @@ contract UniV3ZapTest is HyperdriveTest {
         config.baseToken = IERC20(WETH);
         config.vaultSharesToken = IERC20(address(wethVault));
         config.minimumShareReserves = 1e15;
+        config.fees.curve = 0.01e18;
+        config.fees.flat = 0.0005e18;
+        config.fees.governanceLP = 0.15e18;
+        config.fees.governanceZombie = 0.03e18;
         WETH_VAULT_HYPERDRIVE = IHyperdrive(
             address(
                 new ERC4626Hyperdrive(
@@ -187,75 +186,88 @@ contract UniV3ZapTest is HyperdriveTest {
                 extraData: new bytes(0)
             })
         );
-    }
 
-    /// Helpers ///
+        // Deploy and initialize a sDAI Hyperdrive instance.
+        config.baseToken = IERC20(DAI);
+        config.vaultSharesToken = IERC20(SDAI);
+        SDAI_HYPERDRIVE = IHyperdrive(
+            address(
+                new ERC4626Hyperdrive(
+                    "sDAI Hyperdrive",
+                    config,
+                    adminController,
+                    address(new ERC4626Target0(config, adminController)),
+                    address(new ERC4626Target1(config, adminController)),
+                    address(new ERC4626Target2(config, adminController)),
+                    address(new ERC4626Target3(config, adminController)),
+                    address(new ERC4626Target4(config, adminController))
+                )
+            )
+        );
+        IERC20(DAI).approve(address(SDAI_HYPERDRIVE), 1_000_000e18);
+        SDAI_HYPERDRIVE.initialize(
+            1_000_000e18,
+            0.05e18,
+            IHyperdrive.Options({
+                destination: alice,
+                asBase: true,
+                extraData: new bytes(0)
+            })
+        );
 
-    /// @dev Converts a quantity to base. This works for all Hyperdrive pools.
-    function _convertToBase(
-        IHyperdrive _hyperdrive,
-        uint256 _sharesAmount
-    ) internal view returns (uint256) {
-        // If this is a mainnet deployment and the address is the legacy stETH
-        // pool, we have to convert the proceeds to shares manually using Lido's
-        // `getPooledEthByShares` function.
-        if (
-            block.chainid == 1 &&
-            address(_hyperdrive) == LEGACY_STETH_HYPERDRIVE
-        ) {
-            return
-                ILido(_hyperdrive.vaultSharesToken()).getPooledEthByShares(
-                    _sharesAmount
-                );
-        }
-        // If this is a mainnet deployment and the address is the legacy stETH
-        // pool, we have to convert the proceeds to shares manually using Lido's
-        // `getSharesByPooledEth` function.
-        else if (
-            block.chainid == 1 && address(_hyperdrive) == LEGACY_SDAI_HYPERDRIVE
-        ) {
-            return
-                IERC4626(_hyperdrive.vaultSharesToken()).convertToAssets(
-                    _sharesAmount
-                );
-        }
-        // Otherwise, we can use the built-in `convertToBase` function.
-        else {
-            return _hyperdrive.convertToBase(_sharesAmount);
-        }
-    }
+        // Deploy and initialize a stETH Hyperdrive instance.
+        config.baseToken = IERC20(ETH);
+        config.vaultSharesToken = IERC20(STETH);
+        STETH_HYPERDRIVE = IHyperdrive(
+            address(
+                new StETHHyperdrive(
+                    "stETH Hyperdrive",
+                    config,
+                    adminController,
+                    address(new StETHTarget0(config, adminController)),
+                    address(new StETHTarget1(config, adminController)),
+                    address(new StETHTarget2(config, adminController)),
+                    address(new StETHTarget3(config, adminController)),
+                    address(new StETHTarget4(config, adminController))
+                )
+            )
+        );
+        STETH_HYPERDRIVE.initialize{ value: 100e18 }(
+            100e18,
+            0.05e18,
+            IHyperdrive.Options({
+                destination: alice,
+                asBase: true,
+                extraData: new bytes(0)
+            })
+        );
 
-    /// @dev Converts a quantity to shares. This works for all Hyperdrive pools.
-    function _convertToShares(
-        IHyperdrive _hyperdrive,
-        uint256 _baseAmount
-    ) internal view returns (uint256) {
-        // If this is a mainnet deployment and the address is the legacy stETH
-        // pool, we have to convert the proceeds to shares manually using Lido's
-        // `getSharesByPooledEth` function.
-        if (
-            block.chainid == 1 &&
-            address(_hyperdrive) == LEGACY_STETH_HYPERDRIVE
-        ) {
-            return
-                ILido(_hyperdrive.vaultSharesToken()).getSharesByPooledEth(
-                    _baseAmount
-                );
-        }
-        // If this is a mainnet deployment and the address is the legacy stETH
-        // pool, we have to convert the proceeds to shares manually using Lido's
-        // `getSharesByPooledEth` function.
-        else if (
-            block.chainid == 1 && address(_hyperdrive) == LEGACY_SDAI_HYPERDRIVE
-        ) {
-            return
-                IERC4626(_hyperdrive.vaultSharesToken()).convertToShares(
-                    _baseAmount
-                );
-        }
-        // Otherwise, we can use the built-in `convertToShares` function.
-        else {
-            return _hyperdrive.convertToShares(_baseAmount);
-        }
+        // Deploy and initialize a rETH Hyperdrive instance.
+        config.baseToken = IERC20(ETH);
+        config.vaultSharesToken = IERC20(RETH);
+        RETH_HYPERDRIVE = IHyperdrive(
+            address(
+                new RETHHyperdrive(
+                    "RETH Hyperdrive",
+                    config,
+                    adminController,
+                    address(new RETHTarget0(config, adminController)),
+                    address(new RETHTarget1(config, adminController)),
+                    address(new RETHTarget2(config, adminController)),
+                    address(new RETHTarget3(config, adminController)),
+                    address(new RETHTarget4(config, adminController))
+                )
+            )
+        );
+        IERC20(RETH).approve(address(RETH_HYPERDRIVE), 100e18);
+        RETH_HYPERDRIVE.initialize(
+            100e18,
+            0.05e18,
+            IHyperdrive.Options({
+                destination: alice,
+                asBase: false,
+                extraData: new bytes(0)
+            })
+        );
     }
 }
