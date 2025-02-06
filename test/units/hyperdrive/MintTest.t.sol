@@ -473,7 +473,7 @@ contract MintTest is HyperdriveTest {
         uint256 _bondAmount
     ) internal {
         VmSafe.Log[] memory logs = vm.getRecordedLogs().filterLogs(
-            Mint.selector
+            MintBonds.selector
         );
         assertEq(logs.length, 1);
         VmSafe.Log memory log = logs[0];

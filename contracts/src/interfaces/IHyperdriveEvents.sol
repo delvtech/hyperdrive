@@ -103,7 +103,7 @@ interface IHyperdriveEvents is IMultiTokenEvents {
     );
 
     /// @notice Emitted when a pair of long and short positions are minted.
-    event Mint(
+    event MintBonds(
         address indexed longTrader,
         address indexed shortTrader,
         uint256 indexed maturityTime,
@@ -117,7 +117,7 @@ interface IHyperdriveEvents is IMultiTokenEvents {
     );
 
     /// @notice Emitted when a pair of long and short positions are burned.
-    event Burn(
+    event BurnBonds(
         address indexed trader,
         address indexed destination,
         uint256 indexed maturityTime,
