@@ -880,9 +880,9 @@ contract HyperdriveMatchingEngineV2 is
         return ECDSA.recover(_hash, _signature) == _signer;
     }
 
-    /// @dev Hashes the options of an order.
-    /// @param _options The options to hash.
-    /// @return The hash of the options.
+    /// @dev Helper function to hash an order intent according to EIP-712.
+    /// @param _order The order intent to hash.
+    /// @return The hash of the order intent.
     function _hashOrder(
         OrderIntent calldata _order
     ) internal pure returns (bytes32) {
