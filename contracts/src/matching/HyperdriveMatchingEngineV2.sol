@@ -852,26 +852,7 @@ contract HyperdriveMatchingEngineV2 is
     function hashOrderIntent(
         OrderIntent calldata _order
     ) public view returns (bytes32) {
-        bytes32 optionsHash = _hashOptions(_order.options);
-        return _hashTypedDataV4(
-            keccak256(
-                abi.encode(
-                    ORDER_INTENT_TYPEHASH,
-                    _order.trader,
-                    _order.counterparty,
-                    address(_order.hyperdrive),
-                    _order.fundAmount,
-                    _order.bondAmount,
-                    _order.minVaultSharePrice,
-                    optionsHash,
-                    uint8(_order.orderType),
-                    _order.minMaturityTime,
-                    _order.maxMaturityTime,
-                    _order.expiry,
-                    _order.salt
-                )
-            )
-        );
+        return _hashTypedDataV4(_hashOrder(_order));
     }
 
     /// @notice Verifies a signature for a given signer.
@@ -902,14 +883,32 @@ contract HyperdriveMatchingEngineV2 is
     /// @dev Hashes the options of an order.
     /// @param _options The options to hash.
     /// @return The hash of the options.
-    function _hashOptions(
-        IHyperdrive.Options calldata _options
+    function _hashOrder(
+        OrderIntent calldata _order
     ) internal pure returns (bytes32) {
-        return keccak256(
+        bytes32 optionsHash = keccak256(
             abi.encode(
                 OPTIONS_TYPEHASH,
-                _options.destination,
-                _options.asBase
+                _order.options.destination,
+                _order.options.asBase
+            )
+        );
+        
+        return keccak256(
+            abi.encode(
+                ORDER_INTENT_TYPEHASH,
+                _order.trader,
+                _order.counterparty,
+                address(_order.hyperdrive),
+                _order.fundAmount,
+                _order.bondAmount,
+                _order.minVaultSharePrice,
+                optionsHash,
+                uint8(_order.orderType),
+                _order.minMaturityTime,
+                _order.maxMaturityTime,
+                _order.expiry,
+                _order.salt
             )
         );
     }
