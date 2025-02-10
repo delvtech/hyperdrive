@@ -68,7 +68,6 @@ contract HyperdriveMatchingEngineV2Test is HyperdriveTest {
             memory longOrder = _createOrderIntent(
                 alice,
                 address(0),
-                address(0),
                 100_000e18, // fundAmount.
                 95_000e18, // bondAmount.
                 IHyperdriveMatchingEngineV2.OrderType.OpenLong
@@ -77,7 +76,6 @@ contract HyperdriveMatchingEngineV2Test is HyperdriveTest {
         IHyperdriveMatchingEngineV2.OrderIntent
             memory shortOrder = _createOrderIntent(
                 bob,
-                address(0),
                 address(0),
                 101_000e18, // fundAmount.
                 95_000e18, // bondAmount.
@@ -143,7 +141,6 @@ contract HyperdriveMatchingEngineV2Test is HyperdriveTest {
             memory closeLongOrder = _createOrderIntent(
                 alice,
                 address(0),
-                address(0),
                 90_000e18, // min fund amount to receive.
                 95_000e18, // bond amount to close.
                 IHyperdriveMatchingEngineV2.OrderType.CloseLong
@@ -154,7 +151,6 @@ contract HyperdriveMatchingEngineV2Test is HyperdriveTest {
         IHyperdriveMatchingEngineV2.OrderIntent
             memory closeShortOrder = _createOrderIntent(
                 bob,
-                address(0),
                 address(0),
                 5_001e18, // min fund amount to receive.
                 95_000e18, // bond amount to close.
@@ -194,7 +190,6 @@ contract HyperdriveMatchingEngineV2Test is HyperdriveTest {
             memory closeLongOrder = _createOrderIntent(
                 alice,
                 address(0),
-                address(0),
                 90_000e18,
                 95_000e18,
                 IHyperdriveMatchingEngineV2.OrderType.CloseLong
@@ -205,7 +200,6 @@ contract HyperdriveMatchingEngineV2Test is HyperdriveTest {
         IHyperdriveMatchingEngineV2.OrderIntent
             memory closeShortOrder = _createOrderIntent(
                 bob,
-                address(0),
                 address(0),
                 90_000e18,
                 95_000e18,
@@ -230,7 +224,6 @@ contract HyperdriveMatchingEngineV2Test is HyperdriveTest {
             memory longOrder = _createOrderIntent(
                 alice,
                 address(0),
-                address(0),
                 1e18, // Very small fundAmount.
                 95_000e18,
                 IHyperdriveMatchingEngineV2.OrderType.OpenLong
@@ -239,7 +232,6 @@ contract HyperdriveMatchingEngineV2Test is HyperdriveTest {
         IHyperdriveMatchingEngineV2.OrderIntent
             memory shortOrder = _createOrderIntent(
                 bob,
-                address(0),
                 address(0),
                 1e18, // Very small fundAmount.
                 95_000e18,
@@ -264,7 +256,6 @@ contract HyperdriveMatchingEngineV2Test is HyperdriveTest {
             memory longOrder = _createOrderIntent(
                 alice,
                 address(0),
-                address(0),
                 100_000e18,
                 95_000e18,
                 IHyperdriveMatchingEngineV2.OrderType.OpenLong
@@ -273,7 +264,6 @@ contract HyperdriveMatchingEngineV2Test is HyperdriveTest {
         IHyperdriveMatchingEngineV2.OrderIntent
             memory shortOrder = _createOrderIntent(
                 bob,
-                address(0),
                 address(0),
                 100_000e18,
                 90_000e18, // Different but valid bond amount.
@@ -335,7 +325,6 @@ contract HyperdriveMatchingEngineV2Test is HyperdriveTest {
             memory closeLongOrder = _createOrderIntent(
                 alice,
                 address(0),
-                address(0),
                 100_000e18,
                 200_000e18, // More than what alice has.
                 IHyperdriveMatchingEngineV2.OrderType.CloseLong
@@ -346,7 +335,6 @@ contract HyperdriveMatchingEngineV2Test is HyperdriveTest {
         IHyperdriveMatchingEngineV2.OrderIntent
             memory closeShortOrder = _createOrderIntent(
                 bob,
-                address(0),
                 address(0),
                 100_000e18,
                 200_000e18,
@@ -371,7 +359,6 @@ contract HyperdriveMatchingEngineV2Test is HyperdriveTest {
             memory longOrder = _createOrderIntent(
                 alice,
                 address(0),
-                address(0),
                 100_000e18,
                 95_000e18,
                 IHyperdriveMatchingEngineV2.OrderType.OpenLong
@@ -381,7 +368,6 @@ contract HyperdriveMatchingEngineV2Test is HyperdriveTest {
         IHyperdriveMatchingEngineV2.OrderIntent
             memory shortOrder = _createOrderIntent(
                 bob,
-                address(0),
                 address(0),
                 100_000e18,
                 95_000e18,
@@ -401,7 +387,6 @@ contract HyperdriveMatchingEngineV2Test is HyperdriveTest {
             memory longOrder = _createOrderIntent(
                 alice,
                 address(0),
-                address(0),
                 100_000e18,
                 95_000e18,
                 IHyperdriveMatchingEngineV2.OrderType.OpenLong
@@ -410,7 +395,6 @@ contract HyperdriveMatchingEngineV2Test is HyperdriveTest {
         IHyperdriveMatchingEngineV2.OrderIntent
             memory shortOrder = _createOrderIntent(
                 bob,
-                address(0),
                 address(0),
                 100_000e18,
                 95_000e18,
@@ -434,7 +418,6 @@ contract HyperdriveMatchingEngineV2Test is HyperdriveTest {
             memory longOrder = _createOrderIntent(
                 alice,
                 address(0),
-                address(0),
                 100_000e18,
                 95_000e18,
                 IHyperdriveMatchingEngineV2.OrderType.OpenLong
@@ -443,7 +426,6 @@ contract HyperdriveMatchingEngineV2Test is HyperdriveTest {
         IHyperdriveMatchingEngineV2.OrderIntent
             memory shortOrder = _createOrderIntent(
                 bob,
-                address(0),
                 address(0),
                 50_000e18, // Half the amount.
                 47_500e18, // Half the bonds.
@@ -475,7 +457,6 @@ contract HyperdriveMatchingEngineV2Test is HyperdriveTest {
             memory longOrder = _createOrderIntent(
                 alice,
                 address(0),
-                address(0),
                 100_000e18,
                 95_000e18,
                 IHyperdriveMatchingEngineV2.OrderType.OpenLong
@@ -485,7 +466,6 @@ contract HyperdriveMatchingEngineV2Test is HyperdriveTest {
         IHyperdriveMatchingEngineV2.OrderIntent
             memory shortOrder = _createOrderIntent(
                 bob,
-                address(0),
                 address(0),
                 100_000e18,
                 95_000e18,
@@ -506,7 +486,6 @@ contract HyperdriveMatchingEngineV2Test is HyperdriveTest {
             memory longOrder = _createOrderIntent(
                 alice,
                 address(0),
-                address(0),
                 100_000e18,
                 95_000e18,
                 IHyperdriveMatchingEngineV2.OrderType.OpenLong
@@ -515,7 +494,6 @@ contract HyperdriveMatchingEngineV2Test is HyperdriveTest {
         IHyperdriveMatchingEngineV2.OrderIntent
             memory shortOrder = _createOrderIntent(
                 bob,
-                address(0),
                 address(0),
                 100_000e18,
                 95_000e18,
@@ -535,7 +513,6 @@ contract HyperdriveMatchingEngineV2Test is HyperdriveTest {
     /// @dev Creates an order intent.
     /// @param trader The address of the trader.
     /// @param counterparty The address of the counterparty.
-    /// @param feeRecipient The address of the fee recipient.
     /// @param fundAmount The amount of base tokens to fund the order.
     /// @param bondAmount The amount of bonds to fund the order.
     /// @param orderType The type of the order.
@@ -543,7 +520,6 @@ contract HyperdriveMatchingEngineV2Test is HyperdriveTest {
     function _createOrderIntent(
         address trader,
         address counterparty,
-        address feeRecipient,
         uint256 fundAmount,
         uint256 bondAmount,
         IHyperdriveMatchingEngineV2.OrderType orderType
@@ -552,7 +528,6 @@ contract HyperdriveMatchingEngineV2Test is HyperdriveTest {
             IHyperdriveMatchingEngineV2.OrderIntent({
                 trader: trader,
                 counterparty: counterparty,
-                feeRecipient: feeRecipient,
                 hyperdrive: hyperdrive,
                 fundAmount: fundAmount,
                 bondAmount: bondAmount,

@@ -115,10 +115,6 @@ interface IHyperdriveMatchingEngineV2 {
         /// @dev The counterparty of the trade. If left as zero, the validation
         ///      is skipped.
         address counterparty;
-        /// @dev The fee recipient of the trade. This is the address that will
-        ///      receive any excess trading fees on the match. If left as zero,
-        ///      the validation is skipped.
-        address feeRecipient;
         /// @dev The Hyperdrive address where the trade will be executed.
         IHyperdrive hyperdrive;
         /// @dev The amount to be used in the trade. In the case of `OpenLong` or

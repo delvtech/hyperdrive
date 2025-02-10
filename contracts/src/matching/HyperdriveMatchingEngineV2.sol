@@ -34,7 +34,7 @@ contract HyperdriveMatchingEngineV2 is
     /// @notice The EIP712 typehash of the OrderIntent struct.
     bytes32 public constant ORDER_INTENT_TYPEHASH =
         keccak256(
-            "OrderIntent(address trader,address counterparty,address feeRecipient,address hyperdrive,uint256 fundAmount,uint256 bondAmount,uint256 minVaultSharePrice,Options options,uint8 orderType,uint256 minMaturityTime,uint256 maxMaturityTime,uint256 expiry,bytes32 salt)"
+            "OrderIntent(address trader,address counterparty,address hyperdrive,uint256 fundAmount,uint256 bondAmount,uint256 minVaultSharePrice,Options options,uint8 orderType,uint256 minMaturityTime,uint256 maxMaturityTime,uint256 expiry,bytes32 salt)"
         );
 
     /// @notice The EIP712 typehash of the Options struct.
@@ -347,7 +347,6 @@ contract HyperdriveMatchingEngineV2 is
     /// OrderIntent({
     ///    trader: msg.sender, // Take the user's address.
     ///    counterparty: address(0), // Not needed for immediate fill.
-    ///    feeRecipient: address(0), // Not needed for immediate fill.
     ///    hyperdrive: IHyperdrive(address(0)), // Not needed for immediate fill.
     ///    fundAmount: 0,  // Not needed for immediate fill.
     ///    bondAmount: _bondAmount,  // Take from the user's input.
@@ -860,7 +859,6 @@ contract HyperdriveMatchingEngineV2 is
                         ORDER_INTENT_TYPEHASH,
                         _order.trader,
                         _order.counterparty,
-                        _order.feeRecipient,
                         address(_order.hyperdrive),
                         _order.fundAmount,
                         _order.bondAmount,
@@ -1234,17 +1232,19 @@ contract HyperdriveMatchingEngineV2 is
         );
 
         // This contract needs to take custody of the bonds before burning.
-        _hyperdrive.transferFrom(
-            longAssetId,
+        _hyperdrive.safeTransferFrom(
             _longOrder.trader,
             address(this),
-            _bondMatchAmount
+            longAssetId,
+            _bondMatchAmount,
+            ""
         );
-        _hyperdrive.transferFrom(
-            shortAssetId,
+        _hyperdrive.safeTransferFrom(
             _shortOrder.trader,
             address(this),
-            _bondMatchAmount
+            shortAssetId,
+            _bondMatchAmount,
+            ""
         );
 
         // Calculate minOutput and consider the potential donation to help match
@@ -1317,11 +1317,12 @@ contract HyperdriveMatchingEngineV2 is
         }
 
         // Transfer the position from the close trader to the open trader.
-        _hyperdrive.transferFrom(
-            assetId,
+        _hyperdrive.safeTransferFrom(
             _closeOrder.trader,
             _openOrder.options.destination,
-            _bondMatchAmount
+            assetId,
+            _bondMatchAmount,
+            ""
         );
 
         // Transfer fund tokens from open trader to the close trader.
