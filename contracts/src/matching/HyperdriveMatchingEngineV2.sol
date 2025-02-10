@@ -66,7 +66,12 @@ contract HyperdriveMatchingEngineV2 is
         name = _name;
     }
 
-    /// @notice Matches two orders.
+    /// @notice Matches two orders. The ordering of the inputs matters, and
+    ///         the general rule is to put the open order before the close
+    ///         order and the long order before the short order. For example,
+    ///         OpenLong + CloseLong is valid, but CloseLong + OpenLong is
+    ///         invalid; OpenLong + OpenShort is valid, but OpenShort +
+    ///         OpenLong is invalid.
     /// @param _order1 The first order to match.
     /// @param _order2 The second order to match.
     /// @param _surplusRecipient The address that receives the surplus funds
@@ -822,7 +827,6 @@ contract HyperdriveMatchingEngineV2 is
         OrderIntent[] calldata _orders
     ) external nonReentrant {
         bytes32[] memory orderHashes = new bytes32[](_orders.length);
-
         for (uint256 i = 0; i < _orders.length; i++) {
             // Ensure sender is the trader.
             if (msg.sender != _orders[i].trader) {
