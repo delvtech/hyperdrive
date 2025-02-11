@@ -1486,4 +1486,25 @@ contract HyperdriveMatchingEngineV2 is
             });
         }
     }
+
+    /// @notice Handles the receipt of a single ERC1155 token type. This
+    ///         function is called at the end of a `safeTransferFrom` after the
+    ///         balance has been updated.
+    /// @return The magic function selector if the transfer is allowed, and the
+    ///         the 0 bytes4 otherwise.
+    function onERC1155Received(
+        address,
+        address,
+        uint256,
+        uint256,
+        bytes calldata
+    ) external pure returns (bytes4) {
+        // This contract always accepts the transfer.
+        return
+            bytes4(
+                keccak256(
+                    "onERC1155Received(address,address,uint256,uint256,bytes)"
+                )
+            );
+    }
 }
