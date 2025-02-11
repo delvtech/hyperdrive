@@ -886,16 +886,12 @@ contract HyperdriveMatchingEngineV2 is
         // Get the encoded parts.
         bytes memory encodedPart1 = _encodeOrderPart1(_order);
         bytes memory encodedPart2 = _encodeOrderPart2(_order);
-        
+
         // Concatenate and calculate the final hash
-        return _hashTypedDataV4(
-            keccak256(
-                bytes.concat(
-                    encodedPart1,
-                    encodedPart2
-                )
-            )
-        );
+        return
+            _hashTypedDataV4(
+                keccak256(bytes.concat(encodedPart1, encodedPart2))
+            );
     }
 
     /// @notice Verifies a signature for a given signer.
@@ -929,14 +925,15 @@ contract HyperdriveMatchingEngineV2 is
     function _encodeOrderPart1(
         OrderIntent calldata _order
     ) internal pure returns (bytes memory) {
-        return abi.encode(
-            ORDER_INTENT_TYPEHASH,
-            _order.trader,
-            _order.counterparty,
-            address(_order.hyperdrive),
-            _order.fundAmount,
-            _order.bondAmount
-        );
+        return
+            abi.encode(
+                ORDER_INTENT_TYPEHASH,
+                _order.trader,
+                _order.counterparty,
+                address(_order.hyperdrive),
+                _order.fundAmount,
+                _order.bondAmount
+            );
     }
 
     /// @dev Encodes the second part of the order intent.
@@ -952,16 +949,17 @@ contract HyperdriveMatchingEngineV2 is
                 _order.options.asBase
             )
         );
-        
-        return abi.encode(
-            _order.minVaultSharePrice,
-            optionsHash,
-            uint8(_order.orderType),
-            _order.minMaturityTime,
-            _order.maxMaturityTime,
-            _order.expiry,
-            _order.salt
-        );
+
+        return
+            abi.encode(
+                _order.minVaultSharePrice,
+                optionsHash,
+                uint8(_order.orderType),
+                _order.minMaturityTime,
+                _order.maxMaturityTime,
+                _order.expiry,
+                _order.salt
+            );
     }
 
     /// @dev Validates orders before matching them.
