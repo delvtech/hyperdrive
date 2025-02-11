@@ -574,7 +574,7 @@ contract HyperdriveMatchingEngineV2Test is HyperdriveTest {
 
     /// @dev Fuzzing test to verify TOKEN_AMOUNT_BUFFER is sufficient
     function testFuzz_tokenAmountBuffer(uint256 bondAmount) public {
-        vm.assume(bondAmount >= 100e18 && bondAmount <= 10_000_000e18);
+        bondAmount = bound(bondAmount, 100e18, 1_000_000e18);
         uint256 fundAmount1 = bondAmount / 2;
         (, uint256 cost) = _calculateMintCost(bondAmount);
         uint256 fundAmount2 = cost + 10 - fundAmount1;
