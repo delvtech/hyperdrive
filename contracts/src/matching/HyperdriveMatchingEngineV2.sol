@@ -849,35 +849,53 @@ contract HyperdriveMatchingEngineV2 is
     /// @notice Hashes an order intent according to EIP-712.
     /// @param _order The order intent to hash.
     /// @return The hash of the order intent.
+    /// @dev Use two helper functions to encode to avoid stack too deep.
+    // function hashOrderIntent(
+    //     OrderIntent calldata _order
+    // ) public view returns (bytes32) {
+    //     return
+    //         _hashTypedDataV4(
+    //             keccak256(
+    //                 abi.encode(
+    //                     ORDER_INTENT_TYPEHASH,
+    //                     _order.trader,
+    //                     _order.counterparty,
+    //                     address(_order.hyperdrive),
+    //                     _order.fundAmount,
+    //                     _order.bondAmount,
+    //                     _order.minVaultSharePrice,
+    //                     keccak256(
+    //                         abi.encode(
+    //                             OPTIONS_TYPEHASH,
+    //                             _order.options.destination,
+    //                             _order.options.asBase
+    //                         )
+    //                     ),
+    //                     uint8(_order.orderType),
+    //                     _order.minMaturityTime,
+    //                     _order.maxMaturityTime,
+    //                     _order.expiry,
+    //                     _order.salt
+    //                 )
+    //             )
+    //         );
+    // }
     function hashOrderIntent(
         OrderIntent calldata _order
     ) public view returns (bytes32) {
-        return
-            _hashTypedDataV4(
-                keccak256(
-                    abi.encode(
-                        ORDER_INTENT_TYPEHASH,
-                        // _order.trader,
-                        _order.counterparty,
-                        address(_order.hyperdrive),
-                        _order.fundAmount,
-                        _order.bondAmount,
-                        _order.minVaultSharePrice,
-                        keccak256(
-                            abi.encode(
-                                OPTIONS_TYPEHASH,
-                                _order.options.destination,
-                                _order.options.asBase
-                            )
-                        ),
-                        uint8(_order.orderType),
-                        _order.minMaturityTime,
-                        _order.maxMaturityTime,
-                        _order.expiry,
-                        _order.salt
-                    )
+        // Get the encoded parts.
+        bytes memory encodedPart1 = _encodeOrderPart1(_order);
+        bytes memory encodedPart2 = _encodeOrderPart2(_order);
+        
+        // Concatenate and calculate the final hash
+        return _hashTypedDataV4(
+            keccak256(
+                bytes.concat(
+                    encodedPart1,
+                    encodedPart2
                 )
-            );
+            )
+        );
     }
 
     /// @notice Verifies a signature for a given signer.
@@ -903,6 +921,47 @@ contract HyperdriveMatchingEngineV2 is
 
         // For EOAs, verify ECDSA signature.
         return ECDSA.recover(_hash, _signature) == _signer;
+    }
+
+    /// @dev Encodes the first part of the order intent.
+    /// @param _order The order intent to encode.
+    /// @return The encoded part of the order intent.
+    function _encodeOrderPart1(
+        OrderIntent calldata _order
+    ) internal pure returns (bytes memory) {
+        return abi.encode(
+            ORDER_INTENT_TYPEHASH,
+            _order.trader,
+            _order.counterparty,
+            address(_order.hyperdrive),
+            _order.fundAmount,
+            _order.bondAmount
+        );
+    }
+
+    /// @dev Encodes the second part of the order intent.
+    /// @param _order The order intent to encode.
+    /// @return The encoded part of the order intent.
+    function _encodeOrderPart2(
+        OrderIntent calldata _order
+    ) internal pure returns (bytes memory) {
+        bytes32 optionsHash = keccak256(
+            abi.encode(
+                OPTIONS_TYPEHASH,
+                _order.options.destination,
+                _order.options.asBase
+            )
+        );
+        
+        return abi.encode(
+            _order.minVaultSharePrice,
+            optionsHash,
+            uint8(_order.orderType),
+            _order.minMaturityTime,
+            _order.maxMaturityTime,
+            _order.expiry,
+            _order.salt
+        );
     }
 
     /// @dev Validates orders before matching them.
