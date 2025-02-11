@@ -508,6 +508,213 @@ contract HyperdriveMatchingEngineV2Test is HyperdriveTest {
         matchingEngine.matchOrders(longOrder, shortOrder, celine);
     }
 
+    /// @dev Tests matching orders with OpenLong + CloseLong (transfer case)
+    /// @dev Tests matching orders with OpenLong + CloseLong (transfer case)
+    function test_matchOrders_openLongAndCloseLong() public {
+        // First create a long position for alice
+        test_matchOrders_openLongAndOpenShort();
+        
+        uint256 maturityTime = hyperdrive.latestCheckpoint() + 
+            hyperdrive.getPoolConfig().positionDuration;
+        
+        // Approve matching engine for alice's long position
+        uint256 longAssetId = AssetId.encodeAssetId(
+            AssetId.AssetIdPrefix.Long,
+            maturityTime
+        );
+        
+        vm.startPrank(alice);
+        hyperdrive.setApproval(
+            longAssetId,
+            address(matchingEngine),
+            type(uint256).max
+        );
+        vm.stopPrank();
+
+        // Create orders
+        IHyperdriveMatchingEngineV2.OrderIntent memory openLongOrder = _createOrderIntent(
+            bob,  // bob wants to open long
+            address(0),
+            100_000e18,
+            95_000e18,
+            IHyperdriveMatchingEngineV2.OrderType.OpenLong
+        );
+
+        IHyperdriveMatchingEngineV2.OrderIntent memory closeLongOrder = _createOrderIntent(
+            alice,  // alice wants to close her long
+            address(0),
+            90_000e18,
+            95_000e18,
+            IHyperdriveMatchingEngineV2.OrderType.CloseLong
+        );
+        closeLongOrder.minMaturityTime = maturityTime;
+        closeLongOrder.maxMaturityTime = maturityTime;
+
+        // Sign orders
+        openLongOrder.signature = _signOrderIntent(openLongOrder, bobPK);
+        closeLongOrder.signature = _signOrderIntent(closeLongOrder, alicePK);
+
+        // Record balances before
+        uint256 aliceBaseBalanceBefore = baseToken.balanceOf(alice);
+        uint256 bobBaseBalanceBefore = baseToken.balanceOf(bob);
+        uint256 aliceLongBalanceBefore = _getLongBalance(alice);
+        uint256 bobLongBalanceBefore = _getLongBalance(bob);
+
+        // Match orders
+        matchingEngine.matchOrders(openLongOrder, closeLongOrder, celine);
+
+        // Verify balances
+        assertGt(baseToken.balanceOf(alice), aliceBaseBalanceBefore);  // alice receives payment
+        assertLt(baseToken.balanceOf(bob), bobBaseBalanceBefore);      // bob pays
+        assertLt(_getLongBalance(alice), aliceLongBalanceBefore);      // alice's long position decreases
+        assertGt(_getLongBalance(bob), bobLongBalanceBefore);          // bob receives long position
+    }
+
+    /// @dev Fuzzing test to verify TOKEN_AMOUNT_BUFFER is sufficient
+    function testFuzz_tokenAmountBuffer(
+        uint256 bondAmount
+    ) public {
+        vm.assume(bondAmount >= 100e18 && bondAmount <= 1_000_000e18);
+        uint256 fundAmount1 = bondAmount / 2;
+        ( , uint256 cost) = _calculateMintCost(bondAmount);
+        uint256 fundAmount2 = cost + 10 - fundAmount1;
+
+        // Create orders
+        IHyperdriveMatchingEngineV2.OrderIntent memory longOrder = _createOrderIntent(
+            alice,
+            address(0),
+            fundAmount1,
+            bondAmount,
+            IHyperdriveMatchingEngineV2.OrderType.OpenLong
+        );
+
+        IHyperdriveMatchingEngineV2.OrderIntent memory shortOrder = _createOrderIntent(
+            bob,
+            address(0),
+            fundAmount2,
+            bondAmount,
+            IHyperdriveMatchingEngineV2.OrderType.OpenShort
+        );
+
+        // Sign orders
+        longOrder.signature = _signOrderIntent(longOrder, alicePK);
+        shortOrder.signature = _signOrderIntent(shortOrder, bobPK);
+
+        // Match orders should not revert due to insufficient buffer
+        matchingEngine.matchOrders(longOrder, shortOrder, celine);
+    }
+
+    /// @dev Tests fillOrder with OpenLong maker and OpenShort taker
+    function test_fillOrder_openLongMakerOpenShortTaker() public {
+        // Create maker order
+        IHyperdriveMatchingEngineV2.OrderIntent memory makerOrder = _createOrderIntent(
+            alice,
+            address(0),
+            93_000e18,
+            95_000e18,
+            IHyperdriveMatchingEngineV2.OrderType.OpenLong
+        );
+        makerOrder.signature = _signOrderIntent(makerOrder, alicePK);
+
+        // Create minimal taker order
+        IHyperdriveMatchingEngineV2.OrderIntent memory takerOrder = _createOrderIntent(
+            bob,
+            address(0),
+            0, // Not needed for immediate fill
+            95_000e18,
+            IHyperdriveMatchingEngineV2.OrderType.OpenShort
+        );
+
+        // Record balances before
+        uint256 aliceBaseBalanceBefore = baseToken.balanceOf(alice);
+        uint256 bobBaseBalanceBefore = baseToken.balanceOf(bob);
+        uint256 aliceLongBalanceBefore = _getLongBalance(alice);
+        uint256 bobShortBalanceBefore = _getShortBalance(bob);
+
+        // Fill order
+        matchingEngine.fillOrder(makerOrder, takerOrder);
+
+        // Verify balances
+        assertLt(baseToken.balanceOf(alice), aliceBaseBalanceBefore);
+        assertLt(baseToken.balanceOf(bob), bobBaseBalanceBefore);
+        assertGt(_getLongBalance(alice), aliceLongBalanceBefore);
+        assertGt(_getShortBalance(bob), bobShortBalanceBefore);
+    }
+
+    /// @dev Tests fillOrder with OpenShort maker and OpenLong taker
+    function test_fillOrder_openShortMakerOpenLongTaker() public {
+        // Create maker order
+        IHyperdriveMatchingEngineV2.OrderIntent memory makerOrder = _createOrderIntent(
+            alice,
+            address(0),
+            2_000e18,
+            95_000e18,
+            IHyperdriveMatchingEngineV2.OrderType.OpenShort
+        );
+        makerOrder.signature = _signOrderIntent(makerOrder, alicePK);
+
+        // Create minimal taker order
+        IHyperdriveMatchingEngineV2.OrderIntent memory takerOrder = _createOrderIntent(
+            bob,
+            address(0),
+            0, // Not needed for immediate fill
+            95_000e18,
+            IHyperdriveMatchingEngineV2.OrderType.OpenLong
+        );
+
+        // Record balances before
+        uint256 aliceBaseBalanceBefore = baseToken.balanceOf(alice);
+        uint256 bobBaseBalanceBefore = baseToken.balanceOf(bob);
+        uint256 aliceShortBalanceBefore = _getShortBalance(alice);
+        uint256 bobLongBalanceBefore = _getLongBalance(bob);
+
+        // Fill order
+        matchingEngine.fillOrder(makerOrder, takerOrder);
+
+        // Verify balances
+        assertLt(baseToken.balanceOf(alice), aliceBaseBalanceBefore);
+        assertLt(baseToken.balanceOf(bob), bobBaseBalanceBefore);
+        assertGt(_getLongBalance(bob), bobLongBalanceBefore);
+        assertGt(_getShortBalance(alice), aliceShortBalanceBefore);
+    }
+
+    /// @dev Tests fillOrder failure cases
+    function test_fillOrder_failures() public {
+        IHyperdriveMatchingEngineV2.OrderIntent memory makerOrder = _createOrderIntent(
+            alice,
+            address(0),
+            100_000e18,
+            95_000e18,
+            IHyperdriveMatchingEngineV2.OrderType.OpenLong
+        );
+        makerOrder.signature = _signOrderIntent(makerOrder, alicePK);
+
+        // Test invalid order combination
+        IHyperdriveMatchingEngineV2.OrderIntent memory invalidTakerOrder = _createOrderIntent(
+            bob,
+            address(0),
+            0,
+            95_000e18,
+            IHyperdriveMatchingEngineV2.OrderType.OpenLong // Same as maker
+        );
+        
+        vm.expectRevert(IHyperdriveMatchingEngineV2.InvalidOrderCombination.selector);
+        matchingEngine.fillOrder(makerOrder, invalidTakerOrder);
+
+        // Test expired order
+        makerOrder.expiry = block.timestamp - 1;
+        IHyperdriveMatchingEngineV2.OrderIntent memory validTakerOrder = _createOrderIntent(
+            bob,
+            address(0),
+            0,
+            95_000e18,
+            IHyperdriveMatchingEngineV2.OrderType.OpenShort
+        );
+        
+        vm.expectRevert(IHyperdriveMatchingEngineV2.AlreadyExpired.selector);
+        matchingEngine.fillOrder(makerOrder, validTakerOrder);
+    }
+
     // Helper functions.
 
     /// @dev Creates an order intent.
@@ -586,5 +793,48 @@ contract HyperdriveMatchingEngineV2Test is HyperdriveTest {
         bytes32 digest = matchingEngine.hashOrderIntent(order);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, digest);
         return abi.encodePacked(r, s, v);
+    }
+
+    /// @dev Calculates the cost and parameters for minting positions.
+    /// @param _bondMatchAmount The amount of bonds to mint.
+    /// @return maturityTime The maturity time for new positions.
+    /// @return cost The total cost including fees.
+    function _calculateMintCost(
+        uint256 _bondMatchAmount
+    ) internal view returns (uint256 maturityTime, uint256 cost) {
+        // Get pool configuration.
+        IHyperdrive.PoolConfig memory config = hyperdrive.getPoolConfig();
+
+        // Calculate checkpoint and maturity time.
+        uint256 latestCheckpoint = hyperdrive.latestCheckpoint();
+        maturityTime = latestCheckpoint + config.positionDuration;
+
+        // Get vault share prices.
+        // @dev TODO: there is another way to get the info without calling
+        //      getPoolInfo()?
+        uint256 vaultSharePrice = hyperdrive.getPoolInfo().vaultSharePrice;
+        uint256 openVaultSharePrice = hyperdrive
+            .getCheckpoint(latestCheckpoint)
+            .vaultSharePrice;
+        if (openVaultSharePrice == 0) {
+            openVaultSharePrice = vaultSharePrice;
+        }
+
+        // Calculate the required fund amount.
+        // NOTE: Round the required fund amount up to overestimate the cost.
+        cost = _bondMatchAmount.mulDivUp(
+            vaultSharePrice.max(openVaultSharePrice),
+            openVaultSharePrice
+        );
+
+        // Add flat fee.
+        // NOTE: Round the flat fee calculation up to match other flows.
+        uint256 flatFee = _bondMatchAmount.mulUp(config.fees.flat);
+        cost += flatFee;
+
+        // Add governance fee.
+        // NOTE: Round the governance fee calculation down to match other flows.
+        uint256 governanceFee = 2 * flatFee.mulDown(config.fees.governanceLP);
+        cost += governanceFee;
     }
 }
