@@ -574,7 +574,7 @@ contract HyperdriveMatchingEngineV2Test is HyperdriveTest {
 
     /// @dev Fuzzing test to verify TOKEN_AMOUNT_BUFFER is sufficient
     function testFuzz_tokenAmountBuffer(uint256 bondAmount) public {
-        vm.assume(bondAmount >= 100e18 && bondAmount <= 1_000_000e18);
+        vm.assume(bondAmount >= 100e18 && bondAmount <= 10_000_000e18);
         uint256 fundAmount1 = bondAmount / 2;
         (, uint256 cost) = _calculateMintCost(bondAmount);
         uint256 fundAmount2 = cost + 10 - fundAmount1;
@@ -821,9 +821,7 @@ contract HyperdriveMatchingEngineV2Test is HyperdriveTest {
         maturityTime = latestCheckpoint + config.positionDuration;
 
         // Get vault share prices.
-        // @dev TODO: there is another way to get the info without calling
-        //      getPoolInfo()?
-        uint256 vaultSharePrice = hyperdrive.getPoolInfo().vaultSharePrice;
+        uint256 vaultSharePrice = hyperdrive.convertToBase(1e18);
         uint256 openVaultSharePrice = hyperdrive
             .getCheckpoint(latestCheckpoint)
             .vaultSharePrice;

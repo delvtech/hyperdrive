@@ -1426,9 +1426,7 @@ contract HyperdriveMatchingEngineV2 is
         maturityTime = latestCheckpoint + config.positionDuration;
 
         // Get vault share prices.
-        // @dev TODO: there is another way to get the info without calling
-        //      getPoolInfo()?
-        uint256 vaultSharePrice = _hyperdrive.getPoolInfo().vaultSharePrice;
+        uint256 vaultSharePrice = _hyperdrive.convertToBase(1e18);
         uint256 openVaultSharePrice = _hyperdrive
             .getCheckpoint(latestCheckpoint)
             .vaultSharePrice;
