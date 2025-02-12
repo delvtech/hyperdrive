@@ -308,6 +308,19 @@ contract HyperdriveMatchingEngineV2 is
                 hyperdrive
             );
 
+            if (fundTokenAmountOrder1 < minFundAmountOrder2) {
+                fundToken.safeTransfer(
+                    _order2.options.destination,
+                    minFundAmountOrder2 - fundTokenAmountOrder1
+                );
+            } else if (fundTokenAmountOrder1 > minFundAmountOrder2) {
+                fundToken.safeTransferFrom(
+                    _order1.trader,
+                    _surplusRecipient,
+                    fundTokenAmountOrder1 - minFundAmountOrder2
+                );
+            }
+
             // Update order fund amount used.
             _updateOrderAmount(order1Hash, fundTokenAmountOrder1, false);
             _updateOrderAmount(order2Hash, minFundAmountOrder2, false);
@@ -1383,17 +1396,10 @@ contract HyperdriveMatchingEngineV2 is
         );
 
         // Transfer fund tokens from open trader to the close trader.
-        // @dev Considering this address may hold donated fund tokens, so we
-        //      transfer all the _fundTokenAmountOpenOrder to this contract
-        //      first, then transfer the needed amount to the close trader.
         _fundToken.safeTransferFrom(
             _openOrder.trader,
-            address(this),
-            _fundTokenAmountOpenOrder
-        );
-        _fundToken.safeTransfer(
             _closeOrder.options.destination,
-            _minFundAmountCloseOrder
+            _fundTokenAmountOpenOrder.min(_minFundAmountCloseOrder)
         );
     }
 
