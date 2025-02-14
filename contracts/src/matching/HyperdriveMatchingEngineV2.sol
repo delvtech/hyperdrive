@@ -863,36 +863,6 @@ contract HyperdriveMatchingEngineV2 is
     /// @param _order The order intent to hash.
     /// @return The hash of the order intent.
     /// @dev Use two helper functions to encode to avoid stack too deep.
-    // function hashOrderIntent(
-    //     OrderIntent calldata _order
-    // ) public view returns (bytes32) {
-    //     return
-    //         _hashTypedDataV4(
-    //             keccak256(
-    //                 abi.encode(
-    //                     ORDER_INTENT_TYPEHASH,
-    //                     _order.trader,
-    //                     _order.counterparty,
-    //                     address(_order.hyperdrive),
-    //                     _order.fundAmount,
-    //                     _order.bondAmount,
-    //                     _order.minVaultSharePrice,
-    //                     keccak256(
-    //                         abi.encode(
-    //                             OPTIONS_TYPEHASH,
-    //                             _order.options.destination,
-    //                             _order.options.asBase
-    //                         )
-    //                     ),
-    //                     uint8(_order.orderType),
-    //                     _order.minMaturityTime,
-    //                     _order.maxMaturityTime,
-    //                     _order.expiry,
-    //                     _order.salt
-    //                 )
-    //             )
-    //         );
-    // }
     function hashOrderIntent(
         OrderIntent calldata _order
     ) public view returns (bytes32) {
