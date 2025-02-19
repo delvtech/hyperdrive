@@ -383,6 +383,11 @@ contract HyperdriveMatchingEngineV2 is
         OrderIntent calldata _makerOrder,
         OrderIntent calldata _takerOrder
     ) external nonReentrant {
+        // Ensure sender is the trader.
+        if (msg.sender != _takerOrder.trader) {
+            revert InvalidSender();
+        }
+
         // Validate maker order and taker order.
         bytes32 makerOrderHash = _validateOrdersWithTaker(
             _makerOrder,
@@ -839,7 +844,20 @@ contract HyperdriveMatchingEngineV2 is
         OrderIntent[] calldata _orders
     ) external nonReentrant {
         bytes32[] memory orderHashes = new bytes32[](_orders.length);
-        for (uint256 i = 0; i < _orders.length; i++) {
+        uint256 validOrderCount = 0;
+
+        uint256 orderCount = _orders.length;
+        for (uint256 i = 0; i < orderCount; i++) {
+            // Skip if order is already fully executed
+            bytes32 orderHash = hashOrderIntent(_orders[i]);
+            if (
+                orderAmountsUsed[orderHash].bondAmount >=
+                _orders[i].bondAmount ||
+                orderAmountsUsed[orderHash].fundAmount >= _orders[i].fundAmount
+            ) {
+                continue;
+            }
+
             // Ensure sender is the trader.
             if (msg.sender != _orders[i].trader) {
                 revert InvalidSender();
@@ -853,9 +871,14 @@ contract HyperdriveMatchingEngineV2 is
 
             // Cancel the order.
             isCancelled[orderHash] = true;
-            orderHashes[i] = orderHash;
+            orderHashes[validOrderCount] = orderHash;
+            validOrderCount++;
         }
 
+        // Emit event with assembly to truncate array to actual size
+        assembly {
+            mstore(orderHashes, validOrderCount)
+        }
         emit OrdersCancelled(msg.sender, orderHashes);
     }
 
