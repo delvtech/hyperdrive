@@ -864,7 +864,6 @@ contract HyperdriveMatchingEngineV2 is
             }
 
             // Verify signature.
-            bytes32 orderHash = hashOrderIntent(_orders[i]);
             if (!verifySignature(orderHash, _orders[i].signature, msg.sender)) {
                 revert InvalidSignature();
             }
