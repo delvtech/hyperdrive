@@ -716,7 +716,7 @@ contract HyperdriveMatchingEngineV2Test is HyperdriveTest {
         );
         matchingEngine.fillOrder(makerOrder, invalidTakerOrder);
         vm.stopPrank();
-        
+
         // Test expired order
         makerOrder.expiry = block.timestamp - 1;
         IHyperdriveMatchingEngineV2.OrderIntent
