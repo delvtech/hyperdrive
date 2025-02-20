@@ -76,6 +76,9 @@ contract HyperdriveMatchingEngineV2 is
     /// @param _order2 The second order to match.
     /// @param _surplusRecipient The address that receives the surplus funds
     ///         from matching the trades.
+    /// @dev In the case of _handleMint(), the matching logic is "exact price"
+    ///      semantics according to the order intent, to within numerical precision,
+    ///      with any surplus going to the party that executed the match.
     function matchOrders(
         OrderIntent calldata _order1,
         OrderIntent calldata _order2,
@@ -848,12 +851,14 @@ contract HyperdriveMatchingEngineV2 is
 
         uint256 orderCount = _orders.length;
         for (uint256 i = 0; i < orderCount; i++) {
-            // Skip if order is already fully executed
+            // Skip if order is already fully executed or cancelled
             bytes32 orderHash = hashOrderIntent(_orders[i]);
             if (
                 orderAmountsUsed[orderHash].bondAmount >=
                 _orders[i].bondAmount ||
-                orderAmountsUsed[orderHash].fundAmount >= _orders[i].fundAmount
+                orderAmountsUsed[orderHash].fundAmount >=
+                _orders[i].fundAmount ||
+                isCancelled[orderHash]
             ) {
                 continue;
             }
