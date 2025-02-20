@@ -636,7 +636,9 @@ contract HyperdriveMatchingEngineV2Test is HyperdriveTest {
         uint256 bobShortBalanceBefore = _getShortBalance(bob);
 
         // Fill order
+        vm.startPrank(bob);
         matchingEngine.fillOrder(makerOrder, takerOrder);
+        vm.stopPrank();
 
         // Verify balances
         assertLt(baseToken.balanceOf(alice), aliceBaseBalanceBefore);
@@ -675,7 +677,9 @@ contract HyperdriveMatchingEngineV2Test is HyperdriveTest {
         uint256 bobLongBalanceBefore = _getLongBalance(bob);
 
         // Fill order
+        vm.startPrank(bob);
         matchingEngine.fillOrder(makerOrder, takerOrder);
+        vm.stopPrank();
 
         // Verify balances
         assertLt(baseToken.balanceOf(alice), aliceBaseBalanceBefore);
@@ -706,10 +710,12 @@ contract HyperdriveMatchingEngineV2Test is HyperdriveTest {
                 IHyperdriveMatchingEngineV2.OrderType.OpenLong // Same as maker
             );
 
+        vm.startPrank(bob);
         vm.expectRevert(
             IHyperdriveMatchingEngineV2.InvalidOrderCombination.selector
         );
         matchingEngine.fillOrder(makerOrder, invalidTakerOrder);
+        vm.stopPrank();
 
         // Test expired order
         makerOrder.expiry = block.timestamp - 1;
@@ -722,8 +728,10 @@ contract HyperdriveMatchingEngineV2Test is HyperdriveTest {
                 IHyperdriveMatchingEngineV2.OrderType.OpenShort
             );
 
+        vm.startPrank(bob);
         vm.expectRevert(IHyperdriveMatchingEngineV2.AlreadyExpired.selector);
         matchingEngine.fillOrder(makerOrder, validTakerOrder);
+        vm.stopPrank();
     }
 
     // Helper functions.
