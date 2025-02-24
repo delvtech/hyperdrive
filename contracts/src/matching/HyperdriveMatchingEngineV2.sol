@@ -34,7 +34,7 @@ contract HyperdriveMatchingEngineV2 is
     /// @notice The EIP712 typehash of the OrderIntent struct.
     bytes32 public constant ORDER_INTENT_TYPEHASH =
         keccak256(
-            "OrderIntent(address trader,address counterparty,address hyperdrive,uint256 fundAmount,uint256 bondAmount,uint256 minVaultSharePrice,Options options,uint8 orderType,uint256 minMaturityTime,uint256 maxMaturityTime,uint256 expiry,bytes32 salt)"
+            "OrderIntent(address trader,address counterparty,address hyperdrive,uint256 fundAmount,uint256 bondAmount,uint256 minVaultSharePrice,Options options,uint8 orderType,uint256 minMaturityTime,uint256 maxMaturityTime,uint256 expiry,bytes32 salt)Options(address destination,bool asBase)"
         );
 
     /// @notice The EIP712 typehash of the Options struct.
@@ -76,6 +76,9 @@ contract HyperdriveMatchingEngineV2 is
     /// @param _order2 The second order to match.
     /// @param _surplusRecipient The address that receives the surplus funds
     ///         from matching the trades.
+    /// @dev In the case of _handleMint(), the matching logic is "exact price"
+    ///      semantics according to the order intent, to within numerical precision,
+    ///      with any surplus going to the party that executed the match.
     function matchOrders(
         OrderIntent calldata _order1,
         OrderIntent calldata _order2,
@@ -383,6 +386,11 @@ contract HyperdriveMatchingEngineV2 is
         OrderIntent calldata _makerOrder,
         OrderIntent calldata _takerOrder
     ) external nonReentrant {
+        // Ensure sender is the trader.
+        if (msg.sender != _takerOrder.trader) {
+            revert InvalidSender();
+        }
+
         // Validate maker order and taker order.
         bytes32 makerOrderHash = _validateOrdersWithTaker(
             _makerOrder,
@@ -839,23 +847,42 @@ contract HyperdriveMatchingEngineV2 is
         OrderIntent[] calldata _orders
     ) external nonReentrant {
         bytes32[] memory orderHashes = new bytes32[](_orders.length);
-        for (uint256 i = 0; i < _orders.length; i++) {
+        uint256 validOrderCount = 0;
+
+        uint256 orderCount = _orders.length;
+        for (uint256 i = 0; i < orderCount; i++) {
+            // Skip if order is already fully executed or cancelled
+            bytes32 orderHash = hashOrderIntent(_orders[i]);
+            if (
+                orderAmountsUsed[orderHash].bondAmount >=
+                _orders[i].bondAmount ||
+                orderAmountsUsed[orderHash].fundAmount >=
+                _orders[i].fundAmount ||
+                isCancelled[orderHash]
+            ) {
+                continue;
+            }
+
             // Ensure sender is the trader.
             if (msg.sender != _orders[i].trader) {
                 revert InvalidSender();
             }
 
             // Verify signature.
-            bytes32 orderHash = hashOrderIntent(_orders[i]);
             if (!verifySignature(orderHash, _orders[i].signature, msg.sender)) {
                 revert InvalidSignature();
             }
 
             // Cancel the order.
             isCancelled[orderHash] = true;
-            orderHashes[i] = orderHash;
+            orderHashes[validOrderCount] = orderHash;
+            validOrderCount++;
         }
 
+        // Emit event with assembly to truncate array to actual size
+        assembly {
+            mstore(orderHashes, validOrderCount)
+        }
         emit OrdersCancelled(msg.sender, orderHashes);
     }
 
