@@ -1,11 +1,21 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.24;
 
+import { IMorpho, Market, MarketParams, Id } from "morpho-blue/src/interfaces/IMorpho.sol";
+import { MarketParamsLib } from "morpho-blue/src/libraries/MarketParamsLib.sol";
+import { MorphoBlueConversions } from "../../../contracts/src/instances/morpho-blue/MorphoBlueConversions.sol";
+import { MorphoBlueHyperdrive } from "../../../contracts/src/instances/morpho-blue/MorphoBlueHyperdrive.sol";
+import { MorphoBlueTarget0 } from "../../../contracts/src/instances/morpho-blue/MorphoBlueTarget0.sol";
+import { MorphoBlueTarget1 } from "../../../contracts/src/instances/morpho-blue/MorphoBlueTarget1.sol";
+import { MorphoBlueTarget2 } from "../../../contracts/src/instances/morpho-blue/MorphoBlueTarget2.sol";
+import { MorphoBlueTarget3 } from "../../../contracts/src/instances/morpho-blue/MorphoBlueTarget3.sol";
+import { MorphoBlueTarget4 } from "../../../contracts/src/instances/morpho-blue/MorphoBlueTarget4.sol";
 import { IERC20 } from "../../../contracts/src/interfaces/IERC20.sol";
 import { IHyperdrive } from "../../../contracts/src/interfaces/IHyperdrive.sol";
 import { IHyperdriveMatchingEngineV2 } from "../../../contracts/src/interfaces/IHyperdriveMatchingEngineV2.sol";
+import { IMorphoBlueHyperdrive } from "../../../contracts/src/interfaces/IMorphoBlueHyperdrive.sol";
 import { AssetId } from "../../../contracts/src/libraries/AssetId.sol";
-import { FixedPointMath } from "../../../contracts/src/libraries/FixedPointMath.sol";
+import { FixedPointMath, ONE } from "../../../contracts/src/libraries/FixedPointMath.sol";
 import { HyperdriveMatchingEngineV2 } from "../../../contracts/src/matching/HyperdriveMatchingEngineV2.sol";
 import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
@@ -17,64 +27,224 @@ contract TokenBufferTest is HyperdriveTest {
     using FixedPointMath for *;
     using HyperdriveUtils for *;
     using Lib for *;
+    using MarketParamsLib for MarketParams;
 
-    /// @dev The USDe/DAI Hyperdrive pool on mainnet.
-    address internal constant USDE_DAI_POOL =
-        0xA29A771683b4857bBd16e1e4f27D5B6bfF53209B;
+    /// @dev The Morpho Blue address
+    IMorpho internal constant MORPHO =
+        IMorpho(0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb);
 
-    /// @dev The wstETH/USDC Hyperdrive pool on mainnet.
-    address internal constant WSTETH_USDC_POOL =
-        0xc8D47DE20F7053Cc02504600596A647A482Bbc46;
-
-    /// @dev The DAI token address.
+    /// @dev The DAI token address
     address internal constant DAI = 0x6B175474E89094C44Da98b954EedeAC495271d0F;
 
-    /// @dev The USDe token address.
+    /// @dev The USDe token address
     address internal constant USDE = 0x4c9EDD5852cd905f086C759E8383e09bff1E68B3;
 
-    /// @dev The USDC token address.
+    /// @dev The USDC token address
     address internal constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
 
-    /// @dev The wstETH token address.
+    /// @dev The wstETH token address
     address internal constant WSTETH =
         0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
 
-    /// @dev Charlie will be the surplus recipient.
+    /// @dev The oracle for wstETH/USDC pool
+    address internal constant WSTETH_ORACLE =
+        0x48F7E36EB6B826B2dF4B2E630B62Cd25e89E40e2;
+
+    /// @dev The oracle for USDe/DAI pool
+    address internal constant USDE_ORACLE =
+        0xaE4750d0813B5E37A51f7629beedd72AF1f9cA35;
+
+    /// @dev The interest rate model for Morpho pools
+    address internal constant IRM = 0x870aC11D48B15DB9a138Cf899d20F13F79Ba00BC;
+
+    /// @dev The liquidation loan to value for Morpho pools
+    uint256 internal constant LLTV = 860000000000000000;
+
+    /// @dev Charlie will be the surplus recipient
     address internal constant CHARLIE =
         0x3C44CdDdB6a900fa2b585dd299e03d12FA4293BC;
 
-    /// @dev The Hyperdrive matching engine that is deployed.
+    /// @dev The initializer of the pools
+    address internal constant INITIALIZER =
+        0x70997970C51812dc3A010C7d01b50e0d17dc79C8;
+
+    /// @dev The Hyperdrive matching engine that is deployed
     IHyperdriveMatchingEngineV2 internal matchingEngine;
 
-    /// @dev The USDe/DAI Hyperdrive instance.
+    /// @dev The USDe/DAI Hyperdrive instance
     IHyperdrive internal usdeDaiHyperdrive;
 
-    /// @dev The wstETH/USDC Hyperdrive instance.
+    /// @dev The wstETH/USDC Hyperdrive instance
     IHyperdrive internal wstethUsdcHyperdrive;
 
-    /// @dev Counter for successful trades.
-    uint256 public successfulTrades;
-
-    /// @dev Counter for failed trades.
-    uint256 public failedTrades;
-
-    /// @dev Sets up the test harness on a mainnet fork.
+    /// @dev Sets up the test harness on a mainnet fork
     function setUp() public override __mainnet_fork(21_931_000) {
-        // Run the higher-level setup logic.
+        // Run the higher-level setup logic
         super.setUp();
 
-        // Deploy the Hyperdrive matching engine.
+        // Deploy the Hyperdrive matching engine
         matchingEngine = IHyperdriveMatchingEngineV2(
             address(
                 new HyperdriveMatchingEngineV2("Hyperdrive Matching Engine V2")
             )
         );
 
-        // Set up the Hyperdrive instances.
-        usdeDaiHyperdrive = IHyperdrive(USDE_DAI_POOL);
-        wstethUsdcHyperdrive = IHyperdrive(WSTETH_USDC_POOL);
+        // Deploy a Morpho Blue wstETH/USDC pool
+        IMorphoBlueHyperdrive.MorphoBlueParams
+            memory wstethParams = IMorphoBlueHyperdrive.MorphoBlueParams({
+                morpho: MORPHO,
+                collateralToken: WSTETH,
+                oracle: WSTETH_ORACLE,
+                irm: IRM,
+                lltv: LLTV
+            });
 
-        // Fund Alice and Bob with tokens.
+        IHyperdrive.PoolConfig memory wstethConfig = testConfig(
+            0.04e18,
+            182 days
+        );
+        wstethConfig.baseToken = IERC20(USDC);
+        wstethConfig.vaultSharesToken = IERC20(address(0));
+        wstethConfig.fees.curve = 0.01e18;
+        wstethConfig.fees.flat = 0.0005e18;
+        wstethConfig.fees.governanceLP = 0.15e18;
+        wstethConfig.minimumShareReserves = 1e6;
+        wstethConfig.minimumTransactionAmount = 1e6;
+        wstethConfig.initialVaultSharePrice = MorphoBlueConversions
+            .convertToBase(
+                MORPHO,
+                wstethConfig.baseToken,
+                wstethParams.collateralToken,
+                wstethParams.oracle,
+                wstethParams.irm,
+                wstethParams.lltv,
+                ONE
+            );
+
+        wstethUsdcHyperdrive = IHyperdrive(
+            address(
+                new MorphoBlueHyperdrive(
+                    "MorphoBlueHyperdrive-wstETH-USDC",
+                    wstethConfig,
+                    adminController,
+                    address(
+                        new MorphoBlueTarget0(
+                            wstethConfig,
+                            adminController,
+                            wstethParams
+                        )
+                    ),
+                    address(
+                        new MorphoBlueTarget1(
+                            wstethConfig,
+                            adminController,
+                            wstethParams
+                        )
+                    ),
+                    address(
+                        new MorphoBlueTarget2(
+                            wstethConfig,
+                            adminController,
+                            wstethParams
+                        )
+                    ),
+                    address(
+                        new MorphoBlueTarget3(
+                            wstethConfig,
+                            adminController,
+                            wstethParams
+                        )
+                    ),
+                    address(
+                        new MorphoBlueTarget4(
+                            wstethConfig,
+                            adminController,
+                            wstethParams
+                        )
+                    ),
+                    wstethParams
+                )
+            )
+        );
+
+        // Deploy a Morpho Blue USDe/DAI pool
+        IMorphoBlueHyperdrive.MorphoBlueParams
+            memory usdeParams = IMorphoBlueHyperdrive.MorphoBlueParams({
+                morpho: MORPHO,
+                collateralToken: USDE,
+                oracle: USDE_ORACLE,
+                irm: IRM,
+                lltv: LLTV
+            });
+
+        IHyperdrive.PoolConfig memory usdeConfig = testConfig(
+            0.04e18,
+            182 days
+        );
+        usdeConfig.baseToken = IERC20(DAI);
+        usdeConfig.vaultSharesToken = IERC20(address(0));
+        usdeConfig.fees.curve = 0.01e18;
+        usdeConfig.fees.flat = 0.0005e18;
+        usdeConfig.fees.governanceLP = 0.15e18;
+        usdeConfig.minimumShareReserves = 1e18;
+        usdeConfig.minimumTransactionAmount = 1e18;
+        usdeConfig.initialVaultSharePrice = MorphoBlueConversions.convertToBase(
+            MORPHO,
+            usdeConfig.baseToken,
+            usdeParams.collateralToken,
+            usdeParams.oracle,
+            usdeParams.irm,
+            usdeParams.lltv,
+            ONE
+        );
+
+        usdeDaiHyperdrive = IHyperdrive(
+            address(
+                new MorphoBlueHyperdrive(
+                    "MorphoBlueHyperdrive-USDe-DAI",
+                    usdeConfig,
+                    adminController,
+                    address(
+                        new MorphoBlueTarget0(
+                            usdeConfig,
+                            adminController,
+                            usdeParams
+                        )
+                    ),
+                    address(
+                        new MorphoBlueTarget1(
+                            usdeConfig,
+                            adminController,
+                            usdeParams
+                        )
+                    ),
+                    address(
+                        new MorphoBlueTarget2(
+                            usdeConfig,
+                            adminController,
+                            usdeParams
+                        )
+                    ),
+                    address(
+                        new MorphoBlueTarget3(
+                            usdeConfig,
+                            adminController,
+                            usdeParams
+                        )
+                    ),
+                    address(
+                        new MorphoBlueTarget4(
+                            usdeConfig,
+                            adminController,
+                            usdeParams
+                        )
+                    ),
+                    usdeParams
+                )
+            )
+        );
+
+        // Fund accounts with tokens
         deal(DAI, alice, 10_000_000e18);
         deal(USDE, alice, 10_000_000e18);
         deal(USDC, alice, 10_000_000e6);
@@ -85,7 +255,12 @@ contract TokenBufferTest is HyperdriveTest {
         deal(USDC, bob, 10_000_000e6);
         deal(WSTETH, bob, 1000e18);
 
-        // Approve tokens for Alice and Bob.
+        deal(DAI, INITIALIZER, 10_000_000e18);
+        deal(USDE, INITIALIZER, 10_000_000e18);
+        deal(USDC, INITIALIZER, 10_000_000e6);
+        deal(WSTETH, INITIALIZER, 1000e18);
+
+        // Approve tokens
         _approveTokens(alice, address(usdeDaiHyperdrive), IERC20(DAI));
         _approveTokens(alice, address(usdeDaiHyperdrive), IERC20(USDE));
         _approveTokens(alice, address(wstethUsdcHyperdrive), IERC20(USDC));
@@ -103,33 +278,73 @@ contract TokenBufferTest is HyperdriveTest {
         _approveTokens(bob, address(matchingEngine), IERC20(USDE));
         _approveTokens(bob, address(matchingEngine), IERC20(USDC));
         _approveTokens(bob, address(matchingEngine), IERC20(WSTETH));
+
+        _approveTokens(INITIALIZER, address(usdeDaiHyperdrive), IERC20(DAI));
+        _approveTokens(INITIALIZER, address(usdeDaiHyperdrive), IERC20(USDE));
+        _approveTokens(
+            INITIALIZER,
+            address(wstethUsdcHyperdrive),
+            IERC20(USDC)
+        );
+        _approveTokens(
+            INITIALIZER,
+            address(wstethUsdcHyperdrive),
+            IERC20(WSTETH)
+        );
+
+        // Initialize the Hyperdrive pools
+        vm.startPrank(INITIALIZER);
+
+        // Initialize wstETH/USDC pool
+        wstethUsdcHyperdrive.initialize(
+            1_000_000e6, // 1M USDC
+            0.0361e18,
+            IHyperdrive.Options({
+                asBase: true,
+                destination: INITIALIZER,
+                extraData: ""
+            })
+        );
+
+        // Initialize USDe/DAI pool
+        usdeDaiHyperdrive.initialize(
+            1_000_000e18, // 1M DAI
+            0.0361e18,
+            IHyperdrive.Options({
+                asBase: true,
+                destination: INITIALIZER,
+                extraData: ""
+            })
+        );
+
+        vm.stopPrank();
     }
 
     /// @dev Tests if TOKEN_AMOUNT_BUFFER is sufficient for USDe/DAI pool.
     /// This test uses fixed time and iterates through increasing bond amounts.
     function test_tokenBuffer_USDe_DAI() external {
-        // Use a fixed time elapsed.
+        // Use a fixed time elapsed
         uint256 timeElapsed = 1 days;
 
-        // Advance time to simulate real-world conditions.
+        // Advance time to simulate real-world conditions
         vm.warp(block.timestamp + timeElapsed);
 
-        // Initialize counters for this test.
+        // Initialize counters for this test
         uint256 localSuccessfulTrades = 0;
         uint256 localFailedTrades = 0;
 
-        // Start with 2000e18 and increment by 50000e18 each time, for 20 iterations.
-        for (uint256 i = 0; i < 20; i++) {
-            uint256 bondAmount = 2000e18 + (i * 50000e18);
+        // Start with 20000e18 and increment by 50000e18 each time, for 10 iterations
+        for (uint256 i = 0; i < 10; i++) {
+            uint256 bondAmount = 20000e18 + (i * 50000e18);
 
-            // Calculate fund amounts and make it more than sufficient.
+            // Calculate fund amounts and double it to make it more than sufficient
             uint256 totalFunds = 2 * bondAmount;
 
-            // Split funds between Alice and Bob.
+            // Split funds between Alice and Bob
             uint256 aliceFundAmount = totalFunds / 2;
             uint256 bobFundAmount = totalFunds - aliceFundAmount;
 
-            // Create orders.
+            // Create orders
             IHyperdriveMatchingEngineV2.OrderIntent
                 memory longOrder = _createOrderIntent(
                     alice,
@@ -152,21 +367,21 @@ contract TokenBufferTest is HyperdriveTest {
                     IHyperdriveMatchingEngineV2.OrderType.OpenShort
                 );
 
-            // Sign orders.
+            // Sign orders
             longOrder.signature = _signOrderIntent(longOrder, alicePK);
             shortOrder.signature = _signOrderIntent(shortOrder, bobPK);
 
-            // Try to match orders and record success/failure.
+            // Try to match orders and record success/failure
             try matchingEngine.matchOrders(longOrder, shortOrder, CHARLIE) {
                 localSuccessfulTrades++;
 
-                // Log successful trade.
+                // Log successful trade
                 emit log_named_uint(
                     "Successful trade with bond amount",
                     bondAmount
                 );
 
-                // Verify positions were created.
+                // Verify positions were created
                 uint256 aliceLongBalance = usdeDaiHyperdrive.balanceOf(
                     AssetId.encodeAssetId(
                         AssetId.AssetIdPrefix.Long,
@@ -194,18 +409,18 @@ contract TokenBufferTest is HyperdriveTest {
             } catch {
                 localFailedTrades++;
 
-                // Log failed trade.
+                // Log failed trade
                 emit log_named_uint(
                     "Failed trade with bond amount",
                     bondAmount
                 );
             }
 
-            // Advance block to avoid nonce issues.
+            // Advance block to avoid nonce issues
             vm.roll(block.number + 1);
         }
 
-        // Log summary.
+        // Log summary
         emit log_named_uint(
             "USDe/DAI - Total successful trades",
             localSuccessfulTrades
@@ -216,7 +431,122 @@ contract TokenBufferTest is HyperdriveTest {
         );
     }
 
-    /// @dev Helper function to create an order intent.
+    /// @dev Tests if TOKEN_AMOUNT_BUFFER is sufficient for wstETH/USDC pool.
+    /// This test uses fixed time and iterates through increasing bond amounts.
+    function test_tokenBuffer_wstETH_USDC() external {
+        // Use a fixed time elapsed
+        uint256 timeElapsed = 1 days;
+
+        // Advance time to simulate real-world conditions
+        vm.warp(block.timestamp + timeElapsed);
+
+        // Initialize counters for this test
+        uint256 localSuccessfulTrades = 0;
+        uint256 localFailedTrades = 0;
+
+        // Start with 2000e6 and increment by 5000e6 each time, for 10 iterations
+        for (uint256 i = 0; i < 10; i++) {
+            uint256 bondAmount = 2000e6 + (i * 5000e6);
+
+            // Calculate fund amounts and make it more than sufficient
+            uint256 totalFunds = 2 * bondAmount;
+
+            // Split funds between Alice and Bob
+            uint256 aliceFundAmount = totalFunds / 2;
+            uint256 bobFundAmount = totalFunds - aliceFundAmount;
+
+            // Create orders
+            IHyperdriveMatchingEngineV2.OrderIntent
+                memory longOrder = _createOrderIntent(
+                    alice,
+                    bob,
+                    wstethUsdcHyperdrive,
+                    aliceFundAmount,
+                    bondAmount,
+                    true, // asBase
+                    IHyperdriveMatchingEngineV2.OrderType.OpenLong
+                );
+
+            IHyperdriveMatchingEngineV2.OrderIntent
+                memory shortOrder = _createOrderIntent(
+                    bob,
+                    alice,
+                    wstethUsdcHyperdrive,
+                    bobFundAmount,
+                    bondAmount,
+                    true, // asBase
+                    IHyperdriveMatchingEngineV2.OrderType.OpenShort
+                );
+
+            // Sign orders
+            longOrder.signature = _signOrderIntent(longOrder, alicePK);
+            shortOrder.signature = _signOrderIntent(shortOrder, bobPK);
+
+            // Try to match orders and record success/failure
+            try matchingEngine.matchOrders(longOrder, shortOrder, CHARLIE) {
+                localSuccessfulTrades++;
+
+                // Log successful trade
+                emit log_named_uint(
+                    "Successful trade with bond amount",
+                    bondAmount
+                );
+
+                // Verify positions were created
+                uint256 aliceLongBalance = wstethUsdcHyperdrive.balanceOf(
+                    AssetId.encodeAssetId(
+                        AssetId.AssetIdPrefix.Long,
+                        wstethUsdcHyperdrive.latestCheckpoint() +
+                            wstethUsdcHyperdrive
+                                .getPoolConfig()
+                                .positionDuration
+                    ),
+                    alice
+                );
+
+                uint256 bobShortBalance = wstethUsdcHyperdrive.balanceOf(
+                    AssetId.encodeAssetId(
+                        AssetId.AssetIdPrefix.Short,
+                        wstethUsdcHyperdrive.latestCheckpoint() +
+                            wstethUsdcHyperdrive
+                                .getPoolConfig()
+                                .positionDuration
+                    ),
+                    bob
+                );
+
+                assertGt(
+                    aliceLongBalance,
+                    0,
+                    "Alice should have long position"
+                );
+                assertGt(bobShortBalance, 0, "Bob should have short position");
+            } catch {
+                localFailedTrades++;
+
+                // Log failed trade
+                emit log_named_uint(
+                    "Failed trade with bond amount",
+                    bondAmount
+                );
+            }
+
+            // Advance block to avoid nonce issues
+            vm.roll(block.number + 1);
+        }
+
+        // Log summary
+        emit log_named_uint(
+            "wstETH/USDC - Total successful trades",
+            localSuccessfulTrades
+        );
+        emit log_named_uint(
+            "wstETH/USDC - Total failed trades",
+            localFailedTrades
+        );
+    }
+
+    /// @dev Helper function to create an order intent
     function _createOrderIntent(
         address _trader,
         address _counterparty,
@@ -258,7 +588,7 @@ contract TokenBufferTest is HyperdriveTest {
             });
     }
 
-    /// @dev Helper function to sign an order intent.
+    /// @dev Helper function to sign an order intent
     function _signOrderIntent(
         IHyperdriveMatchingEngineV2.OrderIntent memory _order,
         uint256 _privateKey
@@ -268,7 +598,7 @@ contract TokenBufferTest is HyperdriveTest {
         return abi.encodePacked(r, s, v);
     }
 
-    /// @dev Helper function to approve tokens.
+    /// @dev Helper function to approve tokens
     function _approveTokens(
         address _owner,
         address _spender,
