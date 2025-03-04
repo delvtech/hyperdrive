@@ -57,3 +57,12 @@ string constant RETH_HYPERDRIVE_KIND = "RETHHyperdrive";
 
 /// @dev The kind of StETHHyperdrive.
 string constant STETH_HYPERDRIVE_KIND = "StETHHyperdrive";
+
+/// @dev The kind of StakingUSDSHyperdrive.
+string constant STAKING_USDS_HYPERDRIVE_KIND = "StakingUSDSHyperdrive";
+
+/// @dev The kind of StkWellSHyperdrive.
+string constant STK_WELL_HYPERDRIVE_KIND = "StkWellHyperdrive";
+
+/// @dev The kind of UniV3Zap.
+string constant UNI_V3_ZAP_KIND = "UniV3Zap";

@@ -100,7 +100,7 @@ contract BaseTest is Test {
     }
 
     function fundAccounts(
-        address hyperdrive,
+        address approvalTarget,
         IERC20 token,
         address source,
         address[] memory accounts
@@ -115,9 +115,9 @@ contract BaseTest is Test {
                 accounts[i]
             );
 
-            // Approve Hyperdrive on behalf of the account.
+            // Approve the approval target on behalf of the account.
             vm.startPrank(accounts[i]);
-            token.approve(hyperdrive, type(uint256).max);
+            token.approve(approvalTarget, type(uint256).max);
         }
     }
 }
