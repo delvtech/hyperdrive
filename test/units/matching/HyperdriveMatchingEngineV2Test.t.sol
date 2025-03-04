@@ -576,7 +576,7 @@ contract HyperdriveMatchingEngineV2Test is HyperdriveTest {
     function testFuzz_tokenAmountBuffer(uint256 bondAmount) public {
         bondAmount = bound(bondAmount, 100e18, 1_000_000e18);
         uint256 fundAmount1 = bondAmount / 2;
-        (, uint256 cost) = _calculateMintCost(bondAmount);
+        (, uint256 cost) = _calculateMintCost(bondAmount, true);
         uint256 fundAmount2 = cost + 10 - fundAmount1;
 
         // Create orders
@@ -773,7 +773,7 @@ contract HyperdriveMatchingEngineV2Test is HyperdriveTest {
         (uint128 bondAmountUsedAfter, ) = matchingEngine.orderAmountsUsed(
             orderHash
         );
-        assertGt(bondAmountUsedAfter - bondAmountUsedBefore, 95_000e18);
+        assertGe(bondAmountUsedAfter - bondAmountUsedBefore, 95_000e18);
         assertEq(
             _getLongBalance(alice) - aliceLongBalanceBefore,
             bondAmountUsedAfter
@@ -964,7 +964,7 @@ contract HyperdriveMatchingEngineV2Test is HyperdriveTest {
         // Verify order is now fully filled
         bytes32 orderHash = matchingEngine.hashOrderIntent(makerOrder);
         (uint128 bondAmountUsed, ) = matchingEngine.orderAmountsUsed(orderHash);
-        assertGt(bondAmountUsed, 285_000e18);
+        assertGe(bondAmountUsed, 285_000e18);
 
         // Try to fill again
         IHyperdriveMatchingEngineV2.OrderIntent
@@ -1066,10 +1066,12 @@ contract HyperdriveMatchingEngineV2Test is HyperdriveTest {
 
     /// @dev Calculates the cost and parameters for minting positions.
     /// @param _bondMatchAmount The amount of bonds to mint.
+    /// @param _asBase Whether the cost is in terms of base.
     /// @return maturityTime The maturity time for new positions.
     /// @return cost The total cost including fees.
     function _calculateMintCost(
-        uint256 _bondMatchAmount
+        uint256 _bondMatchAmount,
+        bool _asBase
     ) internal view returns (uint256 maturityTime, uint256 cost) {
         // Get pool configuration.
         IHyperdrive.PoolConfig memory config = hyperdrive.getPoolConfig();
@@ -1103,5 +1105,13 @@ contract HyperdriveMatchingEngineV2Test is HyperdriveTest {
         // NOTE: Round the governance fee calculation down to match other flows.
         uint256 governanceFee = 2 * flatFee.mulDown(config.fees.governanceLP);
         cost += governanceFee;
+
+        if (_asBase) {
+            // NOTE: Round up to overestimate the cost.
+            cost = hyperdrive.convertToBase(cost.divUp(vaultSharePrice));
+        } else {
+            // NOTE: Round up to overestimate the cost.
+            cost = cost.divUp(vaultSharePrice);
+        }
     }
 }

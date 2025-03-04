@@ -153,7 +153,8 @@ contract HyperdriveMatchingEngineV2 is
             // Calculate costs and parameters.
             (uint256 maturityTime, uint256 cost) = _calculateMintCost(
                 hyperdrive,
-                bondMatchAmount
+                bondMatchAmount,
+                _order1.options.asBase
             );
 
             // Check if the maturity time is within the range.
@@ -442,7 +443,8 @@ contract HyperdriveMatchingEngineV2 is
                 // Calculate costs and parameters.
                 (uint256 maturityTime, uint256 cost) = _calculateMintCost(
                     hyperdrive,
-                    bondMatchAmount
+                    bondMatchAmount,
+                    _makerOrder.options.asBase
                 );
 
                 // Check if the maturity time is within the range.
@@ -552,7 +554,8 @@ contract HyperdriveMatchingEngineV2 is
                 // Calculate costs and parameters.
                 (uint256 maturityTime, uint256 cost) = _calculateMintCost(
                     hyperdrive,
-                    bondMatchAmount
+                    bondMatchAmount,
+                    _makerOrder.options.asBase
                 );
 
                 // Check if the maturity time is within the range.
@@ -1415,11 +1418,13 @@ contract HyperdriveMatchingEngineV2 is
     /// @dev Calculates the cost and parameters for minting positions.
     /// @param _hyperdrive The Hyperdrive contract instance.
     /// @param _bondMatchAmount The amount of bonds to mint.
+    /// @param _asBase Whether the cost is in terms of base.
     /// @return maturityTime The maturity time for new positions.
     /// @return cost The total cost including fees.
     function _calculateMintCost(
         IHyperdrive _hyperdrive,
-        uint256 _bondMatchAmount
+        uint256 _bondMatchAmount,
+        bool _asBase
     ) internal view returns (uint256 maturityTime, uint256 cost) {
         // Get pool configuration.
         IHyperdrive.PoolConfig memory config = _hyperdrive.getPoolConfig();
@@ -1453,6 +1458,14 @@ contract HyperdriveMatchingEngineV2 is
         // NOTE: Round the governance fee calculation down to match other flows.
         uint256 governanceFee = 2 * flatFee.mulDown(config.fees.governanceLP);
         cost += governanceFee;
+
+        if (_asBase) {
+            // NOTE: Round up to overestimate the cost.
+            cost = _hyperdrive.convertToBase(cost.divUp(vaultSharePrice));
+        } else {
+            // NOTE: Round up to overestimate the cost.
+            cost = cost.divUp(vaultSharePrice);
+        }
     }
 
     /// @dev Updates either the bond amount or fund amount used for a given order.

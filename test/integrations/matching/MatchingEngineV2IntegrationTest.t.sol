@@ -333,8 +333,8 @@ contract TokenBufferTest is HyperdriveTest {
         uint256 localSuccessfulTrades = 0;
         uint256 localFailedTrades = 0;
 
-        // Start with 20000e18 and increment by 50000e18 each time, for 10 iterations
-        for (uint256 i = 0; i < 10; i++) {
+        // Start with 20000e18 and increment by 50000e18 each time, for 20 iterations
+        for (uint256 i = 0; i < 20; i++) {
             uint256 bondAmount = 20000e18 + (i * 50000e18);
 
             // Calculate fund amounts and double it to make it more than sufficient
@@ -444,8 +444,8 @@ contract TokenBufferTest is HyperdriveTest {
         uint256 localSuccessfulTrades = 0;
         uint256 localFailedTrades = 0;
 
-        // Start with 2000e6 and increment by 5000e6 each time, for 10 iterations
-        for (uint256 i = 0; i < 10; i++) {
+        // Start with 2000e6 and increment by 5000e6 each time, for 20 iterations
+        for (uint256 i = 0; i < 20; i++) {
             uint256 bondAmount = 2000e6 + (i * 5000e6);
 
             // Calculate fund amounts and make it more than sufficient
