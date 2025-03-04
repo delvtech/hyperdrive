@@ -3,6 +3,7 @@ pragma solidity ^0.8.20;
 
 import { IHyperdrive } from "./IHyperdrive.sol";
 import { ISwapRouter } from "./ISwapRouter.sol";
+import { IWETH } from "./IWETH.sol";
 
 /// @title IUniV3Zap
 /// @author DELV
@@ -286,4 +287,8 @@ interface IUniV3Zap {
     /// @notice Returns the Uniswap swap router.
     /// @return The Uniswap swap router.
     function swapRouter() external view returns (ISwapRouter);
+
+    /// @notice Returns the Uniswap swap router.
+    /// @return The Uniswap swap router.
+    function weth() external view returns (IWETH);
 }

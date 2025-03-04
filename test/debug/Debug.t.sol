@@ -2,12 +2,14 @@
 pragma solidity 0.8.20;
 
 import { console2 as console } from "forge-std/console2.sol";
-import { IHyperdriveCore } from "contracts/src/interfaces/IHyperdriveCore.sol";
-import { IMultiTokenCore } from "contracts/src/interfaces/IMultiTokenCore.sol";
-import { ETH } from "contracts/src/libraries/Constants.sol";
-import { BaseTest } from "test/utils/BaseTest.sol";
-import { EtchingUtils } from "test/utils/EtchingUtils.sol";
-import { Lib } from "test/utils/Lib.sol";
+import { IHyperdriveCore } from "../../contracts/src/interfaces/IHyperdriveCore.sol";
+import { IMultiTokenCore } from "../../contracts/src/interfaces/IMultiTokenCore.sol";
+import { IUniV3Zap } from "../../contracts/src/interfaces/IUniV3Zap.sol";
+import { ETH } from "../../contracts/src/libraries/Constants.sol";
+import { UniV3Zap } from "../../contracts/src/zaps/UniV3Zap.sol";
+import { BaseTest } from "../utils/BaseTest.sol";
+import { EtchingUtils } from "../utils/EtchingUtils.sol";
+import { Lib } from "../utils/Lib.sol";
 
 /// @author DELV
 /// @title Debugging
@@ -68,12 +70,22 @@ contract Debug is BaseTest, EtchingUtils {
     /// @dev Debugs the provided Hyperdrive transaction.
     /// @param _tx The transaction to debug.
     function debug(Transaction memory _tx) internal {
+        // Etch the UniV3Zap contract.
+        console.log("test: 1");
+        IUniV3Zap zap = IUniV3Zap(_tx.to);
+        {
+            UniV3Zap template = new UniV3Zap("", zap.swapRouter(), zap.weth());
+            vm.etch(address(zap), address(template).code);
+        }
+        console.log("test: 2");
+
         // Etch the hyperdrive instance to add console logs.
         (
             string memory name,
             string memory kind,
             string memory version
-        ) = etchHyperdrive(_tx.to);
+        ) = etchHyperdrive(address(0x324395D5d835F84a02A75Aa26814f6fD22F25698));
+        console.log("test: 3");
 
         // Log a preamble with the Hyperdrive name, version, and the function
         // that will be called.

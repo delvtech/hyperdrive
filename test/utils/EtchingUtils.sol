@@ -1,6 +1,9 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.20;
 
+// FIXME
+import { console2 as console } from "forge-std/console2.sol";
+
 import { Test } from "forge-std/Test.sol";
 import { ERC4626Hyperdrive } from "contracts/src/instances/erc4626/ERC4626Hyperdrive.sol";
 import { ERC4626Target0 } from "contracts/src/instances/erc4626/ERC4626Target0.sol";
@@ -53,24 +56,25 @@ contract EtchingUtils is Test {
         // Ensure that the contract's version matches.
         IHyperdrive hyperdrive = IHyperdrive(_hyperdrive);
         string memory version = hyperdrive.version();
-        if (!hyperdrive.version().eq(VERSION)) {
-            revert(
-                vm.replace(
-                    vm.replace(
-                        "EtchingUtils: The checked-out version is %0 but the target version is %1. Consider checking out the target version",
-                        "%0",
-                        VERSION
-                    ),
-                    "%1",
-                    version
-                )
-            );
-        }
+        // if (!hyperdrive.version().eq(VERSION)) {
+        //     revert(
+        //         vm.replace(
+        //             vm.replace(
+        //                 "EtchingUtils: The checked-out version is %0 but the target version is %1. Consider checking out the target version",
+        //                 "%0",
+        //                 VERSION
+        //             ),
+        //             "%1",
+        //             version
+        //         )
+        //     );
+        // }
 
         // Using the name, decide which type of Hyperdrive instance needs to
         // be etched.
         string memory kind = hyperdrive.kind();
         if (kind.eq(ERC4626_HYPERDRIVE_KIND)) {
+            console.log("erc4626 vault");
             etchERC4626Hyperdrive(_hyperdrive);
         } else if (kind.eq(EZETH_HYPERDRIVE_KIND)) {
             etchEzETHHyperdrive(_hyperdrive);
@@ -98,44 +102,15 @@ contract EtchingUtils is Test {
         // used to load immutables that will be used during the etching process.
         IHyperdrive hyperdrive = IHyperdrive(_hyperdrive);
 
-        // Etch the base contract.
-        {
-            ERC20Mintable target = ERC20Mintable(hyperdrive.baseToken());
-            ERC20Mintable template = new ERC20Mintable(
-                target.name(),
-                target.symbol(),
-                target.decimals(),
-                address(0),
-                target.isCompetitionMode(),
-                target.maxMintAmount()
-            );
-            vm.etch(address(target), address(template).code);
-        }
-
-        // TODO: Remove this once we leave testnet.
-        //
-        // Etch the vault contract.
-        {
-            MockERC4626 target = MockERC4626(hyperdrive.vaultSharesToken());
-            MockERC4626 template = new MockERC4626(
-                ERC20Mintable(address(target.asset())),
-                target.name(),
-                target.symbol(),
-                0,
-                address(0),
-                target.isCompetitionMode(),
-                target.maxMintAmount()
-            );
-            vm.etch(address(target), address(template).code);
-        }
-
         // Etch the target0 contract.
+        console.log("etchERC4626Hyperdrive: 1");
         {
             ERC4626Target0 template = new ERC4626Target0(
                 hyperdrive.getPoolConfig()
             );
             vm.etch(hyperdrive.target0(), address(template).code);
         }
+        console.log("etchERC4626Hyperdrive: 2");
 
         // Etch the target1 contract.
         {
@@ -144,6 +119,7 @@ contract EtchingUtils is Test {
             );
             vm.etch(hyperdrive.target1(), address(template).code);
         }
+        console.log("etchERC4626Hyperdrive: 3");
 
         // Etch the target2 contract.
         {
@@ -152,6 +128,7 @@ contract EtchingUtils is Test {
             );
             vm.etch(hyperdrive.target2(), address(template).code);
         }
+        console.log("etchERC4626Hyperdrive: 4");
 
         // Etch the target3 contract.
         {
@@ -160,6 +137,7 @@ contract EtchingUtils is Test {
             );
             vm.etch(hyperdrive.target3(), address(template).code);
         }
+        console.log("etchERC4626Hyperdrive: 5");
 
         // Etch the hyperdrive contract.
         {
@@ -175,6 +153,7 @@ contract EtchingUtils is Test {
             );
             vm.etch(address(hyperdrive), address(template).code);
         }
+        console.log("etchERC4626Hyperdrive: 6");
     }
 
     function etchEzETHHyperdrive(address _hyperdrive) internal {

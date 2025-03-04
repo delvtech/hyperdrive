@@ -1,5 +1,8 @@
 // SPDX-License-Identifier: Apache-2.0
-pragma solidity 0.8.22;
+pragma solidity 0.8.20;
+
+// FIXME
+import { console2 as console } from "forge-std/console2.sol";
 
 import { ERC20 } from "openzeppelin/token/ERC20/ERC20.sol";
 import { ReentrancyGuard } from "openzeppelin/utils/ReentrancyGuard.sol";
@@ -371,12 +374,14 @@ contract UniV3Zap is IUniV3Zap, ReentrancyGuard {
         bool _shouldWrap
     ) external nonReentrant returns (uint256 proceeds) {
         // Validate the zap parameters.
+        console.log("closeLongZap: 1");
         address proceedsAsset = _validateZapOut(
             _hyperdrive,
             _options,
             _swapParams,
             _shouldWrap
         );
+        console.log("closeLongZap: 2");
 
         // Take custody of the long position.
         _hyperdrive.transferFrom(
@@ -385,6 +390,7 @@ contract UniV3Zap is IUniV3Zap, ReentrancyGuard {
             address(this),
             _bondAmount
         );
+        console.log("closeLongZap: 3");
 
         // Close the long, zap the proceeds into the target asset, and send
         // them to the trader.
@@ -395,7 +401,10 @@ contract UniV3Zap is IUniV3Zap, ReentrancyGuard {
         // tokens. As a consequence, we don't need the output value of closing
         // the long position.
         _hyperdrive.closeLong(_maturityTime, _bondAmount, _minOutput, _options);
+        console.log("closeLongZap: 4");
         proceeds = _zapOut(_swapParams, proceedsAsset, _shouldWrap);
+        console.log("closeLongZap: 5");
+        console.log("proceeds = %s", proceeds);
 
         return proceeds;
     }
@@ -946,7 +955,8 @@ contract UniV3Zap is IUniV3Zap, ReentrancyGuard {
         }
         // Otherwise, we can use the built-in `convertToShares` function.
         else {
-            return _hyperdrive.convertToShares(_baseAmount);
+            revert("");
+            // return _hyperdrive.convertToShares(_baseAmount);
         }
     }
 }
