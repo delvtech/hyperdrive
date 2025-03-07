@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 pragma solidity 0.8.24;
 
-import { IMorpho, Market, MarketParams, Id } from "morpho-blue/src/interfaces/IMorpho.sol";
+import { IMorpho, MarketParams } from "morpho-blue/src/interfaces/IMorpho.sol";
 import { MarketParamsLib } from "morpho-blue/src/libraries/MarketParamsLib.sol";
 import { MorphoBlueConversions } from "../../../contracts/src/instances/morpho-blue/MorphoBlueConversions.sol";
 import { MorphoBlueHyperdrive } from "../../../contracts/src/instances/morpho-blue/MorphoBlueHyperdrive.sol";

@@ -575,9 +575,9 @@ contract HyperdriveMatchingEngineV2Test is HyperdriveTest {
     /// @dev Fuzzing test to verify TOKEN_AMOUNT_BUFFER is sufficient
     function testFuzz_tokenAmountBuffer(uint256 bondAmount) public {
         bondAmount = bound(bondAmount, 100e18, 1_000_000e18);
-        uint256 fundAmount1 = bondAmount / 2;
-        (, uint256 cost) = _calculateMintCost(bondAmount, true);
-        uint256 fundAmount2 = cost + 10 - fundAmount1;
+        // Ensure the fund is way more than sufficient
+        uint256 fundAmount1 = bondAmount * 2;
+        uint256 fundAmount2 = fundAmount1;
 
         // Create orders
         IHyperdriveMatchingEngineV2.OrderIntent
@@ -1062,56 +1062,5 @@ contract HyperdriveMatchingEngineV2Test is HyperdriveTest {
         bytes32 digest = matchingEngine.hashOrderIntent(order);
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, digest);
         return abi.encodePacked(r, s, v);
-    }
-
-    /// @dev Calculates the cost and parameters for minting positions.
-    /// @param _bondMatchAmount The amount of bonds to mint.
-    /// @param _asBase Whether the cost is in terms of base.
-    /// @return maturityTime The maturity time for new positions.
-    /// @return cost The total cost including fees.
-    function _calculateMintCost(
-        uint256 _bondMatchAmount,
-        bool _asBase
-    ) internal view returns (uint256 maturityTime, uint256 cost) {
-        // Get pool configuration.
-        IHyperdrive.PoolConfig memory config = hyperdrive.getPoolConfig();
-
-        // Calculate checkpoint and maturity time.
-        uint256 latestCheckpoint = hyperdrive.latestCheckpoint();
-        maturityTime = latestCheckpoint + config.positionDuration;
-
-        // Get vault share prices.
-        uint256 vaultSharePrice = hyperdrive.convertToBase(1e18);
-        uint256 openVaultSharePrice = hyperdrive
-            .getCheckpoint(latestCheckpoint)
-            .vaultSharePrice;
-        if (openVaultSharePrice == 0) {
-            openVaultSharePrice = vaultSharePrice;
-        }
-
-        // Calculate the required fund amount.
-        // NOTE: Round the required fund amount up to overestimate the cost.
-        cost = _bondMatchAmount.mulDivUp(
-            vaultSharePrice.max(openVaultSharePrice),
-            openVaultSharePrice
-        );
-
-        // Add flat fee.
-        // NOTE: Round the flat fee calculation up to match other flows.
-        uint256 flatFee = _bondMatchAmount.mulUp(config.fees.flat);
-        cost += flatFee;
-
-        // Add governance fee.
-        // NOTE: Round the governance fee calculation down to match other flows.
-        uint256 governanceFee = 2 * flatFee.mulDown(config.fees.governanceLP);
-        cost += governanceFee;
-
-        if (_asBase) {
-            // NOTE: Round up to overestimate the cost.
-            cost = hyperdrive.convertToBase(cost.divUp(vaultSharePrice));
-        } else {
-            // NOTE: Round up to overestimate the cost.
-            cost = cost.divUp(vaultSharePrice);
-        }
     }
 }

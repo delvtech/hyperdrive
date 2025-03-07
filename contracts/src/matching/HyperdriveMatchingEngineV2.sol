@@ -1459,6 +1459,18 @@ contract HyperdriveMatchingEngineV2 is
         uint256 governanceFee = 2 * flatFee.mulDown(config.fees.governanceLP);
         cost += governanceFee;
 
+        // @dev we can use hyperdrive.convertToBase and hyperdrive.convertToShares
+        //      to simulate the conversions made within the yield source. When we
+        //      are using base, what happens under the hood is that the calculations
+        //      will flow as:
+        //      1. Deposit base into yield source.
+        //      2. Calculate the shares minted with hyperdrive.convertToShares(baseAmount)
+        //      3. Calculate the final base amount with
+        //         finalBaseAmount =
+        //         hyperdrive.convertToShares(baseAmount).mulDown(vaultSharePrice)
+        //      With this in mind, we should be able to work back to this input
+        //      base amount with high precision if we do:
+        //      baseAmount = hyperdrive.convertToBase(finalBaseAmount.divDown(vaultSharePrice)
         if (_asBase) {
             // NOTE: Round up to overestimate the cost.
             cost = _hyperdrive.convertToBase(cost.divUp(vaultSharePrice));
