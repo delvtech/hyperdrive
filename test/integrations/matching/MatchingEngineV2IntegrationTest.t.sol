@@ -21,13 +21,13 @@ import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
 import { Lib } from "../../utils/Lib.sol";
 import { IRestakeManager, IRenzoOracle } from "../../../contracts/src/interfaces/IRenzo.sol";
-import { EzETHHyperdrive } from "../../../contracts/src/instances/ezETH/EzETHHyperdrive.sol";
-import { EzETHTarget0 } from "../../../contracts/src/instances/ezETH/EzETHTarget0.sol";
-import { EzETHTarget1 } from "../../../contracts/src/instances/ezETH/EzETHTarget1.sol";
-import { EzETHTarget2 } from "../../../contracts/src/instances/ezETH/EzETHTarget2.sol";
-import { EzETHTarget3 } from "../../../contracts/src/instances/ezETH/EzETHTarget3.sol";
-import { EzETHTarget4 } from "../../../contracts/src/instances/ezETH/EzETHTarget4.sol";
-import { EzETHConversions } from "../../../contracts/src/instances/ezETH/EzETHConversions.sol";
+import { EzETHHyperdrive } from "../../../contracts/src/instances/ezeth/EzETHHyperdrive.sol";
+import { EzETHTarget0 } from "../../../contracts/src/instances/ezeth/EzETHTarget0.sol";
+import { EzETHTarget1 } from "../../../contracts/src/instances/ezeth/EzETHTarget1.sol";
+import { EzETHTarget2 } from "../../../contracts/src/instances/ezeth/EzETHTarget2.sol";
+import { EzETHTarget3 } from "../../../contracts/src/instances/ezeth/EzETHTarget3.sol";
+import { EzETHTarget4 } from "../../../contracts/src/instances/ezeth/EzETHTarget4.sol";
+import { EzETHConversions } from "../../../contracts/src/instances/ezeth/EzETHConversions.sol";
 
 /// @dev This test suite tests if TOKEN_AMOUNT_BUFFER in HyperdriveMatchingEngineV2
 ///      is sufficient for successful minting operations across different pools.
