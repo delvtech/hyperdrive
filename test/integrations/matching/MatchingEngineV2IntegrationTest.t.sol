@@ -20,6 +20,14 @@ import { HyperdriveMatchingEngineV2 } from "../../../contracts/src/matching/Hype
 import { HyperdriveTest } from "../../utils/HyperdriveTest.sol";
 import { HyperdriveUtils } from "../../utils/HyperdriveUtils.sol";
 import { Lib } from "../../utils/Lib.sol";
+import { IRestakeManager, IRenzoOracle } from "../../../contracts/src/interfaces/IRenzo.sol";
+import { EzETHHyperdrive } from "../../../contracts/src/instances/ezETH/EzETHHyperdrive.sol";
+import { EzETHTarget0 } from "../../../contracts/src/instances/ezETH/EzETHTarget0.sol";
+import { EzETHTarget1 } from "../../../contracts/src/instances/ezETH/EzETHTarget1.sol";
+import { EzETHTarget2 } from "../../../contracts/src/instances/ezETH/EzETHTarget2.sol";
+import { EzETHTarget3 } from "../../../contracts/src/instances/ezETH/EzETHTarget3.sol";
+import { EzETHTarget4 } from "../../../contracts/src/instances/ezETH/EzETHTarget4.sol";
+import { EzETHConversions } from "../../../contracts/src/instances/ezETH/EzETHConversions.sol";
 
 /// @dev This test suite tests if TOKEN_AMOUNT_BUFFER in HyperdriveMatchingEngineV2
 ///      is sufficient for successful minting operations across different pools.
@@ -76,6 +84,24 @@ contract TokenBufferTest is HyperdriveTest {
 
     /// @dev The wstETH/USDC Hyperdrive instance
     IHyperdrive internal wstethUsdcHyperdrive;
+
+    /// @dev The Renzo RestakeManager contract
+    IRestakeManager internal constant RESTAKE_MANAGER =
+        IRestakeManager(0x74a09653A083691711cF8215a6ab074BB4e99ef5);
+
+    /// @dev The Renzo Oracle contract
+    IRenzoOracle internal constant RENZO_ORACLE =
+        IRenzoOracle(0x5a12796f7e7EBbbc8a402667d266d2e65A814042);
+
+    /// @dev The ezETH token contract
+    address internal constant EZETH =
+        0xbf5495Efe5DB9ce00f80364C8B423567e58d2110;
+
+    /// @dev The placeholder address for ETH.
+    address internal constant ETH = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+
+    /// @dev The EzETH Hyperdrive instance
+    IHyperdrive internal ezethHyperdrive;
 
     /// @dev Sets up the test harness on a mainnet fork
     function setUp() public override __mainnet_fork(21_931_000) {
@@ -244,6 +270,78 @@ contract TokenBufferTest is HyperdriveTest {
             )
         );
 
+        // Deploy an EzETH Hyperdrive pool
+        IHyperdrive.PoolConfig memory ezethConfig = testConfig(
+            0.04e18,
+            15 days
+        );
+        ezethConfig.baseToken = IERC20(ETH);
+        ezethConfig.vaultSharesToken = IERC20(EZETH);
+        ezethConfig.fees.curve = 0.01e18;
+        ezethConfig.fees.flat = 0.0005e18;
+        ezethConfig.fees.governanceLP = 0.15e18;
+        ezethConfig.minimumShareReserves = 1e15;
+        ezethConfig.minimumTransactionAmount = 1e15;
+
+        // Use EzETHConversions to calculate the initialVaultSharePrice
+        ezethConfig.initialVaultSharePrice = EzETHConversions.convertToBase(
+            RENZO_ORACLE,
+            RESTAKE_MANAGER,
+            IERC20(EZETH),
+            ONE
+        );
+
+        emit log_named_uint(
+            "EzETH Initial vault share price",
+            ezethConfig.initialVaultSharePrice
+        );
+
+        ezethHyperdrive = IHyperdrive(
+            address(
+                new EzETHHyperdrive(
+                    "EzETHHyperdrive",
+                    ezethConfig,
+                    adminController,
+                    address(
+                        new EzETHTarget0(
+                            ezethConfig,
+                            adminController,
+                            RESTAKE_MANAGER
+                        )
+                    ),
+                    address(
+                        new EzETHTarget1(
+                            ezethConfig,
+                            adminController,
+                            RESTAKE_MANAGER
+                        )
+                    ),
+                    address(
+                        new EzETHTarget2(
+                            ezethConfig,
+                            adminController,
+                            RESTAKE_MANAGER
+                        )
+                    ),
+                    address(
+                        new EzETHTarget3(
+                            ezethConfig,
+                            adminController,
+                            RESTAKE_MANAGER
+                        )
+                    ),
+                    address(
+                        new EzETHTarget4(
+                            ezethConfig,
+                            adminController,
+                            RESTAKE_MANAGER
+                        )
+                    ),
+                    RESTAKE_MANAGER
+                )
+            )
+        );
+
         // Fund accounts with tokens
         deal(DAI, alice, 10_000_000e18);
         deal(USDE, alice, 10_000_000e18);
@@ -259,6 +357,10 @@ contract TokenBufferTest is HyperdriveTest {
         deal(USDE, INITIALIZER, 10_000_000e18);
         deal(USDC, INITIALIZER, 10_000_000e6);
         deal(WSTETH, INITIALIZER, 1000e18);
+
+        deal(EZETH, alice, 10_000e18);
+        deal(EZETH, bob, 10_000e18);
+        deal(EZETH, INITIALIZER, 10_000e18);
 
         // Approve tokens
         _approveTokens(alice, address(usdeDaiHyperdrive), IERC20(DAI));
@@ -292,6 +394,12 @@ contract TokenBufferTest is HyperdriveTest {
             IERC20(WSTETH)
         );
 
+        _approveTokens(alice, address(ezethHyperdrive), IERC20(EZETH));
+        _approveTokens(bob, address(ezethHyperdrive), IERC20(EZETH));
+        _approveTokens(INITIALIZER, address(ezethHyperdrive), IERC20(EZETH));
+        _approveTokens(alice, address(matchingEngine), IERC20(EZETH));
+        _approveTokens(bob, address(matchingEngine), IERC20(EZETH));
+
         // Initialize the Hyperdrive pools
         vm.startPrank(INITIALIZER);
 
@@ -312,6 +420,17 @@ contract TokenBufferTest is HyperdriveTest {
             0.0361e18,
             IHyperdrive.Options({
                 asBase: true,
+                destination: INITIALIZER,
+                extraData: ""
+            })
+        );
+
+        // Initialize EzETH Hyperdrive pool
+        ezethHyperdrive.initialize(
+            1_000e18, // 1000 ezETH
+            0.0361e18,
+            IHyperdrive.Options({
+                asBase: false,
                 destination: INITIALIZER,
                 extraData: ""
             })
@@ -544,6 +663,114 @@ contract TokenBufferTest is HyperdriveTest {
             "wstETH/USDC - Total failed trades",
             localFailedTrades
         );
+    }
+
+    /// @dev Tests if TOKEN_AMOUNT_BUFFER is sufficient for EzETH pool.
+    /// This test uses fixed time and iterates through increasing bond amounts.
+    function test_tokenBuffer_EzETH_notAsBase() external {
+        // Use a fixed time elapsed
+        uint256 timeElapsed = 1 days;
+
+        // Advance time to simulate real-world conditions
+        vm.warp(block.timestamp + timeElapsed);
+
+        // Initialize counters for this test
+        uint256 localSuccessfulTrades = 0;
+        uint256 localFailedTrades = 0;
+
+        // Start with 2e18 and increment by 5e18 each time, for 20 iterations
+        for (uint256 i = 0; i < 20; i++) {
+            uint256 bondAmount = 2e18 + (i * 5e18);
+
+            // Calculate fund amounts and make it more than sufficient
+            uint256 totalFunds = 2 * bondAmount;
+
+            // Split funds between Alice and Bob
+            uint256 aliceFundAmount = totalFunds / 2;
+            uint256 bobFundAmount = totalFunds - aliceFundAmount;
+
+            // Create orders
+            IHyperdriveMatchingEngineV2.OrderIntent
+                memory longOrder = _createOrderIntent(
+                    alice,
+                    bob,
+                    ezethHyperdrive,
+                    aliceFundAmount,
+                    bondAmount,
+                    false, // asBase
+                    IHyperdriveMatchingEngineV2.OrderType.OpenLong
+                );
+
+            IHyperdriveMatchingEngineV2.OrderIntent
+                memory shortOrder = _createOrderIntent(
+                    bob,
+                    alice,
+                    ezethHyperdrive,
+                    bobFundAmount,
+                    bondAmount,
+                    false, // asBase
+                    IHyperdriveMatchingEngineV2.OrderType.OpenShort
+                );
+
+            // Sign orders
+            longOrder.signature = _signOrderIntent(longOrder, alicePK);
+            shortOrder.signature = _signOrderIntent(shortOrder, bobPK);
+
+            // Try to match orders and record success/failure
+            try matchingEngine.matchOrders(longOrder, shortOrder, CHARLIE) {
+                localSuccessfulTrades++;
+
+                // Log successful trade
+                emit log_named_uint(
+                    "Successful trade with bond amount",
+                    bondAmount
+                );
+
+                // Verify positions were created
+                uint256 aliceLongBalance = ezethHyperdrive.balanceOf(
+                    AssetId.encodeAssetId(
+                        AssetId.AssetIdPrefix.Long,
+                        ezethHyperdrive.latestCheckpoint() +
+                            ezethHyperdrive.getPoolConfig().positionDuration
+                    ),
+                    alice
+                );
+
+                uint256 bobShortBalance = ezethHyperdrive.balanceOf(
+                    AssetId.encodeAssetId(
+                        AssetId.AssetIdPrefix.Short,
+                        ezethHyperdrive.latestCheckpoint() +
+                            ezethHyperdrive.getPoolConfig().positionDuration
+                    ),
+                    bob
+                );
+
+                assertGt(
+                    aliceLongBalance,
+                    0,
+                    "Alice should have long position"
+                );
+                assertGt(bobShortBalance, 0, "Bob should have short position");
+            } catch {
+                localFailedTrades++;
+
+                // Log failed trade
+                emit log_named_uint(
+                    "Failed trade with bond amount",
+                    bondAmount
+                );
+            }
+
+            // Advance block to avoid nonce issues
+            vm.roll(block.number + 1);
+        }
+
+        // Log summary
+        emit log_named_uint(
+            "EzETH - Total successful trades",
+            localSuccessfulTrades
+        );
+        emit log_named_uint("EzETH - Total failed trades", localFailedTrades);
     }
 
     /// @dev Helper function to create an order intent
