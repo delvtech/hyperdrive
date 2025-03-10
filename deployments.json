@@ -1216,86 +1216,6 @@
             "address": "0xc7822a469436dc786e88cca48f6e194d2b8c0e03",
             "timestamp": "2024-09-09T18:18:34.017Z"
         },
-        "ElementDAO Hyperdrive Factory": {
-            "contract": "HyperdriveFactory",
-            "address": "0xfbabc73b6241df6453d88ac13b556ba643f9a6ad",
-            "timestamp": "2024-09-09T18:18:39.056Z"
-        },
-        "ElementDAO Renzo xezETH Hyperdrive Deployer Coordinator_EzETHLineaHyperdriveCoreDeployer": {
-            "contract": "EzETHLineaHyperdriveCoreDeployer",
-            "address": "0xe61fb0f6a265f614ca6bf2ee83bbc463cb34da38",
-            "timestamp": "2024-09-09T20:31:41.948Z"
-        },
-        "LPMath": {
-            "contract": "LPMath",
-            "address": "0xd9400ab142b4ad18c181538b76522334e0cd8d37",
-            "timestamp": "2024-09-09T20:31:46.740Z"
-        },
-        "ElementDAO Renzo xezETH Hyperdrive Deployer Coordinator_EzETHLineaTarget0Deployer": {
-            "contract": "EzETHLineaTarget0Deployer",
-            "address": "0xbe082293b646cb619a638d29e8eff7cf2f46aa3a",
-            "timestamp": "2024-09-09T20:31:52.026Z"
-        },
-        "ElementDAO Renzo xezETH Hyperdrive Deployer Coordinator_EzETHLineaTarget1Deployer": {
-            "contract": "EzETHLineaTarget1Deployer",
-            "address": "0x08b40647714ac1e5742633fc2d83c20d61a199d2",
-            "timestamp": "2024-09-09T20:31:57.021Z"
-        },
-        "ElementDAO Renzo xezETH Hyperdrive Deployer Coordinator_EzETHLineaTarget2Deployer": {
-            "contract": "EzETHLineaTarget2Deployer",
-            "address": "0xf95b98256edb861be389b9807f6656e8be2dc488",
-            "timestamp": "2024-09-09T20:32:01.931Z"
-        },
-        "ElementDAO Renzo xezETH Hyperdrive Deployer Coordinator_EzETHLineaTarget3Deployer": {
-            "contract": "EzETHLineaTarget3Deployer",
-            "address": "0xdf5d682404b0611f46f2626d9d5a37eb6a6fd27d",
-            "timestamp": "2024-09-09T20:32:06.773Z"
-        },
-        "ElementDAO Renzo xezETH Hyperdrive Deployer Coordinator_EzETHLineaTarget4Deployer": {
-            "contract": "EzETHLineaTarget4Deployer",
-            "address": "0xd9bdabb0f87e46af44063d251eb07edfe260d9f1",
-            "timestamp": "2024-09-09T20:32:11.533Z"
-        },
-        "ElementDAO Renzo xezETH Hyperdrive Deployer Coordinator": {
-            "contract": "EzETHLineaHyperdriveDeployerCoordinator",
-            "address": "0x2bbf0716fb1ac91169b0dbecff232c7bf1b7e701",
-            "timestamp": "2024-09-09T20:32:16.455Z"
-        },
-        "ElementDAO KelpDAO rsETH Hyperdrive Deployer Coordinator_RsETHLineaHyperdriveCoreDeployer": {
-            "contract": "RsETHLineaHyperdriveCoreDeployer",
-            "address": "0x0fb305a458b1008faee03147b700b3975bea03fd",
-            "timestamp": "2024-09-09T20:32:26.534Z"
-        },
-        "ElementDAO KelpDAO rsETH Hyperdrive Deployer Coordinator_RsETHLineaTarget0Deployer": {
-            "contract": "RsETHLineaTarget0Deployer",
-            "address": "0xd8ee8f39c42ee9b005582e4dc0d530c7de6f1471",
-            "timestamp": "2024-09-09T20:32:31.372Z"
-        },
-        "ElementDAO KelpDAO rsETH Hyperdrive Deployer Coordinator_RsETHLineaTarget1Deployer": {
-            "contract": "RsETHLineaTarget1Deployer",
-            "address": "0xb2f17302ed12fe72d883fcc2b66f1b844fbb7964",
-            "timestamp": "2024-09-09T20:32:36.154Z"
-        },
-        "ElementDAO KelpDAO rsETH Hyperdrive Deployer Coordinator_RsETHLineaTarget2Deployer": {
-            "contract": "RsETHLineaTarget2Deployer",
-            "address": "0xe441e793f7d6f7b0d633a770554d8924103a30b4",
-            "timestamp": "2024-09-09T20:32:40.940Z"
-        },
-        "ElementDAO KelpDAO rsETH Hyperdrive Deployer Coordinator_RsETHLineaTarget3Deployer": {
-            "contract": "RsETHLineaTarget3Deployer",
-            "address": "0xe8dc5073b02d062388db8e50762a8c9a1c823540",
-            "timestamp": "2024-09-09T20:32:45.714Z"
-        },
-        "ElementDAO KelpDAO rsETH Hyperdrive Deployer Coordinator_RsETHLineaTarget4Deployer": {
-            "contract": "RsETHLineaTarget4Deployer",
-            "address": "0xe0da47a1a6ceb80bb945652cb96a821fa5d91327",
-            "timestamp": "2024-09-09T20:32:50.678Z"
-        },
-        "ElementDAO KelpDAO rsETH Hyperdrive Deployer Coordinator": {
-            "contract": "RsETHLineaHyperdriveDeployerCoordinator",
-            "address": "0x279c0504575639131be082923c21289d553d7c08",
-            "timestamp": "2024-09-09T20:32:55.517Z"
-        },
         "ElementDAO 182 Day Renzo xezETH Hyperdrive_EzETHLineaTarget0": {
             "contract": "EzETHLineaTarget0",
             "address": "0xA1bFB507067CeB2c08abB72D0A49a76564CE4587",
@@ -1355,6 +1275,11 @@
             "contract": "RsETHLineaHyperdrive",
             "address": "0xB56e0Bf37c4747AbbC3aA9B8084B0d9b9A336777",
             "timestamp": "2024-09-09T20:34:07.406Z"
+        },
+        "ElementDAO Hyperdrive Factory": {
+            "contract": "HyperdriveFactory",
+            "address": "0xd917235d89a58af93302e9a998d62735740c8117",
+            "timestamp": "2024-11-19T01:15:49.334Z"
         }
     },
     "base": {
