@@ -139,8 +139,6 @@ abstract contract HyperdriveMultiToken is IHyperdriveEvents, HyperdriveBase {
                 if (response != IERC1155Receiver.onERC1155Received.selector) {
                     revert IHyperdrive.ERC1155InvalidReceiver();
                 }
-            } catch Error(string memory reason) {
-                revert(reason);
             } catch {
                 revert IHyperdrive.ERC1155InvalidReceiver();
             }
