@@ -532,6 +532,18 @@ abstract contract HyperdriveTarget0 is
         _revert(abi.encode(_nonces[account]));
     }
 
+    /// @notice Returns whether or not an interface is supported.
+    /// @param interfaceId The ID of the interface.
+    /// @return A flag indicating whether or not the interface is supported.
+    function supportsInterface(
+        bytes4 interfaceId
+    ) external pure returns (bool) {
+        if (interfaceId == bytes4(0xd9b67a26)) {
+            return true;
+        }
+        return false;
+    }
+
     /// Helpers ///
 
     /// @dev Reverts with the provided bytes. This is useful in getters used
