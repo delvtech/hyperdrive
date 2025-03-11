@@ -67,3 +67,6 @@ etherscan_requests/
 
 # todos
 TODO.md
+
+# Agent0 fuzzing output files
+.crash_report
