@@ -61,7 +61,14 @@ interface IMultiTokenRead {
     ) external view returns (uint256[] memory);
 
     /// @notice Gets the permit nonce for an account.
-    /// @param owner The owner of the tokens.
+    /// @param _owner The owner of the tokens.
     /// @return The permit nonce of the owner.
-    function nonces(address owner) external view returns (uint256);
+    function nonces(address _owner) external view returns (uint256);
+
+    /// @notice Returns whether or not an interface is supported.
+    /// @param _interfaceId The ID of the interface.
+    /// @return A flag indicating whether or not the interface is supported.
+    function supportsInterface(
+        bytes4 _interfaceId
+    ) external pure returns (bool);
 }

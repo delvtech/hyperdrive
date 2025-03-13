@@ -11,9 +11,7 @@ import { HyperdriveBase } from "./HyperdriveBase.sol";
 /// @notice Implements the MultiToken accounting that Hyperdrive uses to track
 ///         user's positions. MultiToken maintains a set of balances and
 ///         approvals for a list of sub-tokens specified by an asset ID. This
-///         token is mostly ERC1155 compliant; however, we remove on transfer
-///         callbacks and safe transfer because of the risk of external calls to
-///         untrusted code.
+///         token is ERC1155 compliant.
 /// @dev Our architecture maintains ERC20 compatibility by allowing users to
 ///      access their balances and approvals through ERC20 forwarding contracts
 ///      deployed by the registered forwarder factory. To ensure that only the
@@ -141,8 +139,6 @@ abstract contract HyperdriveMultiToken is IHyperdriveEvents, HyperdriveBase {
                 if (response != IERC1155Receiver.onERC1155Received.selector) {
                     revert IHyperdrive.ERC1155InvalidReceiver();
                 }
-            } catch Error(string memory reason) {
-                revert(reason);
             } catch {
                 revert IHyperdrive.ERC1155InvalidReceiver();
             }

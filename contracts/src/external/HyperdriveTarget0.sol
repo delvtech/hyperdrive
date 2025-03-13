@@ -532,6 +532,22 @@ abstract contract HyperdriveTarget0 is
         _revert(abi.encode(_nonces[account]));
     }
 
+    /// @notice Returns whether or not an interface is supported.
+    /// @param _interfaceId The ID of the interface.
+    /// @return A flag indicating whether or not the interface is supported.
+    function supportsInterface(
+        bytes4 _interfaceId
+    ) external pure returns (bool) {
+        // If the interface ID is the ERC165 or ERC1155 interface, return true.
+        if (
+            _interfaceId == bytes4(0x01ffc9a7) ||
+            _interfaceId == bytes4(0xd9b67a26)
+        ) {
+            _revert(abi.encode(true));
+        }
+        _revert(abi.encode(false));
+    }
+
     /// Helpers ///
 
     /// @dev Reverts with the provided bytes. This is useful in getters used
