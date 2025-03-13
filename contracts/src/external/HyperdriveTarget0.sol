@@ -533,15 +533,19 @@ abstract contract HyperdriveTarget0 is
     }
 
     /// @notice Returns whether or not an interface is supported.
-    /// @param interfaceId The ID of the interface.
+    /// @param _interfaceId The ID of the interface.
     /// @return A flag indicating whether or not the interface is supported.
     function supportsInterface(
-        bytes4 interfaceId
+        bytes4 _interfaceId
     ) external pure returns (bool) {
-        if (interfaceId == bytes4(0xd9b67a26)) {
-            return true;
+        // If the interface ID is the ERC165 or ERC1155 interface, return true.
+        if (
+            _interfaceId == bytes4(0x01ffc9a7) ||
+            _interfaceId == bytes4(0xd9b67a26)
+        ) {
+            _revert(abi.encode(true));
         }
-        return false;
+        _revert(abi.encode(false));
     }
 
     /// Helpers ///

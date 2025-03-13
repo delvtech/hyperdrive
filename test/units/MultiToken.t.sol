@@ -598,4 +598,15 @@ contract MultiTokenTest is HyperdriveTest {
         // Verify balance update
         assertEq(hyperdrive.balanceOf(1, address(receiver)), 100 ether);
     }
+
+    function testSupportsInterface() public view {
+        // Ensure that Hyperdrive supports the ERC165 interface.
+        assertTrue(hyperdrive.supportsInterface(bytes4(0x01ffc9a7)));
+
+        // Ensure that Hyperdrive supports the ERC1155 interface.
+        assertTrue(hyperdrive.supportsInterface(bytes4(0xd9b67a26)));
+
+        // Ensure that Hyperdrive doesn't support a random interface.
+        assertFalse(hyperdrive.supportsInterface(bytes4(0xdeadbeef)));
+    }
 }
