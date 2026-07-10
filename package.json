@@ -63,6 +63,7 @@
   "dependencies": {
     "@delvtech/hyperdrive-wasm": "^0.15.3",
     "esm": "^3.2.25",
+    "foundry-gas-utils": "github:saifyoussuf/foundry-gas-utils",
     "yarn": "^1.22.19"
   }
 }
